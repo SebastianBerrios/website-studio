@@ -9,6 +9,7 @@ import {
   useSpring,
   MotionValue,
 } from "motion/react";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 
 export const HeroParallax = ({
   products,
@@ -111,6 +112,16 @@ export const Header = () => {
         flexibles y listas para atraer clientes. Tú pones la idea, nosotros la
         magia.
       </p>
+      <div className="mt-4">
+        <HoverBorderGradient
+          containerClassName="rounded-full"
+          as="button"
+          href="/portfolio"
+          className=" dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+        >
+          <span>Explorar proyectos</span>
+        </HoverBorderGradient>
+      </div>
     </div>
   );
 };
