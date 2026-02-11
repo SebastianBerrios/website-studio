@@ -33,27 +33,27 @@ export const HeroParallax = ({
 
   const translateX = useSpring(
     useTransform(scrollYProgress, [0, 1], [0, 1000]),
-    springConfig
+    springConfig,
   );
   const translateXReverse = useSpring(
     useTransform(scrollYProgress, [0, 1], [0, -1000]),
-    springConfig
+    springConfig,
   );
   const rotateX = useSpring(
     useTransform(scrollYProgress, [0, 0.2], [15, 0]),
-    springConfig
+    springConfig,
   );
   const opacity = useSpring(
     useTransform(scrollYProgress, [0, 0.2], [0.2, 1]),
-    springConfig
+    springConfig,
   );
   const rotateZ = useSpring(
     useTransform(scrollYProgress, [0, 0.2], [20, 0]),
-    springConfig
+    springConfig,
   );
   const translateY = useSpring(
     useTransform(scrollYProgress, [0, 0.2], [-700, 50]),
-    springConfig
+    springConfig,
   );
   return (
     <div
@@ -119,7 +119,7 @@ export const Header = () => {
           href="/portfolio"
           className=" dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
         >
-          <span>Explorar proyectos</span>
+          <span>Explora nuestros proyectos</span>
         </HoverBorderGradient>
       </div>
     </div>
