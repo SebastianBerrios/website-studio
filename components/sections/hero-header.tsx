@@ -31,13 +31,23 @@ export function HeroHeader({ locale }: { locale: Locale }) {
         <HoverBorderGradient
           containerClassName="rounded-full"
           as="button"
-          // `landingAnchor()` returns a plain `string` by contract (lib/links.ts),
-          // so `typedRoutes` cannot verify it structurally. The cast is safe
-          // here (unlike `caseStudyPath()`/`pricingPath()`): `/es` is a real
-          // route created in this PR, and `#proyectos` is a real anchor
-          // (`app/[locale]/page.tsx` renders `<div id="proyectos">`). See
-          // design.md D7 and `lib/content/invariants.ts`'s
-          // `checkNoSelfReferentialLinks`, which covers what this cast waives.
+          // `landingAnchor()` returns a plain `string` by contract
+          // (lib/links.ts), so `typedRoutes` cannot verify it structurally,
+          // and this cast waives that check for the hero CTA's href.
+          //
+          // Unlike `product.link as Route` in `hero-parallax.tsx`, this cast
+          // has NO compensating build-time control. `lib/content/
+          // invariants.ts`'s `checkNoSelfReferentialLinks` does NOT cover
+          // it: that function only inspects `toHeroProducts()` output, and
+          // only tests equality with `/` or `/{locale}` — a different
+          // property than "does this anchor target actually exist".
+          // `checkInternalLinksResolve` has the same blind spot; neither
+          // ever sees this component's href. The target is safe TODAY only
+          // because `/es#proyectos` is a real anchor — `HeroParallax`'s
+          // products track carries a matching `id` (`app/[locale]/page.tsx`
+          // passes `productsId="proyectos"`) — verified by reading the two
+          // files side by side, not by any gate. See
+          // `sdd/dev-services-website/verify-report.md` finding W1.
           href={landingAnchor(locale, "proyectos") as Route}
           className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
         >
