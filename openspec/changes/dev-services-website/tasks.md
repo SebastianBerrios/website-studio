@@ -143,10 +143,16 @@ Design decisions: D4, D6.
 - [ ] 1.H1 **[HUMAN, blocks 1.7/1.8/1.9]** Supply the studio's real WhatsApp
       business number. **Still open** — not supplied this batch;
       `lib/contact.ts` stays in `pending` state.
-- [ ] 1.H2 **[HUMAN]** Confirm `https://www.atemporalarq.com/` is live
+- [x] 1.H2 **[HUMAN]** Confirm `https://www.atemporalarq.com/` is live
       (currently UNVERIFIED). If unreachable, flag the Atemporal entry for a
       future evidence-state downgrade (affects PR 5, not this slice's
-      structure). **Still open** — not independently reverified this batch.
+      structure). **Closed, negatively**, by the `fix/content-honesty`
+      remediation slice: `nslookup`/`curl` confirm NXDOMAIN on the apex and
+      `www`, from a resolver that correctly resolved the other three
+      project domains in the same run. `atemporal` is downgraded to
+      `evidence.state: "not-deployed"` (see verify-report.md finding C2).
+      One independent cross-network check is still recommended before
+      treating this as permanent.
 
 ### Verification
 
@@ -384,8 +390,8 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 - [ ] 3.H2 **[HUMAN]** Confirm consent for `wedding-invitation-piero`
       (couple), `blu-biolink` (proprietary per README), and `blu` (sanitized
       capture) before their entries leave `withheld`/anonymized state.
-- [ ] 3.H3 **[HUMAN]** Carry forward 1.H2 if `atemporalarq.com` liveness is
-      still unconfirmed.
+- [x] 3.H3 **[HUMAN]** Carry forward 1.H2 if `atemporalarq.com` liveness is
+      still unconfirmed. **Resolved via 1.H2** — see its note above.
 
 ### Verification
 
@@ -651,6 +657,50 @@ brief-form section behind a flag; WhatsApp (live since PR 1) carries
 conversion.
 
 ---
+
+## Remediation slice — `fix/content-honesty` (post-`sdd-verify`)
+
+Fixes CRITICAL findings C1/C2 and WARNING findings W1/W2 from
+`sdd/dev-services-website/verify-report.md`, all confined to `lib/content/**`
+and the hero component/page. Does not widen scope beyond those four
+findings and the coupled hero-floor decision.
+
+- [x] R1 (C1) Remove `blucafefinance.png` from `lib/content/projects/
+      media.ts` and delete it from `public/projects/`. Flip `blu`'s
+      `evidence` to `{ state: "no-visual", media: [] }`. Correct the false
+      "login screen" `alt` text (removed along with the media entry).
+- [x] R2 (C2) Flip `atemporal`'s `evidence` to `{ state: "not-deployed",
+      media: [MEDIA.atemporal] }` — domain confirmed NXDOMAIN, not merely
+      unverified. Remove `UNVERIFIED_LIVENESS` (exported, read by nothing).
+      Document in `lib/content/invariants.ts` why external-link reachability
+      is not a build-time gate (non-deterministic network call during
+      `next build`).
+- [x] R3 (floor) Lower `checkHeroFloor`'s threshold from 4 to 3 in
+      `lib/content/invariants.ts`, documented as a temporary launch-quality
+      signal to raise as captures/consent land — not a new permanent target.
+- [x] R4 (W1) Correct `components/sections/hero-header.tsx`'s comment: it
+      falsely claimed `checkNoSelfReferentialLinks` covers the CTA's
+      `as Route` cast. State plainly that no build-time control covers it.
+- [x] R5 (W2) Move the `#proyectos` anchor off the whole hero (which
+      wrapped the CTA) onto `HeroParallax`'s products track via a new
+      `productsId` prop, so the anchor target sits below the CTA in
+      document order. Updated `app/[locale]/page.tsx`.
+
+### Verification (remediation slice)
+
+- [x] R.V1 `npm run build` passes with the floor at 3 and both entries
+      corrected.
+- [x] R.V2 `npm run lint` passes — same 2 pre-existing
+      `hover-border-gradient.tsx` warnings, no new ones.
+- [x] R.V3 Fault-injection re-proof: `VERCEL_ENV=production` still throws
+      real exit code 1 when a `Localized<string>` value is blanked.
+- [x] R.V4 `blucafefinance` (filename and any residual comment mention)
+      appears nowhere in `.next/server/app/*.html` or `lib/`.
+- [x] R.V5 Every internal/external link in the compiled `es.html`/
+      `_not-found.html` output resolves to a verified target: `/es`,
+      `/es#proyectos` (confirmed positioned after the CTA in document
+      order), `https://luang.com.pe/`, `https://blucafe.vercel.app/`. No
+      `atemporalarq.com` link remains anywhere in the built output.
 
 ## Cross-cutting notes
 
