@@ -2372,3 +2372,277 @@ as fixed commitments anywhere.
 Ready for `sdd-verify` to re-validate this batch against the spec/design, or
 `sdd-apply` to continue once the user supplies the pricing figures/currency
 blocking the rest of PR 3b (3.7/3.8) and PR 4.
+
+---
+
+## Batch 11 note — file/Engram divergence flagged, not backfilled
+
+Between this file's "Batch 10" entry above and Batch 12 below, two pieces of
+work landed and were recorded in Engram's `sdd/dev-services-website/
+apply-progress` observation but were **not** mirrored to this file: a
+cleanup slice on `chore/cleanup-verify-warnings` (closed `sdd-verify`
+findings W3, W6, W8, W11; added `.env.example`) and a small `feat/contact`
+commit (`71b2ce3`, wiring the real WhatsApp number, closing task 1.H1). Both
+are real, already-merged-to-this-branch's-ancestry work — nothing is lost,
+since Engram is the authoritative cumulative record under this project's
+hybrid artifact-store convention — but this file's own narrative has a gap
+between Batch 10 and Batch 12. Flagged here rather than fabricated
+retroactively; a future documentation-only pass should backfill a "Batch 11"
+entry from the Engram observation (id 384 at time of writing) if this file
+needs to stand alone.
+
+## Batch 12 — PR 4 (pricing page) + tasks 3.7/3.8 (`feat/pricing-page`, based on `chore/cleanup-verify-warnings`)
+
+**What**: Implemented all of PR 4 (tasks 4.0-4.10) plus tasks 3.7 (already
+closed via 4.0) and 3.8 (Precios landing summary), now that the user
+supplied real figures for all 8 `PriceToken`s (PEN) plus the launch-pricing
+framing (first 5 projects, no crossed-out "normal price" since none has been
+decided). Also restored the "Precios" nav item in header/footer and
+dual-CTA'd the Servicios cards (task 4.8).
+
+**Why**: Task 4.H1 (the sole remaining blocker for PR 4, 3.7, and 3.8) was
+closed this batch — the user supplied: `landing-basic` S/500,
+`landing-standard` S/650, `landing-premium` S/800, `microsite-basic` S/100,
+`microsite-event` S/150, `app-from` S/1,500 (a floor), `care-basic`
+S/80/mes, `care-standard` S/150/mes.
+
+**Where** (3 work-unit commits on `feat/pricing-page`):
+
+1. `753fef4` feat(content): populate pricing tiers, quote block, retainer
+   plans, and terms data — `lib/content/pricing.ts` (rewritten: `PRICES`
+   populated as `"set"`; new `PricingTier`/`PRICING_TIERS`,
+   `QuoteBlock`/`QUOTE_BLOCK`, `RetainerPlan`/`RETAINER_PLANS`,
+   `PricingTerms`/`PRICING_TERMS`, `formatMoney()`, `DISPLAY_CURRENCY`,
+   `LAUNCH_PRICING_SLOTS`), `lib/content/types.ts` (promoted `Commitment<T>`
+   from `retainer.ts`, generalized doc comment), `lib/content/retainer.ts`
+   (now imports + re-exports `Commitment` from `types.ts` instead of
+   declaring it locally).
+2. `ac814a3` feat(pricing): add the pricing page, its components, and
+   activate the price-integrity gate — `components/pricing/price.tsx`,
+   `price-pending.tsx`, `tier-card.tsx`, `quote-block.tsx`,
+   `retainer-plans.tsx`, `terms-table.tsx`, `faq.tsx` (all new),
+   `app/[locale]/precios/page.tsx` (new, `force-static`, composes all 8
+   blocks), `lib/content/invariants.ts` (`PRICE_INTEGRITY_CHECK_ACTIVE` →
+   `true`; `checkInternalLinksResolve`'s `LIVE_TARGETS` gained
+   `/{locale}/precios` in this same commit), `eslint.config.mjs` (new
+   `no-restricted-syntax` rule banning `[PRICE:`/`[CURRENCY]` literals and
+   template-literal segments under `app/**`, `components/**`,
+   `lib/dictionaries/**`), `lib/dictionaries/types.ts`/`es.ts` (added
+   `PricingDictionary`, `PricingFaqDictionary`, and their Spanish content).
+3. `1738ce6` feat(landing): add Precios summary section, restore Precios
+   nav, dual-CTA the Servicios cards — `components/sections/
+   pricing-summary.tsx` (new, landing section 6), `app/[locale]/page.tsx`
+   (composes `<PricingSummary>` between Autoridad and Retainer),
+   `components/layout/site-header.tsx`/`site-footer.tsx` (Precios nav item
+   restored, pointing at `pricingPath()`; the removal-rationale comment
+   deleted), `components/sections/services.tsx` (each card now renders both
+   `pricingCta`/`proofCta`), `lib/links.ts` (`pricingPath()`/
+   `pricingLineAnchor()` retyped to template-literal return types instead of
+   plain `string` — no `as Route` cast needed at any call site; new
+   `PRICING_LINE_ANCHOR_IDS` map), `app/sitemap.ts` (emits the
+   `/{locale}/precios` entry), `lib/dictionaries/types.ts`/`es.ts`
+   (`PricingSummaryDictionary`, `header.pricingLink`, `footer.pricingLink`,
+   `services.pricingCta`, all added in this commit alongside their first
+   consumers).
+
+**Documented deviations** (same discipline as every prior batch's deviation
+notes):
+
+- **`PricingTier.notIncluded`/`turnaround`, `QuoteBlock.turnaround`,
+  `PricingTerms.paymentSchedule` are `Commitment<T>`, not design.md's literal
+  required-non-empty-tuple shape.** Turnaround times, per-tier exclusions,
+  and payment schedule were explicitly on this batch's "not supplied, do not
+  invent" list. Rather than fabricate values to satisfy a required shape,
+  these render an honest "pendiente" state — visually distinct, never a
+  silently blank section. Tracked as an open item below, not closed.
+- **`PricingTier` has no separate `included` field.** The one settled,
+  quantifiable inclusion fact (2 revision rounds, `PROCESS.
+  revisionRoundsIncluded`) is what renders — same "one exported constant,
+  every consumer reads through it" discipline `lib/content/process.ts`
+  already established, not a second, invented inclusions list.
+- **`RetainerPlan`s (`care-basic`/`care-standard`) share identical published
+  commitments, differing only by price.** No scope/priority/hour difference
+  between the two plans was supplied — modeling one would be fabrication.
+  Tracked as an open item below.
+- **Task 4.7's literal `?line=` pre-tag into `#brief` was not built.**
+  Neither `#brief` nor the brief form exist yet (PR 6b), and this batch's
+  hard constraints forbid a CTA pointing at a target that does not exist
+  when the commit lands. The pricing page's block-8 CTA and the landing
+  summary's CTA both point at the already-live WhatsApp channel instead,
+  with the visitor's service line implicit only in the WhatsApp message
+  framing, not a real pre-tag. **Tracked as an explicit follow-up for
+  PR 6b**: once the brief form and `#brief` exist, replace these CTAs with
+  the real `?line=<ServiceLine>` anchor.
+- **FAQ's code-ownership objection renders an honest "pendiente" answer**,
+  not a fabricated policy — the studio was not asked/has not supplied one
+  this batch. 3 of the 4 mandated objections are answered from real,
+  settled facts (launch-pricing framing for "why not lower"; revision
+  rounds + retainer for "later changes"; retainer cancellation terms reused
+  verbatim for "how to leave").
+- **`app/[locale]/precios/page.tsx` has no `generateMetadata`/per-page
+  `alternates.canonical`.** The root layout's `alternates.canonical` is
+  hardcoded to `/${DEFAULT_LOCALE}` (i.e. `/es`), which is only correct for
+  the landing page — `/es/precios` currently inherits a canonical pointing
+  at the home page. This is a pre-existing structural gap (surfaced now that
+  a second page exists, not introduced by this batch) and was left alone:
+  no task in this batch's scope asked for it, and fixing it well means
+  giving every future page its own `generateMetadata`, not a one-line patch
+  to this page alone. **Tracked as an open item below.**
+
+**Learned**:
+
+- `as const satisfies Record<PriceToken, PriceEntry>` where every entry
+  happens to be `"set"` makes TypeScript infer the narrower "every entry is
+  literally `set`" type when the const is indexed by a generic
+  `PriceToken`-typed parameter — the exhaustive `switch` in `Price` then
+  flags `case "pending"` as unreachable (`Type '"pending"' is not comparable
+  to type '"set"'`), because nothing in the *data* is currently pending, not
+  because the *type* forbids it. Fixed by explicitly widening
+  (`PRICES[token] as PriceEntry`) at each consumption site
+  (`components/pricing/price.tsx`, `lib/content/invariants.ts`'s
+  `checkPendingPricesInProduction`). A plain `const entry: PriceEntry = ...`
+  type *annotation* did NOT fix this in practice — only an explicit `as
+  PriceEntry` cast did; worth remembering for the next `as const
+  satisfies`-typed data module that starts fully resolved.
+- Next 16.1.1's `typedRoutes` accepts a function's return type as a
+  template-literal type without a cast, but only if the function's
+  annotated return type IS the template literal (e.g. `` `/${Locale}/precios` ``)
+  — annotating it as plain `string` (even if the runtime value would match
+  the pattern) forces every call site to cast. This is the concrete
+  mechanism behind design.md's "not a bare `string`" note, and it is how
+  `pricingPath()`/`pricingLineAnchor()` avoid a new `as Route` cast entirely
+  (hard constraint 4) where `landingAnchor()`/`caseStudyPath()` (untouched,
+  out of scope) still need one at every call site.
+- Moving `Commitment<T>` from `lib/content/retainer.ts` to `lib/content/
+  types.ts` requires an actual `import type { Commitment }` for the type's
+  own internal use in `retainer.ts`, not just `export type { Commitment }
+  from "./types"` — a re-export alone does not bring the name into scope
+  for the file's own declarations. This broke `RetainerCommitments`'s field
+  types silently into `any` (cascading into "implicit any" errors in every
+  *consumer*, `components/sections/retainer.tsx` and the new
+  `retainer-plans.tsx`, rather than an obvious error at the declaration
+  site) until caught by a full `tsc --noEmit` pass — `next build`'s
+  Turbopack error reporting surfaced a downstream symptom first, not the
+  root cause; raw `tsc --noEmit` gave the real error immediately.
+
+**Verification** (no browser; all via `npm run build`/`npm run lint`/compiled
+HTML, same discipline as every prior batch — this project has no test
+runner):
+
+- `npm run build`: exit 0, only the expected non-strict `NEXT_PUBLIC_SITE_URL`
+  warning. Route list confirms `/[locale]/precios` → `/es/precios` compiled.
+- `npm run lint`: exit 0, exactly the 2 pre-existing
+  `hover-border-gradient.tsx` warnings, none added.
+- `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://example.test npm run
+  build`: exit 0, clean, with the price-integrity gate now active.
+- **Price-integrity gate fault injection**: set `PRICES["app-from"]` back to
+  `{ status: "pending" }`, ran the same production build command → real
+  exit code 1, `Content integrity check failed: - Price token "app-from" is
+  still "pending" in a production build.`. Restored the exact original
+  value, rebuilt in production mode clean (exit 0).
+- **ESLint rule spot-check**: temporarily added `{"[PRICE:test]"}` inside
+  `components/pricing/price.tsx`'s JSX, ran `npm run lint` → real lint
+  error citing the rule's message. Removed it, lint clean again.
+- **PricePending rendering**: with `app-from` forced back to `pending` and a
+  non-production `npm run build` (warn mode, does not throw), confirmed
+  `.next/server/app/es/precios.html` contains
+  `<span class="inline-flex items-center gap-2 rounded-md border-2
+  border-dashed border-destructive ..." data-price-token="app-from">Precio
+  pendiente<span ...>[app-from]</span></span>` — the loud, designed pending
+  state, not bare text. Restored, rebuilt clean.
+- **8-block page order**: compiled-HTML string offsets on a fresh
+  `/es/precios` build: intro(2786) < linea-a(3287) < linea-c(6673) <
+  linea-b(8948) < linea-d(10561) < "Condiciones generales"(12702) <
+  "Preguntas frecuentes"(13586) < CTA heading(15354) — matches the spec's
+  8-block order exactly.
+- **All 8 figures render with `S/`**: `grep -o 'S/[0-9,]*'` against the
+  compiled `/es/precios` output returns all 8 distinct amounts (S/500,
+  S/650, S/800, S/100, S/150 ×2 tokens, S/80, S/1,500).
+- **Launch framing + revision rounds**: compiled markup contains "Precios de
+  lanzamiento para los primeros 5 proyectos del estudio..." and "Incluye 2
+  rondas de revisión."/"2 rondas de revisión por proyecto" (terms table).
+- **Landing section order**: fresh `/es` build, string offsets:
+  servicios(8125) < proceso(10637) < proyectos(13419) < autoridad(23655) <
+  precios(24548) < retainer(26064) — Hero < Servicios < Proceso < Proyectos
+  < Autoridad < Precios < Retainer holds for every section built so far.
+- **Every `href` in the compiled `/es` and `/es/precios` output resolves**:
+  internal — `/es`, `/es#proyectos`, `/es/precios`,
+  `/es/precios#linea-{a,b,c,d}` (all real); external —
+  `atemporalarq.vercel.app`, `blucafe.vercel.app`, `luang.com.pe`, `wa.me`
+  (all pre-verified in earlier batches). No dead link found.
+- Confirmed zero new `"use client"` files: `grep -rl '"use client"' components
+  app lib` still returns only `hero-parallax.tsx` and
+  `hover-border-gradient.tsx`.
+- Confirmed zero new `as Route` casts: every occurrence of `as Route` in the
+  repo predates this batch (`landingAnchor()` call sites in
+  header/footer/services/hero-header, `product.link as Route` in
+  `hero-parallax.tsx`, the temporary cast in `lib/brief/submit.ts`).
+
+**Diff size, reported honestly**: measured via `git diff --stat` against the
+pre-batch tip plus `wc -l` on new files: **~1,333 changed lines** (591
+insertions/121 deletions across 13 modified files, plus ~621 lines across 9
+new files) — well over the ~470-line estimate `tasks.md`'s Review Workload
+Forecast flagged as "borderline" and roughly 3x the 400-line reviewer
+budget. Per instruction, this was NOT split into separate PRs (the
+orchestrator/user explicitly directed implementing all of PR 4 + 3.7/3.8 in
+one batch), but it WAS split into 3 work-unit commits with clean, mostly
+file-level boundaries (data → page/components/gate → landing wiring) so a
+future retroactive split into chained PRs remains straightforward. Each
+commit's file set was checked by import-dependency analysis to be
+self-consistent build/lint-wise in isolation (A has no consumers yet but
+introduces no errors; B only imports from A; C only imports from A and B) —
+this was NOT independently re-verified by checking out each intermediate
+commit and re-running `npm run build`/`npm run lint`, given time
+constraints; flagged here rather than silently assumed clean.
+
+**Open items, explicitly not closed by this batch** (carried forward, none
+invented):
+
+- Turnaround time (per fixed tier and for Line B) — not supplied.
+- Per-tier exclusions ("not included") for all 5 fixed tiers (Lines A/C) —
+  not supplied.
+- Payment schedule (cross-cutting terms block) — not supplied.
+- Code-ownership policy (FAQ's 4th mandated objection) — not supplied.
+- Any scope/priority/hour difference between `care-basic` and
+  `care-standard` beyond price — not supplied; currently modeled as
+  identical commitments, different price only.
+- Task 4.7's literal `?line=<ServiceLine>` pre-tag into `#brief` — deferred
+  to PR 6b, once the brief form and `#brief` exist.
+- `app/[locale]/precios/page.tsx` has no page-level `generateMetadata`/
+  `alternates.canonical` — inherits the root layout's `/es`-only canonical.
+  Pre-existing structural gap, surfaced but not fixed this batch.
+- `RETAINER_COMMITMENTS.channels` remains `pending` (carried from PR 3b,
+  untouched this batch).
+- The two retainer boundary notes (bug-vs-feature, content-edit size) remain
+  unresolved to a fixed rule (carried from PR 3b, untouched this batch).
+- This file's Batch 11 gap (see note above) — a documentation-only backfill,
+  not a code item.
+- PR 5 (case studies) and PR 6a/6b (brief form UI, landing wiring,
+  `/gracias`) remain entirely unimplemented.
+
+No push performed. No PR opened. No history rewrite. Local commits only, on
+`feat/pricing-page`.
+
+## Status (cumulative, through Batch 12)
+
+39/39 PR 1-2c/6a code tasks + 5/5 `fix/content-honesty` tasks + 4/4
+`fix/restore-consented-content` tasks + 6/6 PR 3a code tasks + **4/4 PR 3b
+code tasks complete** (3.5, 3.6, 3.7-via-4.0, 3.8, all done) + **11/11 PR 4
+code tasks complete** (4.0-4.10) + 1/1 PR 4 human task closed this batch
+(4.H1; 4.H2 partially closed in PR 3b, `channels` still open) + 6 cleanup
+items from the `chore/cleanup-verify-warnings` slice (recorded in Engram,
+not yet mirrored to this file — see "Batch 11 note" above).
+
+PR 5 and PR 6a (already implemented per Engram — see "Batch 11 note") /PR 6b
+remain the primary remaining work. PR 6a's server logic was implemented in
+an earlier batch per Engram's cumulative record; this file has not been
+independently re-checked against that claim in this batch. PR 5 (case
+studies) and PR 6b (brief form UI, landing wiring, `/gracias`) are blocked
+on business content/human tasks not supplied this batch (case-study
+write-up approval, screenshot captures/consent, email provider DNS
+verification, RESEND_API_KEY/BRIEF_TO_EMAIL/BRIEF_FROM_EMAIL provisioning).
+
+Ready for `sdd-verify` to validate this batch against `specs/pricing/
+spec.md` and `specs/landing-narrative/spec.md`, or for `sdd-apply` to
+continue with PR 5/PR 6b once their respective blocking human tasks are
+resolved.

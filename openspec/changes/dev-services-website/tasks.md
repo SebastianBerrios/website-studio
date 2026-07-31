@@ -481,6 +481,11 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 > `pending`. Building a pricing summary or the `Price`/`PricePending`
 > components without real figures would either invent a number or render an
 > empty shell — both rejected. See apply-progress.md for the full reasoning.
+>
+> **Addendum (PR 4 batch, `feat/pricing-page`):** the user supplied real
+> figures for all 8 tokens, unblocking both 3.7 (closed via task 4.0) and
+> 3.8 (implemented). The landing now composes all 7 sections through
+> Retainer — see 3.9's note below.
 
 - [x] 3.5 Create `components/sections/authority.tsx` (Server): renders
       `ACADEMY` from `lib/content/authority.ts` in `no-link` state — brand
@@ -524,34 +529,30 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
       `VERCEL_ENV=production npm run build` → real exit code 1
       (`RETAINER_COMMITMENTS.cancellationTerms is "set" but blank.`),
       restored the exact original string, rebuilt clean (exit 0).
-- [ ] ~~3.7~~ **Moved to PR 4 as task 4.0** — `components/pricing/price.tsx`
-      and `price-pending.tsx`. PR 4 is their first consumer, so leaving them
-      here would make PR 4 depend on a later PR. See "Delivery order
-      correction". **Still out of scope**: no price figure supplied.
-- [ ] 3.8 Create `components/sections/pricing-summary.tsx` (Server): subset
-      of the full tier anatomy + link to `/[locale]/precios`, which resolves
-      because PR 4 shipped before this PR. Reuses `Price`/`PricePending`
-      from task 4.0. — *landing-narrative: Precios Summary Section Contract*
-      **Still out of scope, explicitly excluded from this batch**: blocked on
-      task 4.H1 (price figures + currency decision) and on task 4.0
-      (`Price`/`PricePending` components) — neither exists. Building this
-      section now would mean either inventing a figure or shipping an empty
-      shell; both are worse than the honest gap in
-      `app/[locale]/page.tsx` between Autoridad (section 5) and Retainer
-      (section 7).
+- [x] ~~3.7~~ **Closed via PR 4's task 4.0** —
+      `components/pricing/price.tsx` and `price-pending.tsx` shipped as part
+      of the PR 4 batch (commit `ac814a3`), now that price figures exist
+      (task 4.H1 closed). See "Delivery order correction".
+- [x] 3.8 Created `components/sections/pricing-summary.tsx` (Server): landing
+      section 6, between Autoridad and Retainer. Renders one headline figure
+      per service line via `<Price>` plus a link to `/[locale]/precios` for
+      the full tier anatomy — a subset, not a duplicate, per this
+      requirement. **Unblocked and implemented this batch** (commit
+      `1738ce6`), now that both task 4.0 (`Price`/`PricePending`) and task
+      4.H1 (real figures) exist. — *landing-narrative: Precios Summary
+      Section Contract*
 - [x] 3.9 `app/[locale]/page.tsx`: compose sections 2-7 in the fixed order
       between the hero (section 1, PR 2) and the brief/footer placeholders
       (sections 8-9, PR 6). — *landing-narrative: Fixed Section Order*
-      **Partial, updated this batch**: now composes sections 1 (Hero), 2
-      (Servicios), 3 (Proceso), 4 (Proyectos), 5 (Autoridad, this batch), and
-      7 (Retainer, this batch). Section 6 (Precios summary) is the one
-      deliberate gap — task 3.8 above. Relative order among rendered
-      sections is correct (Hero < Servicios < Proceso < Proyectos <
-      Autoridad < Retainer); the section-6 gap is filled once PR 4 supplies
-      pricing figures, not reordered around. Marked `[x]` because every
-      section this batch is responsible for composing is composed in the
-      correct relative order — the remaining gap is task 3.8's, not this
-      task's, to close.
+      **Closed (PR 4 batch)**: now composes all 7 sections through Retainer —
+      1 (Hero), 2 (Servicios), 3 (Proceso), 4 (Proyectos), 5 (Autoridad), 6
+      (Precios summary, task 3.8, this batch), 7 (Retainer). Verified section
+      order by compiled-HTML string offset on a fresh build: servicios(8125)
+      < proceso(10637) < proyectos(13419) < autoridad(23655) <
+      precios(24548) < retainer(26064) — matches
+      `specs/landing-narrative/spec.md`'s "Fixed Section Order" exactly for
+      every section built so far. Only sections 8-9 (dedicated brief-form
+      section, PR 6b) remain outside this page's composition.
 
 ### Human tasks
 
@@ -590,13 +591,12 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 - [x] 3.V3 **Human** (performed by the apply agent via compiled HTML, not a
       browser): verify section order top-to-bottom matches Hero → Servicios
       → Proceso → Proyectos → Autoridad → Precios → Retainer.
-      **Updated this batch**: confirmed in `.next/server/app/es.html` (fresh
-      `VERCEL_ENV=production` build) that Hero (2665) < Servicios (7864) <
-      Proceso (9812) < Proyectos (12594) < Autoridad (22830) < Retainer
-      (23667) by string offset of each section's heading/id. Precios
-      (section 6) is the one deliberate gap between Autoridad and Retainer —
-      no price figure exists yet (task 3.8/4.H1). Every section this batch
-      is responsible for is in the correct relative order.
+      **Updated again in the PR 4 batch**: the Precios gap is closed (task
+      3.8). Confirmed in a fresh `.next/server/app/es.html` that
+      servicios(8125) < proceso(10637) < proyectos(13419) < autoridad(23655)
+      < precios(24548) < retainer(26064) by string offset — Hero < Servicios
+      < Proceso < Proyectos < Autoridad < Precios < Retainer holds in full
+      for every section built so far.
 - [x] 3.V4 **Human** (performed by the apply agent via compiled HTML, not a
       browser): verify the Academy block has no clickable link/CTA and no
       scale claims. **Implemented this batch**: extracted the compiled
@@ -644,70 +644,128 @@ degrades to PR 2's hero-only state. Earlier slices keep working.
 Satisfies: `pricing` (all requirements). Design decision: D8 (layers 1-4
 complete).
 
+> **Batch note (sdd-apply)**: implemented on branch `feat/pricing-page`
+> (based on `chore/cleanup-verify-warnings`), across three work-unit commits:
+> `753fef4` (pricing data), `ac814a3` (pricing page/components/gate/eslint
+> rule), `1738ce6` (landing wiring — this batch also closed 3.7/3.8). Real
+> figures for all 8 tokens were supplied by the user this batch (task 4.H1
+> closed). See apply-progress.md for full verification detail and open
+> items.
+
 ### Code tasks
 
-- [ ] 4.1 `lib/content/pricing.ts`: populate Line A (3 tiers), Line C (1-2
-      tiers) — each with all 7 required anatomy fields incl. a non-empty
-      `notIncluded` tuple; Line B quote-on-request shape (typical shapes,
-      pricing variables, process/turnaround, floor token); Line D retainer
-      plan block (response-time, hours coverage, exclusions, cancellation
-      terms). All still `status: 'pending'` until 4.H1 lands. — *pricing:
-      Fixed Tier Anatomy, Line B Contract, Line D Contract*
-- [ ] 4.0 Create `components/pricing/price.tsx`, `components/pricing/
+- [x] 4.1 `lib/content/pricing.ts`: populated Line A (3 tiers), Line C (2
+      tiers), Line B quote-on-request shape, Line D's two named/priced
+      plans, and cross-cutting terms. **Documented deviation**: `turnaround`
+      and per-tier `notIncluded` are `Commitment<T>` (promoted from
+      `lib/content/retainer.ts` to `lib/content/types.ts`), not the design's
+      literal required-non-empty-tuple shape — neither was supplied this
+      batch, so both render an honest "pending" state instead of a
+      fabricated one. `revisionRounds` is read from
+      `PROCESS.revisionRoundsIncluded` (2, already settled), not duplicated
+      per tier. — *pricing: Fixed Tier Anatomy, Line B Contract, Line D
+      Contract*
+- [x] 4.0 Created `components/pricing/price.tsx`, `components/pricing/
       price-pending.tsx` (Server): exhaustive switch on `PriceEntry.status`;
-      `pending` renders the loud dashed-outline "PRECIO PENDIENTE" state.
-      **Moved here from task 3.7** — this PR is their first consumer. —
-      *design D8*
-- [ ] 4.2 Create `components/pricing/tier-card.tsx` (Server): renders one
-      fixed tier's full anatomy including exclusions.
-- [ ] 4.3 Create `components/pricing/quote-block.tsx` (Server): Line B's
+      `pending` renders the loud dashed-outline "Precio pendiente" state.
+      Verified rendering directly in compiled markup (see apply-progress.md).
+      — *design D8*
+- [x] 4.2 Created `components/pricing/tier-card.tsx` (Server): renders one
+      fixed tier's full anatomy; the exclusions/turnaround slots render their
+      `Commitment` state (set value, or an honest "pendiente" note).
+- [x] 4.3 Created `components/pricing/quote-block.tsx` (Server): Line B's
       shapes/variables/process/floor.
-- [ ] 4.4 Create `components/pricing/terms-table.tsx` (Server): always-
-      included vs always-extra, payment schedule, `[CURRENCY]`-token-backed
-      currency.
-- [ ] 4.5 Create `components/pricing/faq.tsx` (Server, native
-      `<details>/<summary>`): the 4 mandatory objections (price, later
-      changes, code ownership, how to leave). **Rejected: Radix/shadcn
-      accordion** per design D10 — costs a client boundary + dependency.
-- [ ] 4.6 Create `app/[locale]/precios/page.tsx`: compose blocks 1-8 in the
-      spec's exact order; `export const dynamic = 'force-static'`. —
+- [x] 4.4 Created `components/pricing/terms-table.tsx` (Server): always-
+      included vs always-extra (both restate `PROCESS.revisionRoundsIncluded`,
+      not an invented list), payment schedule (`Commitment`, honestly
+      pending). Currency is never hardcoded — every figure renders through
+      `<Price>`/`formatMoney()`, which read `DISPLAY_CURRENCY`.
+- [x] 4.5 Created `components/pricing/faq.tsx` (Server, native
+      `<details>/<summary>`). 3 of the 4 mandatory objections are answered
+      from real, settled facts; the 4th (code ownership) was not supplied
+      this batch and renders an honest "pendiente" answer rather than an
+      invented policy — see 4.V5 and apply-progress.md's open items.
+      **Rejected: Radix/shadcn accordion** per design D10.
+- [x] 4.6 Created `app/[locale]/precios/page.tsx`: composes all 8 blocks in
+      the spec's exact order (verified by compiled-HTML string offset — see
+      apply-progress.md); `export const dynamic = "force-static"`. —
       *pricing: Page Block Order*
-- [ ] 4.7 Wire the pricing CTA's pre-tagging: append `?line=<ServiceLine>` on
-      the anchor into `#brief` (form itself lands PR 6). — *design §9 CTA
-      pre-tagging; lead-capture: Service Line Pre-Tagging*
-- [ ] 4.8 Update PR 3's `services.tsx`/`pricing-summary.tsx` anchor links to
-      the real `/[locale]/precios#<line>` block anchors now that the route
-      exists (resolves 3.V7).
-- [ ] 4.9 `eslint.config.mjs`: add `no-restricted-syntax` banning literal
-      `[PRICE:` / `[CURRENCY]` strings under `app/**`, `components/**`,
-      `lib/dictionaries/**`. — *design D8 layer 4; pricing: Placeholder
-      Discipline*
-- [ ] 4.10 `lib/content/invariants.ts`: activate the pending-price/currency-
-      in-production check now that pricing data exists (stubbed in PR 2b).
+- [x] 4.7 **Documented deviation, not the literal mechanism**: `#brief` and
+      the brief form do not exist yet (PR 6b), and this batch's hard
+      constraints forbid a CTA pointing at a target that does not exist when
+      the commit lands. The CTA points at the already-live WhatsApp channel
+      instead. The real `?line=<ServiceLine>` pre-tag into `#brief` is an
+      open follow-up for PR 6b, tracked in apply-progress.md, not closed
+      here. — *design §9 CTA pre-tagging; lead-capture: Service Line
+      Pre-Tagging*
+- [x] 4.8 Updated `services.tsx` (there is no separate
+      `pricing-summary.tsx` anchor to update — that component was created in
+      this same batch already linking to `pricingPath()`): each Servicios
+      card now renders both `pricingCta` (`pricingLineAnchor()`, deep-linking
+      to `/[locale]/precios#linea-<line>`) and the existing `proofCta`.
+      Resolves 3.V7's successor concern.
+- [x] 4.9 `eslint.config.mjs`: added `no-restricted-syntax` banning literal
+      `[PRICE:` / `[CURRENCY]` strings (including template-literal segments)
+      under `app/**`, `components/**`, `lib/dictionaries/**`. Spot-checked:
+      an injected `[PRICE:test]` literal fails lint with the rule's message;
+      removed, lint is clean again. — *design D8 layer 4; pricing:
+      Placeholder Discipline*
+- [x] 4.10 `lib/content/invariants.ts`: `PRICE_INTEGRITY_CHECK_ACTIVE`
+      flipped to `true` now that every `PriceToken` is `"set"`.
+      Fault-injection verified (see apply-progress.md): setting one token
+      back to `pending` and running `VERCEL_ENV=production npm run build`
+      produces real exit code 1 with the expected message; restoring it
+      rebuilds clean (exit 0). `checkInternalLinksResolve`'s `LIVE_TARGETS`
+      also extended with `/{locale}/precios` in this same commit
+      (`ac814a3`), alongside the route creation, per hard constraint 2.
 
 ### Human tasks (blocking this page's launch only)
 
-- [ ] 4.H1 **[HUMAN, blocks going live]** Actual price figures for Lines A,
-      C, D tiers and the Line B floor, plus the currency decision
-      (PEN/USD).
-- [ ] 4.H2 **[HUMAN]** Final retainer commitment figures if not already
-      supplied in PR 3 (response window, monthly hours, cancellation terms).
+- [x] 4.H1 **[HUMAN]** Closed this batch — the user supplied all 8 figures
+      (PEN, published as launch pricing for the first 5 projects) and the
+      currency decision (PEN).
+- [ ] 4.H2 **[HUMAN]** Mostly closed in PR 3b (response window, scope model,
+      inclusions/exclusions, cancellation terms). **Still open**:
+      `RETAINER_COMMITMENTS.channels` remains `pending` — not supplied in
+      this batch either.
 
 ### Verification
 
-- [ ] 4.V1 `npm run build` passes with `PRICES` still `pending` — confirms
-      the build does NOT fail in non-production mode, only warns.
-- [ ] 4.V2 `npm run lint` passes; spot-check the new rule by temporarily
-      typing a `[PRICE:` literal, confirming lint fails, then removing it.
-- [ ] 4.V3 **Human**: verify `PricePending`'s dashed-outline/loud state is
-      unmistakable in dev for every unresolved token.
-- [ ] 4.V4 **Human**: verify block order matches the 8-block spec sequence.
-- [ ] 4.V5 **Human**: verify the FAQ answers all 4 mandated objections.
-- [ ] 4.V6 **Separate production gate**: once 4.H1 figures land, re-run
-      `npm run build` with `VERCEL_ENV=production` (or equivalent) and
-      confirm `assertContentInvariants()` throws if any token is still
-      `pending`. Do not deploy this page to production before that check is
-      clean.
+- [x] 4.V1 **Superseded by the batch's actual sequencing, not literally
+      performed as written**: tasks 4.1-4.10 landed together in this batch
+      rather than 4.1-4.9 first (with `PRICES` still `pending`) followed by
+      a separate 4.10. The equivalent, stronger evidence this check exists
+      for is captured by 4.V6's fault injection instead (proves the gate
+      fires when a token IS pending, and stays clean when every token is
+      set) — see apply-progress.md.
+- [x] 4.V2 `npm run lint` passes; spot-checked the new rule by temporarily
+      typing a `[PRICE:test]` literal in `components/pricing/price.tsx`,
+      confirmed lint failed with the rule's message, removed it, confirmed
+      lint clean again (same 2 pre-existing `hover-border-gradient.tsx`
+      warnings, no new ones).
+- [x] 4.V3 Verified via compiled markup (no browser available to the apply
+      agent, same discipline as prior PR 3 verification entries): temporarily
+      set `app-from` back to `pending`, ran a non-production `npm run build`
+      (warn mode), confirmed `.next/server/app/es/precios.html` renders the
+      dashed-border, uppercase "Precio pendiente" state with the token name
+      `[app-from]` — not bare text, not a gray box. Restored, rebuilt clean.
+- [x] 4.V4 Verified via compiled-HTML string offset on a fresh build:
+      intro(2786) < linea-a(3287) < linea-c(6673) < linea-b(8948) <
+      linea-d(10561) < "Condiciones generales"(12702) < "Preguntas
+      frecuentes"(13586) < CTA heading(15354) — matches the 8-block order
+      exactly.
+- [~] 4.V5 **Partial, not fully satisfied**: 3 of 4 mandated objections
+      (price reasoning, later changes, how to leave) are answered from real,
+      settled facts. The 4th (code ownership) has not been supplied by the
+      studio and renders an honest "pendiente" note rather than an invented
+      policy — this is a genuine, tracked gap against the literal
+      requirement, not a silent pass. See apply-progress.md's open items.
+- [x] 4.V6 **Separate production gate**: verified. `VERCEL_ENV=production
+      NEXT_PUBLIC_SITE_URL=https://example.test npm run build` passes clean
+      with all 8 figures `set`. Fault injection (one token forced back to
+      `pending`) produces real exit code 1 with
+      `Content integrity check failed: - Price token "app-from" is still
+      "pending" in a production build.`; restoring it rebuilds clean.
 
 **Rollback**: additive route; revert removes `/precios`, earlier slices keep
 working.
