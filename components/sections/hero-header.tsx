@@ -43,10 +43,15 @@ export function HeroHeader({ locale }: { locale: Locale }) {
           // property than "does this anchor target actually exist".
           // `checkInternalLinksResolve` has the same blind spot; neither
           // ever sees this component's href. The target is safe TODAY only
-          // because `/es#proyectos` is a real anchor — `HeroParallax`'s
-          // products track carries a matching `id` (`app/[locale]/page.tsx`
-          // passes `productsId="proyectos"`) — verified by reading the two
-          // files side by side, not by any gate. See
+          // because `/es#proyectos` is a real anchor —
+          // `components/sections/portfolio.tsx` (PR 3a, task 3.4) carries
+          // `id="proyectos"` on its section element — verified by reading
+          // the two files side by side, not by any gate. (Until PR 3a
+          // shipped, this same anchor targeted `HeroParallax`'s products
+          // track via its `productsId` prop, the `fix/restore-consented-
+          // content` remediation's W2 fix; the anchor moved to the real
+          // Proyectos section once it existed, and `HeroParallax` no longer
+          // receives `productsId` from `app/[locale]/page.tsx`.) See
           // `sdd/dev-services-website/verify-report.md` finding W1.
           href={landingAnchor(locale, "proyectos") as Route}
           className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"

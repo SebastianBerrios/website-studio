@@ -22,7 +22,34 @@ export type NotFoundDictionary = {
   readonly backLink: string;
 };
 
+/**
+ * Landing section 2, "Servicios" (landing-narrative spec, "Servicios Section
+ * Contract"). `proofCta` is the single CTA every service card renders —
+ * see `components/sections/services.tsx`'s doc comment for why this PR does
+ * not also render a pricing-block link (`/[locale]/precios` and the landing's
+ * Precios summary section both ship in slices excluded from this batch).
+ */
+export type ServicesDictionary = {
+  readonly heading: string;
+  readonly proofCta: string;
+};
+
+/**
+ * Landing section 4, "Proyectos" (landing-narrative spec, "Proyectos Section
+ * Contract"). `gatedNote`/`notDeployedNote` are the generic, state-level
+ * labels `components/portfolio/evidence.tsx` renders alongside each
+ * project's own specific `evidence.disclosure` text — structural UI copy,
+ * not a domain fact, so it belongs here rather than in `lib/content/**`.
+ */
+export type PortfolioDictionary = {
+  readonly heading: string;
+  readonly gatedNote: string;
+  readonly notDeployedNote: string;
+};
+
 export type Dictionary = {
   readonly hero: HeroDictionary;
+  readonly services: ServicesDictionary;
+  readonly portfolio: PortfolioDictionary;
   readonly notFound: NotFoundDictionary;
 };
