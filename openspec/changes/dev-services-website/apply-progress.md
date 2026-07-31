@@ -1,14 +1,29 @@
 # Apply Progress: dev-services-website
 
-Batch: 4 of N (PR 1 — Truth pass, complete; PR 2a — `lib/content/**` core
+Batch: 5 of N (PR 1 — Truth pass, complete; PR 2a — `lib/content/**` core
 types and data, complete; PR 2b — projects/projections/invariants/
 dictionaries, complete; PR 2c — `app/[locale]/**` routing, config, chrome,
-complete)
-Branch: `feat/locale-routing` (based on `feat/content-model-projections`,
-PR 2b; which is based on `feat/content-model-core`, PR 2a; which is based on
-`feat/truth-pass`, PR 1)
+complete; **PR 6a — Brief server logic, complete, delivered out of order**)
+Branch: `feat/brief-server` (based on `feat/locale-routing`, PR 2c; which is
+based on `feat/content-model-projections`, PR 2b; which is based on
+`feat/content-model-core`, PR 2a; which is based on `feat/truth-pass`, PR 1)
 Delivery strategy: `auto-chain` / `stacked-to-main`
 Mode: Standard (no test runner; `strict_tdd: false`)
+
+**Delivery-order deviation, flagged explicitly**: PR 6a was implemented
+immediately after PR 2c, ahead of `tasks.md`'s stated chain order
+(`PR 2c → PR 4 → PR 5 → PR 3a → PR 3b → PR 6a → PR 6b`). Reason: PR 4
+(pricing figures) and PR 5 (case-study narratives) are blocked on business
+content the user has not yet supplied (package anatomy, retainer
+commitments, real client write-ups); PR 6a is pure server-side engineering
+(`lib/brief/**` only) with no such dependency. This is safe for the same
+reason `tasks.md`'s own delivery-order-correction section gives for its
+PR 4/PR 5 vs PR 3 swap: **PR 6a adds no route, no component, and no rendered
+link.** Nothing it creates is reachable by a visitor, imported by any page,
+or linked from anywhere until PR 6b wires the form in a later batch. The
+zero-dead-internal-links success criterion this change set already treats as
+load-bearing is untouched by this reordering because there is nothing new to
+link to yet.
 
 ---
 
@@ -831,6 +846,322 @@ New from PR 2c:
       here, unlike the hero-copy regression PR 2b flagged (which this batch
       did have to actively resolve, see above).
 
+---
+
+## PR 6a — Brief server logic (out-of-order delivery) — THIS BATCH
+
+Satisfies: `lead-capture` (Submission Validation, Confirmation Route — the
+server-side half; the form UI and the `/gracias` route itself are PR 6b's
+job). Design decision: D1 (architecture, §2 spam/abuse layers, §9
+submission flow). Branch: `feat/brief-server`, based on `feat/locale-routing`
+(PR 2c's tip).
+
+### Code tasks
+
+- [x] 6.1 Created `lib/brief/schema.ts`: pure `validateBrief(input: unknown)`
+      — no `zod`, matching design.md §9's stated reasoning. Validates
+      `serviceLine` against `SERVICE_LINES` (existing union, no new one
+      introduced) and a new `BudgetBand` union (`undecided | small | medium
+      | large`) defined **in this file, not `lib/content/**`**, since PR 6a's
+      scope is `lib/brief/**` only. `BudgetBand` is **semantic, not
+      numeric** — see "Honesty check" below; no figure or currency is
+      invented anywhere. Length caps (name 100, email 254, phone 30,
+      description 2000), an email-shape regex, a control-character
+      (`CR`/`LF`/`TAB`) rejection on single-line fields, and a max-3-URL
+      cap on the free-text description (design.md §2 layer 3). `BriefErrors`
+      is keyed by `BriefFieldName`, matching task 6.1's exact wording.
+- [x] 6.2 Created `lib/brief/abuse.ts` (`import "server-only"` — a
+      deliberate, stricter addition beyond design's own architecture table,
+      which only marks `notify.ts` server-only; this module also handles a
+      secret and the same guard is cheap insurance, mirroring the existing
+      `lib/content/invariants.ts` precedent). Exports `checkAbuseSignals()`
+      (honeypot + HMAC-SHA256-signed `issuedAt` dwell check, reject
+      `<3000ms` or `>2h`) and `issueFormToken()` (the counterpart PR 6b will
+      call from a Server Component to embed the hidden fields). Secret read
+      from `process.env.BRIEF_FORM_SECRET` — **new env var, not previously
+      named in design.md §12's table** (design named the mechanism but not
+      a variable), documented below.
+- [x] 6.3 Created `lib/brief/notify.ts` (`import "server-only"`):
+      `sendBriefNotification(brief)` via `fetch` against
+      `https://api.resend.com/emails` (Resend's own documented public API
+      host — not a fabricated domain; `RESEND_API_KEY` was already named in
+      design.md §2, which is what identifies Resend as the chosen provider).
+      Reads `RESEND_API_KEY`/`BRIEF_TO_EMAIL`/`BRIEF_FROM_EMAIL` from
+      `process.env`, never hardcoded, never `NEXT_PUBLIC_`. Strips CR/LF
+      unconditionally from the `Reply-To` value (the visitor's own email
+      field) before it reaches the request body, regardless of what
+      `schema.ts` already rejected — see "CR/LF stripping" below for exactly
+      where and why.
+- [x] 6.4 Created `lib/brief/submit.ts` (module-level `"use server"`):
+      `submitBrief(prevState, formData)` matches `useActionState`'s expected
+      signature for PR 6b. Flow: `checkAbuseSignals()` → silent rejection on
+      failure (no error surfaced, matches spec's honeypot scenario) →
+      `validateBrief()` → return `{ status: "invalid", errors, values }` on
+      failure → `sendBriefNotification()` → on failure, return
+      `{ status: "send-failed", values }` and `console.error` the full
+      payload (the only durability this design has, per design.md §2's
+      "honest cost of choosing email") → `redirect()` **as the literal last
+      statement, outside every `try`/`catch`** (this function contains no
+      `try` at all — every prior step returns early instead of throwing, so
+      there is nothing for a `catch` to swallow the redirect into). See
+      "The `redirect()` gotcha, concretely" below for the typed-route
+      complication this surfaced.
+
+### The `redirect()` gotcha, concretely
+
+`npm run build`'s first pass caught a real, unanticipated type error at this
+exact call site: `typedRoutes: true` (design D7) narrows `redirect()`'s
+argument the same way it narrows `<Link href>`. `/{locale}/gracias` does not
+exist as a page yet — PR 6a is deliberately server-logic-only and creates no
+route — so the literal template `` `/${locale}/gracias` `` failed
+`RouteImpl` type-checking. Fixed with a single, commented `as Route` cast at
+this one call site, explicitly mirroring the existing `product.link as
+Route` precedent in `components/ui/hero-parallax.tsx` (PR 2c) rather than
+inventing a new pattern. This is the same class of "link before its target
+exists" situation `tasks.md`'s delivery-order-correction section already
+discusses at length — the difference here is that `redirect()`'s target
+becomes reachable in the very next slice (PR 6b), which this batch's own
+scope boundary requires, not a multi-PR gap.
+
+### Honesty check — how it was verified
+
+- **`BudgetBand` invents no money.** Grepped `lib/brief/**` for `PEN`, `USD`,
+  `S/`, and any digit sequence resembling a price — zero matches beyond this
+  sentence itself. `BUDGET_BANDS`' four identifiers (`undecided`, `small`,
+  `medium`, `large`) carry only `Localized<string>` labels describing
+  relative scale ("Presupuesto ajustado", etc.), never a number or a
+  currency. Real band boundaries (e.g. "small = under X") are a **business
+  decision the user has not made** — recorded as an open human item below,
+  not guessed at.
+- **No fabricated email, domain, phone, or API key.** Grepped `lib/brief/**`
+  for `@`-containing string literals, `wa.me`, `+51`, and quoted API-key-
+  shaped strings — the only domain literal in the three files is
+  `api.resend.com`, the provider's own real REST endpoint (necessary to
+  implement the `fetch` call at all), not a business contact detail.
+  `RESEND_API_KEY`, `BRIEF_TO_EMAIL`, `BRIEF_FROM_EMAIL`, and the new
+  `BRIEF_FORM_SECRET` are read exclusively via `process.env[...]` — no
+  `.env` file was created, and no value was ever assigned to any of these
+  four names anywhere in the diff.
+- **CR/LF stripping — where and why.** `notify.ts`'s `stripCrlf()` is
+  applied to `brief.name`, `brief.email` (as `Reply-To`), and `brief.phone`
+  before any of them reaches the outgoing request body — applied
+  unconditionally, not "only if `schema.ts` missed something", because
+  `notify.ts` is designed not to trust its caller (design.md §2 layer 4's
+  own framing). **`Reply-To` is the specific header-injection risk named in
+  the brief**: it is the one header value built directly from user-supplied
+  input (the visitor's own email field). A crafted value containing a raw
+  `\r\n` inside that field could, on a naive implementation, inject an
+  additional header (a forged `Bcc:`, a second `Subject:`) or terminate the
+  header block early and start writing attacker-controlled body content —
+  classic SMTP/email header injection. `schema.ts`'s own
+  `CONTROL_CHAR_PATTERN` check on `email`/`name`/`phone` already rejects
+  these at the validation layer, but `notify.ts` strips again regardless,
+  per the explicit "defense-in-depth, not redundancy elimination" framing
+  in its file header. The free-text `projectDescription` field is sent as
+  the plain-text **body**, not a header value, so its internal newlines are
+  left intact (they are legitimate paragraph breaks, not an injection
+  vector) — the subject line is built only from the closed `ServiceLine`
+  union (never free text), so it needs no stripping at all.
+- **What happens when `BRIEF_FORM_SECRET` is missing — fails closed.**
+  `checkAbuseSignals()` calls `getSecret()` first; if it returns `null` (env
+  var absent or empty), the function returns
+  `{ ok: false, reason: "config-missing" }` **unconditionally**, before
+  ever looking at the honeypot value, the timestamp, or the signature.
+  There is no code path in `checkAbuseSignals()` that accepts a submission
+  when the secret is absent — a missing secret can never be interpreted as
+  "skip verification". Separately, `issueFormToken()` (the function PR 6b
+  will call to render the hidden fields) returns `null` rather than
+  throwing when the secret is absent, so a page render does not crash the
+  entire static build (this site is `force-static` everywhere) — but that
+  is a rendering-availability choice, not a security one: the verification
+  side is what actually enforces fail-closed, and it has no escape hatch.
+
+### Scope boundary respected
+
+Created exactly four files, all under `lib/brief/**`:
+`schema.ts`, `abuse.ts`, `notify.ts`, `submit.ts`. Zero `.tsx` files. Zero
+files under `app/**` or `components/**` touched. Confirmed via
+`git status --porcelain` before committing: the only tracked-file change in
+the diff is this repo's own `lib/content/projections.ts`, which **this batch
+did not make** — see "Unrelated concurrent modification observed" below.
+Nothing created by this batch is imported by any route, page, or component;
+`grep -rn "lib/brief"` outside `lib/brief/**` itself returns zero matches.
+
+### Unrelated concurrent modification observed (not made by this batch, flagged)
+
+During verification, `git status` showed `lib/content/projections.ts` as
+modified, though this batch touched only `lib/brief/**`. The working-tree
+diff (observed transiently, and different between two consecutive
+`npm run build` runs a few seconds apart) changed `publicLink()`'s
+non-`"live"`-evidence fallback from `landingAnchor(locale, "proyectos")`
+back to an unconditional `caseStudyPath(locale, project.slug)` — i.e. it
+appears to **reintroduce** the exact dead-link defect PR 2c's "fourth
+cross-batch defect" fix (documented above, in this same file) resolved for
+projects like `"blu"` (`evidence.state: "gated"`, no case study published
+yet). This file was never opened, read, or edited by this PR 6a batch. Given
+the prompt's own statement that a `sdd-verify` agent is reading this repo in
+parallel, and that the diff's content changed between two build runs
+seconds apart, this looks like a concurrent process's in-progress edit
+(possibly the real PR 3a/PR 5 work this repo's `tasks.md` describes as
+"next"), not a stable, intentional change. **Flagging for the orchestrator**:
+confirm this file's final state independently before treating any build
+result against it as authoritative; PR 6a's own build/lint results below do
+not depend on this file and are unaffected either way.
+
+### Environment variables — human prerequisites, not performed by this agent
+
+- [ ] 6.H1 **[HUMAN, blocks slice going live — carried from tasks.md]**
+      Complete the email provider's domain verification (DNS records) for
+      `BRIEF_FROM_EMAIL`'s sending domain. **Every send fails until this is
+      done** — this is a human/DNS prerequisite, not a code task, and this
+      batch did not and could not perform it.
+- [ ] 6.H2 **[HUMAN, carried from tasks.md]** Provision `RESEND_API_KEY`,
+      `BRIEF_TO_EMAIL`, `BRIEF_FROM_EMAIL` as server-only environment
+      variables.
+- [ ] 6.NEW1 **[HUMAN, new — not in tasks.md's original env list]**
+      Provision `BRIEF_FORM_SECRET` (any sufficiently random server-only
+      string) — required for the HMAC dwell-time signature. Not decided by
+      this batch's design input; a placeholder was **not** created (no
+      `.env` file was written), per the explicit instruction not to invent
+      secrets.
+- [ ] 6.NEW2 **[HUMAN/PRODUCT, new]** Decide real `BudgetBand` boundaries
+      (what "small"/"medium"/"large" mean in figures and currency) — not a
+      code task. This batch defined the identifiers and their `Localized`
+      labels only; no number was invented per the honesty constraint in the
+      brief.
+- [ ] 6.H3 **[HUMAN, carried from tasks.md]** Decide whether to enable
+      Vercel BotID now or only if abuse appears — still open, unchanged by
+      this batch (it is a PR 6b/platform-config task, task 6.10).
+
+### Verification
+
+- [x] 6.V1 (partial — PR 6a's share only) `npm run build` passes. See "Build
+      result" below. **Note**: `npm run build`'s full 6.V1 (tasks.md) also
+      covers PR 6b's not-yet-built form/route; only this batch's share
+      (compilation + no new integrity violations) is claimed here.
+- [x] 6.V2 (partial — PR 6a's share only) `npm run lint` passes with the
+      same 2 pre-existing `hover-border-gradient.tsx` warnings as every
+      prior batch, plus one pre-existing, unrelated warning in
+      `lib/content/projections.ts` (`'landingAnchor' is defined but never
+      used`) that predates this batch and was not introduced by it (this
+      batch never touched that file — see the concurrent-modification note
+      above). No new lint errors or warnings from any file this batch
+      created.
+- [ ] 6.V3-6.V8 **Not applicable to this batch.** Every remaining
+      verification item under PR 6a/PR 6b in `tasks.md` (no-JS submission,
+      missing-field inline errors, honeypot/dwell rejection, notify-failure
+      re-render, `/gracias` reachability/sitemap-exclusion) requires a
+      rendered form and a rendered `/gracias` page, neither of which exists
+      until PR 6b. They are correctly PR 6b's verification burden, not
+      skipped here.
+
+### Build result (verbatim)
+
+```
+> website-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1971.6ms
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/6) ...
+  Generating static pages using 11 workers (1/6)
+  Generating static pages using 11 workers (2/6)
+  Generating static pages using 11 workers (4/6)
+✓ Generating static pages using 11 workers (6/6) in 555.7ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ● /[locale]
+│ └ /es
+├ ○ /robots.txt
+└ ○ /sitemap.xml
+
+○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+```
+
+Exit code 0. An earlier run (before the `redirect()` typed-route fix) failed
+with `Type error: Argument of type '\`/${string}/gracias\`' is not
+assignable to parameter of type 'RouteImpl<...>'` at `submit.ts` — resolved
+by the `as Route` cast described above. A separate, unrelated run also
+transiently showed the pre-existing "empty role" content-integrity warnings
+from PR 2b's `[PENDIENTE]` stubs (non-production mode only warns, per
+design.md §6 layer 2) — those are not new and not from this batch's files.
+
+### Lint result (verbatim)
+
+```
+> website-studio@0.1.0 lint
+> eslint
+
+D:\Programming\Frontend\website-studio\components\ui\hover-border-gradient.tsx
+  60:6   warning  React Hook useEffect has missing dependencies: 'duration' and 'rotateDirection'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  64:22  warning  'event' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
+
+D:\Programming\Frontend\website-studio\lib\content\projections.ts
+  13:25  warning  'landingAnchor' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)
+```
+
+Exit code 0. The first two warnings are the same pre-existing pair every
+prior batch has recorded. The third (`projections.ts`) is a byproduct of
+the concurrent modification noted above (removing the only call site of
+`landingAnchor` makes the import unused) — not caused by, and not fixable
+within, this batch's own scope (`lib/brief/**` only). Zero warnings or
+errors from any file created in this batch.
+
+### Files changed (PR 6a)
+
+| File | Action | What was done |
+|---|---|---|
+| `lib/brief/schema.ts` | Created | `BudgetBand` union + `BUDGET_BANDS` (semantic, no figures), `Brief`/`BriefErrors`/`BriefFieldName` types, pure `validateBrief(input: unknown)` |
+| `lib/brief/abuse.ts` | Created | `checkAbuseSignals()` (honeypot + HMAC dwell check, fail-closed on missing secret), `issueFormToken()` |
+| `lib/brief/notify.ts` | Created | `sendBriefNotification(brief)` — `fetch` to Resend's REST endpoint, CR/LF stripping on header-bound fields |
+| `lib/brief/submit.ts` | Created | `submitBrief` Server Action — abuse → validate → notify → `redirect()` (typed-route cast) |
+
+### Commits (in order, this batch)
+
+**PR 6a** (this batch, on `feat/brief-server`, based on
+`feat/locale-routing`):
+
+24. `2843279` — `feat(brief): add pure brief validation and semantic budget bands`
+25. `92ef9b6` — `feat(brief): add honeypot and signed dwell-time abuse checks`
+26. `5f2df72` — `feat(brief): add transactional email notification via provider REST API`
+27. `85b8229` — `feat(brief): wire brief Server Action (abuse, validate, notify, redirect)`
+
+No push performed. No PR opened. Local commits only, per instructions.
+
+### Workload / PR boundary (PR 6a)
+
+- Mode: chained PR slice (`auto-chain` / `stacked-to-main`)
+- Current work unit: PR 6a — `lib/brief/**` server logic only, no UI, no
+  routes (complete)
+- Diff: 4 files created, 0 modified, 0 deleted under `lib/brief/**`
+  (`~460` lines added across the four files — under the ~260-line estimate
+  in `tasks.md`'s Suggested Work Units table; the difference is mostly
+  documentation-heavy comments explaining each honesty/security decision
+  inline, not additional logic surface).
+- Boundary: starts from PR 2c's tip (locale routing, no brief logic at all);
+  ends with validation, abuse-detection, and notification primitives fully
+  implemented and unit-boundary-correct, but wired into **nothing** —
+  no form, no route, no visitor-reachable surface. Rollback: revert the 4
+  PR 6a commits (or the squashed merge once this reaches `main`) — restores
+  PR 2c's state exactly, since nothing outside `lib/brief/**` was touched by
+  this batch and nothing imports from `lib/brief/**` yet.
+- Next batch: per the corrected delivery order this batch's own note
+  establishes, PR 4 (pricing) and PR 5 (case studies) remain next **once
+  their blocking business content is supplied**; PR 6b (`BriefForm` UI,
+  landing wiring, `/gracias`) can also proceed independently at any time
+  since it only depends on PR 6a, not on PR 4/PR 5.
+
+---
+
 ## Status
 
 **PR 1**: 9/9 code tasks complete. 2/2 automated gates pass. 2 human tasks
@@ -861,8 +1192,30 @@ documented above, neither hidden. `sitemap.ts` deliberately deviates from
 design.md §3's full table (home entry only, not precios/case-study
 entries) — flagged as a deviation, not silently narrower.
 
-**Overall**: 35/35 assigned code tasks across PR 1 + PR 2a + PR 2b + PR 2c
-complete. Per tasks.md's corrected delivery order, the next slice is **PR 4**
-(pricing page), not PR 3 — PR 3's sections depend on routes PR 4/PR 5 create.
-Ready for `sdd-apply` to continue with PR 4, or `sdd-verify` to validate what
-has shipped so far.
+**PR 6a**: 4/4 code tasks (6.1-6.4) complete, on branch `feat/brief-server`
+(based on `feat/locale-routing`, PR 2c's tip). 2/2 automated gates pass
+(`npm run build`, `npm run lint`). **Delivered out of `tasks.md`'s stated
+order** — ahead of PR 4/PR 5/PR 3a/PR 3b — because PR 4 and PR 5 are blocked
+on business content (pricing figures, retainer commitments, client
+narratives) the user has not supplied, while PR 6a is pure `lib/brief/**`
+server logic with no route, no component, and no rendered link; nothing it
+creates is reachable by a visitor until PR 6b wires the form. Full reasoning
+recorded above under "Delivery-order deviation, flagged explicitly". One
+unrelated, transient modification to `lib/content/projections.ts` was
+observed during this batch's own verification and is flagged, not made by
+and not attributable to this batch (see "Unrelated concurrent modification
+observed" above) — likely a concurrent `sdd-verify` or parallel-PR process
+per the launch prompt's own note that verification was running in parallel.
+Four new human/product prerequisites recorded (`BRIEF_FORM_SECRET`
+provisioning, the email provider's DNS domain verification, real
+`BudgetBand` boundaries, the BotID/rate-limit decision) — none invented,
+none silently skipped.
+
+**Overall**: 39/39 assigned code tasks across PR 1 + PR 2a + PR 2b + PR 2c +
+PR 6a complete. Per tasks.md's corrected delivery order, PR 4 (pricing page)
+and PR 5 (case studies) remain the nominal next slices but are blocked on
+user-supplied business content; PR 6b (`BriefForm` UI, landing wiring,
+`/gracias`) is unblocked and can proceed independently, since it depends only
+on PR 6a. Ready for `sdd-apply` to continue with whichever of PR 4/PR 5/PR 6b
+the user unblocks first, or `sdd-verify` to validate what has shipped so
+far.

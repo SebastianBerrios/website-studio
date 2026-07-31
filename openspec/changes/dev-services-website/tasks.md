@@ -560,21 +560,27 @@ Satisfies: `lead-capture` (all requirements). Design decision: D1.
 
 ### PR 6a — Brief server logic
 
-- [ ] 6.1 Create `lib/brief/schema.ts`: pure `validateBrief()` against
+- [x] 6.1 Create `lib/brief/schema.ts`: pure `validateBrief()` against
       `ServiceLine`/`BudgetBand` unions + length/regex checks; `BriefErrors`
       keyed by field. — *design §9; lead-capture: Submission Validation*
-- [ ] 6.2 Create `lib/brief/abuse.ts`: honeypot field check + HMAC-signed-
+- [x] 6.2 Create `lib/brief/abuse.ts`: honeypot field check + HMAC-signed-
       timestamp dwell-time check (reject <~3s or >~2h). — *design §2 layer
       1*
-- [ ] 6.3 Create `lib/brief/notify.ts` (server-only): `sendBriefNotification
+- [x] 6.3 Create `lib/brief/notify.ts` (server-only): `sendBriefNotification
       (brief)` via `fetch` to the provider's REST endpoint using
       `RESEND_API_KEY`/`BRIEF_TO_EMAIL`/`BRIEF_FROM_EMAIL`; strips CR/LF
       from any field reaching an email header. — *design D1; §2 layer 4*
-- [ ] 6.4 Create `lib/brief/submit.ts` (`"use server"`): abuse → validate →
+- [x] 6.4 Create `lib/brief/submit.ts` (`"use server"`): abuse → validate →
       notify → `redirect()` as the LAST statement outside any try/catch (the
       documented gotcha — a `redirect()` inside `try` gets swallowed by
       `catch`). On notify failure: return error state with preserved values
       + `stderr` log, no redirect. — *design D1; §9 submission flow*
+      **Note (out-of-order delivery)**: implemented ahead of PR 3a/3b/4/5 in
+      this list's stated order. PR 4 (pricing figures) and PR 5 (case-study
+      narratives) are blocked on business content the user has not supplied;
+      PR 6a is pure server-side engineering with no such dependency, adds no
+      route/component/rendered link, and is unreachable by any visitor until
+      PR 6b wires the form. See apply-progress.md for the full reasoning.
 
 ### PR 6b — Form UI, landing wiring, confirmation
 
