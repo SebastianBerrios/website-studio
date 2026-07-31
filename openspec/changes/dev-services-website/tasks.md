@@ -246,37 +246,44 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 
 ### PR 2c — routing, config, chrome
 
-- [ ] 2.17 Create `app/[locale]/layout.tsx`: `generateStaticParams() =>
+- [x] 2.17 Create `app/[locale]/layout.tsx`: `generateStaticParams() =>
       LOCALES.map(locale => ({locale}))`; `export const dynamicParams =
       false`; call `assertLocale()`; `await assertContentInvariants()`;
       render `site-header`/`site-footer` from PR 1 (moved here) + dictionary
       context. — *design D3 layers 1 & 3; D8 layer 2*
-- [ ] 2.18 Move `app/page.tsx` → `app/[locale]/page.tsx`: compose
+- [x] 2.18 Move `app/page.tsx` → `app/[locale]/page.tsx`: compose
       `hero-header.tsx` + `toHeroProducts(locale)` into `HeroParallax` (only
       the hero for now — sections 2-7 land in PR 3). Delete old
       `app/page.tsx`.
-- [ ] 2.19 Create `app/not-found.tsx` (root, locale-neutral, default Spanish
+- [x] 2.19 Create `app/not-found.tsx` (root, locale-neutral, default Spanish
       copy, no dictionary/chrome dependency). — *design §3 layout
       boundaries*
-- [ ] 2.20 Create `app/[locale]/not-found.tsx` (uses dictionary, full
+- [x] 2.20 Create `app/[locale]/not-found.tsx` (uses dictionary, full
       chrome). — *site-shell: Not Found Handling*
-- [ ] 2.21 Create `app/sitemap.ts`: cross-product `LOCALES ×
+- [x] 2.21 Create `app/sitemap.ts`: cross-product `LOCALES ×
       publishableProjects()` (`/gracias` excluded once it exists in PR 6). —
-      *site-shell: Discoverability Files*
-- [ ] 2.22 Create `app/robots.ts`: allow crawling, reference the sitemap.
-- [ ] 2.23 `next.config.ts`: add `typedRoutes: true`; add `redirects()`
+      *site-shell: Discoverability Files*. **Deviation**: emits only the
+      home entry per locale this batch — see apply-progress.md for why
+      `precios`/`proyectos/<slug>` entries are deliberately deferred to
+      PR 4/PR 5.
+- [x] 2.22 Create `app/robots.ts`: allow crawling, reference the sitemap.
+- [x] 2.23 `next.config.ts`: add `typedRoutes: true`; add `redirects()`
       per design D2's six entries (`/`→`/es`, `/precios`→`/es/precios`,
       `/gracias`→`/es/gracias`, `/proyectos/:slug`→`/es/proyectos/:slug`,
       `/portfolio`→`/es#proyectos`, `/es/proyectos`→`/es#proyectos`). No
       `images` block (D12). — *design D2, D7, D12*
-- [ ] 2.24 `components/ui/hover-border-gradient.tsx:103`: retype `href?:
+- [x] 2.24 `components/ui/hover-border-gradient.tsx:103`: retype `href?:
       string` → `href?: Route` (`import type { Route } from "next"`); update
       the `<Link href={href}>` call site. **FLAGGED: hand-built component;
       required by `typedRoutes: true` or the build fails (design risk 2).**
-- [ ] 2.25 `app/[locale]/page.tsx` `ProductCard` internal-link branch:
-      contained `link as Route` cast at the one boundary produced by
-      `caseStudyPath()`, with a comment citing D7 and invariant 4's coverage.
-- [ ] 2.26 Root `app/layout.tsx`: set `metadataBase` from
+- [x] 2.25 `components/ui/hero-parallax.tsx` `ProductCard` internal-link
+      branch: contained `link as Route` cast at the one boundary produced by
+      `lib/content/projections.ts`'s `publicLink()`, with a comment citing
+      D7 and `checkNoSelfReferentialLinks`'s coverage. **Correction**: the
+      task text named `app/[locale]/page.tsx`, but `ProductCard` is defined
+      in and exported from `components/ui/hero-parallax.tsx` — the cast was
+      applied at its actual location.
+- [x] 2.26 Root `app/layout.tsx`: set `metadataBase` from
       `NEXT_PUBLIC_SITE_URL`; add `alternates.canonical` /
       `alternates.languages` / `x-default`. — *design D2 SEO consequences*
 

@@ -1,10 +1,12 @@
 # Apply Progress: dev-services-website
 
-Batch: 3 of N (PR 1 — Truth pass, complete; PR 2a — `lib/content/**` core
+Batch: 4 of N (PR 1 — Truth pass, complete; PR 2a — `lib/content/**` core
 types and data, complete; PR 2b — projects/projections/invariants/
-dictionaries, complete)
-Branch: `feat/content-model-projections` (based on `feat/content-model-core`,
-PR 2a; which is based on `feat/truth-pass`, PR 1)
+dictionaries, complete; PR 2c — `app/[locale]/**` routing, config, chrome,
+complete)
+Branch: `feat/locale-routing` (based on `feat/content-model-projections`,
+PR 2b; which is based on `feat/content-model-core`, PR 2a; which is based on
+`feat/truth-pass`, PR 1)
 Delivery strategy: `auto-chain` / `stacked-to-main`
 Mode: Standard (no test runner; `strict_tdd: false`)
 
@@ -385,31 +387,211 @@ and `lib/links.ts` (task 2.16). Did NOT touch `next.config.ts`,
 `typedRoutes`, `redirects()`, `app/[locale]/`, `hover-border-gradient.tsx`,
 or `app/page.tsx` (PR 2c). Nothing from PR 3+ was started.
 
-### Human tasks — status (PR 2)
+### PR 2c — routing, config, chrome — THIS BATCH
 
-- [ ] 2.H1 **[HUMAN]** Confirm fragment redirects (`#proyectos`) behave as
-      expected once deployed — not applicable yet, `redirects()` is PR 2c.
-- [ ] 2.H2 **[HUMAN]** Supply `NEXT_PUBLIC_SITE_URL` — not applicable yet,
-      consumed starting PR 2c.
+Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found,
+Zero Dead Internal Links). Design decisions: D2, D3, D7, D11 (implicitly —
+no route sets `dynamic`, none reads a dynamic API), D12.
 
-### Verification (PR 2's list, PR 2a+2b's slice)
+#### Code tasks
 
-- [x] Ran `npm run build` — passes on both PR 2a's and PR 2b's final commit.
-      See "Build result" below (PR 2b's final run).
-- [x] Ran `npm run lint` — passes, only the 2 pre-existing
-      `hover-border-gradient.tsx` warnings (PR 2c's job, untouched here).
-      See "Lint result" below.
-- [x] Confirmed no invented price, currency, URL, metric, consent flag, or
-      narrative prose exists anywhere in either batch's code — see the
-      "Honesty check" sections above.
-- [x] Confirmed every static image import resolves to a file that exists on
-      disk (PR 2b's "Static image import verification" table above).
+- [x] 2.17 Created `app/[locale]/layout.tsx`: `generateStaticParams() =>
+      LOCALES.map(locale => ({ locale }))`, `export const dynamicParams =
+      false` (phantom-locale layer 1), `assertLocale()` (layer 3, narrows
+      `string` → `Locale`), `await assertContentInvariants()` (layer 2),
+      wraps `children` with `SiteHeader`/`SiteFooter`.
+- [x] 2.18 Created `app/[locale]/page.tsx`, deleted `app/page.tsx`: composes
+      `<HeroHeader locale={validLocale} />` into `HeroParallax`'s `header`
+      slot, with `toHeroProducts(validLocale)` as the products source —
+      replacing the hardcoded 4-project array `app/page.tsx` used to define
+      inline. **This completes the expand-then-contract sequence PR 2b's
+      `hero-parallax.tsx` comment described**: `InterimHeader` and the
+      `header ?? <InterimHeader />` fallback are both deleted in the same
+      work unit that wires the real `<HeroHeader>` (see "Overriding rule
+      compliance" below).
+- [x] 2.19 Created `app/not-found.tsx` (root): no `<html>`/`<body>` of its
+      own (renders inside `app/layout.tsx`'s), locale-neutral, default
+      Spanish copy, links to `/${DEFAULT_LOCALE}`, no header/footer chrome
+      dependency.
+- [x] 2.20 Created `app/[locale]/not-found.tsx`: renders inside the locale
+      layout (chrome already wraps it), reads a new `notFound` dictionary
+      entry. **Deviation, flagged**: uses `getDictionary(DEFAULT_LOCALE)`
+      directly rather than reading a `locale` prop — whether Next 16.1.1
+      passes `params` to a `not-found.tsx` file is not confirmed anywhere in
+      this repo's `node_modules` (the next-types-plugin does not special-case
+      `not-found.tsx` the way it does `page.tsx`), and `LOCALES = ['es']`
+      today makes the default-locale dictionary correct for 100% of
+      visitors regardless of how that question resolves.
+- [x] 2.21 Created `app/sitemap.ts`: emits `${SITE_URL}/${locale}` for every
+      locale. **Deviation from design.md §3's literal table, flagged, not
+      silent**: the design's full cross-product also lists `precios` and
+      `proyectos/{slug}` (from `publishableProjects()`) as sitemap entries.
+      Neither route exists yet under `stacked-to-main`'s actual ship order
+      (PR 4/PR 5 create them) — emitting those entries now would list a
+      genuinely dead URL in the built output's `sitemap.xml`, which a
+      crawler treats as a real link to follow. `specs/site-shell/spec.md`'s
+      "Zero Dead Internal Links" requirement and the tasks.md delivery-order
+      correction's own stated success criterion ("holds at every point in
+      the chain") apply here just as much as to a rendered `<Link>`. PR 4
+      must add the `precios` entry; PR 5's task 5.6 ("confirm it now emits
+      real entries... mechanism built in PR 2c") must add the
+      `publishableProjects()`-driven case-study entries — this batch does
+      not pre-build that cross-product early, so task 5.6's own premise (a
+      mechanism already emitting placeholder/wrong entries) does not quite
+      hold; whoever picks up PR 5 will be adding the case-study branch of
+      this function, not just confirming it.
+- [x] 2.22 Created `app/robots.ts`: allows all crawling, references
+      `${SITE_URL}/sitemap.xml`.
+- [x] 2.23 `next.config.ts`: added `typedRoutes: true` and `redirects()`
+      with all six entries from design.md D2 verbatim (`/`→`/es` 307,
+      `/precios`→`/es/precios`, `/gracias`→`/es/gracias`,
+      `/proyectos/:slug`→`/es/proyectos/:slug`, `/portfolio`→`/es#proyectos`,
+      `/es/proyectos`→`/es#proyectos`). Confirmed compiled correctly via
+      `.next/routes-manifest.json` (see "Verification" below) — all six
+      present, all `statusCode: 307`. No `images` block added (D12). These
+      are config-level redirect rules, not rendered `<Link>`/`<a>` elements
+      — nothing in this batch's rendered HTML points at `/precios`,
+      `/gracias`, or `/proyectos/:slug` (see the sitemap deviation above for
+      why the same reasoning does NOT extend to sitemap entries).
+- [x] 2.24 `components/ui/hover-border-gradient.tsx`: retyped `href?:
+      string` → `href?: Route` (`import type { Route } from "next"`); the
+      `<Link href={href}>` call site needed no further change since it was
+      already conditionally rendered only when `href` is truthy.
+- [x] 2.25 `components/ui/hero-parallax.tsx` `ProductCard`'s internal-link
+      branch: added a contained, commented `product.link as Route` cast at
+      the `<Link href={...}>` call site — the boundary produced by
+      `lib/content/projections.ts`'s `publicLink()`. **Correction, not
+      silent**: the task text named `app/[locale]/page.tsx` as the file to
+      edit, but `ProductCard` is defined in and exported from
+      `components/ui/hero-parallax.tsx` (confirmed by reading the file
+      before editing) — the cast was applied at its actual location, with a
+      comment citing design.md D7 and naming
+      `lib/content/invariants.ts`'s `checkNoSelfReferentialLinks` (the
+      invariants file's own header numbers this check "2", not "4" as
+      tasks.md's phrasing "invariant 4's coverage" suggested — a minor
+      docs/numbering mismatch between tasks.md and design.md's enforcement-
+      layer prose list vs. invariants.ts's actual numbered checks, neither of
+      which lines up to "4" meaning "self-referential link" under any
+      reading tried. Named the function directly instead of a number to stay
+      unambiguous.)
+- [x] 2.26 Root `app/layout.tsx`: added `metadataBase: new URL(SITE_URL)`
+      (`process.env.NEXT_PUBLIC_SITE_URL`, falls back to
+      `http://localhost:3000` so the build never fails on task 2.H2 still
+      being open) and `alternates: { canonical, languages, 'x-default' }`,
+      all pointing at `/${DEFAULT_LOCALE}`.
 
-The full PR 2's `2.V1`-`2.V6` verification items (locale routing,
-`typedRoutes`, redirects, `<head>` metadata) do not apply yet — they depend
-on PR 2c's routing work, not yet started.
+#### A fourth cross-batch defect found and fixed (not part of the three named in the brief)
 
-## Build result (verbatim, final commit `4440bf9`)
+**`lib/content/projections.ts`'s `publicLink()` would have rendered a real
+dead link the moment this PR reached `main`.** Its literal design.md §5 rule
+(`externalUrl` when `evidence.state === 'live'`, else `caseStudyPath(locale,
+slug)`) was written and shipped in PR 2b. The curated `featured` set already
+includes a project whose evidence is `"gated"`, not `"live"` — `"blu"` — and
+`toHeroProducts()`'s no-visual filter does NOT exclude `"gated"` projects, so
+`"blu"` reaches the hero today. Wiring `toHeroProducts()` into the real page
+in this batch (task 2.18) would therefore have rendered a hero card whose
+`<Link href>` resolves to `/es/proyectos/blu` — a route that does not exist
+until PR 5, which under `stacked-to-main` ships strictly after PR 2c.
+
+Fixed in `lib/content/projections.ts`: `publicLink()` now falls back to
+`landingAnchor(locale, "proyectos")` for any non-`"live"` evidence project,
+mirroring the exact pattern PR 1 already established for this situation
+(`app/page.tsx`'s former "Blu Finances" entry). Documented in-code as a
+flagged deviation from design.md §5's literal table, with an explicit
+instruction for whoever picks up PR 5 (or PR 3a's task 3.4 published-state
+derivation) to replace the fallback once a project's case study is actually
+published. Verified fixed by inspecting the compiled static HTML (see
+"Verification" below) — no `/proyectos/` string appears anywhere in
+`.next/server/app/es.html`.
+
+#### Overriding rule compliance — the expand-then-contract contraction
+
+PR 2b's `hero-parallax.tsx` left `InterimHeader` and the `header ?? ...`
+fallback in place, with a comment explaining PR 2c must delete both in the
+same commit that wires the real `<HeroHeader>`. This batch does exactly
+that: `app/[locale]/page.tsx` passes `<HeroHeader locale={validLocale} />`
+into `HeroParallax`'s `header` prop, and `hero-parallax.tsx` deletes
+`InterimHeader` and the fallback in the same work-unit commit (commit
+`3d174a6`, "feat(routing): wire locale segment layout, page, and
+header/footer" — see "Commits" below). Confirmed via `grep -rn
+"InterimHeader"` across the repo: zero remaining references. Confirmed via
+the compiled `.next/server/app/es.html`: the deleted `InterimHeader`'s exact
+heading text ("que hace crecer tu negocio") does not appear; the dictionary's
+actual copy ("Tu proyecto es único", "Explora nuestros proyectos") does.
+
+#### Human tasks — status (PR 2)
+
+- [ ] 2.H1 **[HUMAN]** Confirm fragment redirects (`#proyectos`, `#precios`)
+      behave as expected once deployed. Now applicable: `redirects()` exists
+      and `#proyectos` is a real anchor on the rendered page
+      (`<div id="proyectos">` in `app/[locale]/page.tsx`); `#precios` is not
+      yet a real anchor (no Precios section exists until PR 3b) — see the
+      `site-header.tsx`/`site-footer.tsx` code comments. Not independently
+      verified in a browser by this agent (no browsing tool available).
+- [ ] 2.H2 **[HUMAN]** Supply `NEXT_PUBLIC_SITE_URL` for the target
+      deployment. Falls back to `http://localhost:3000` in its absence, so
+      the build does not fail — but canonical/OG/sitemap/robots URLs will be
+      wrong until this is set.
+
+#### Verification (PR 2's full list, now applicable)
+
+- [x] 2.V1 `npm run build` passes — confirms `generateStaticParams`,
+      `dynamicParams = false`, `typedRoutes`, and `assertContentInvariants()`
+      all compile and run without throwing. See "Build result" below.
+- [x] 2.V2 `npm run lint` passes — only the 2 pre-existing
+      `hover-border-gradient.tsx` warnings remain (same warnings, same line
+      count as before this batch's one-line addition shifted their line
+      numbers by 1). See "Lint result" below.
+- [ ] 2.V3 **Human**: request `/precios`, `/gracias`, `/proyectos/x`
+      unprefixed — confirm 307 to the `/es/...` counterpart. **Automated
+      substitute performed**: inspected `.next/routes-manifest.json`
+      directly — all three redirects present, `statusCode: 307`,
+      `destination` matches design.md D2 exactly (see "Verification" prose
+      below for the full table). Live HTTP request **not** performed by this
+      agent — no server/browser tool available.
+- [ ] 2.V4 **Human**: request an unknown first segment (e.g. `/xx`) — confirm
+      the root `app/not-found.tsx` renders (404), not a phantom locale page.
+      **Automated substitute performed**: `generateStaticParams()` returns
+      only `[{ locale: "es" }]` and `dynamicParams = false` is set — per
+      design.md D3 (VERIFIED against `next/dist/build/segment-config/app/
+      app-segment-config.d.ts`), this makes Next 404 any other first segment
+      at the routing layer, with zero runtime code executed (in particular,
+      `assertLocale()` is never even called for `/xx` — layer 1 stops it
+      before layer 3 would ever run). Confirmed the build's route table
+      lists no page for any segment other than `/[locale]` (`Route (app)`
+      output below shows only `/[locale]`, `/_not-found`, `/robots.txt`,
+      `/sitemap.xml`). Live HTTP request to `/xx` **not** performed by this
+      agent.
+- [ ] 2.V5 **Human**: request `/es` — identical content to today's `/`;
+      confirm `/` itself 307-redirects to `/es`. **Automated substitute
+      performed**: `.next/routes-manifest.json` confirms `/` → `/es`,
+      `statusCode: 307`. Live request **not** performed.
+- [ ] 2.V6 **Human**: inspect `<head>` for `metadataBase`, canonical, OG tags
+      resolving to absolute URLs. **Partially substituted**: `app/layout.tsx`
+      sets `metadataBase`/`alternates` from source, confirmed by reading the
+      file; the actual rendered `<head>` was not inspected in a browser by
+      this agent.
+
+#### Honest gap in this PR's own delivery-order guarantee
+
+`/precios` and `/proyectos/:slug` are registered `redirects()` sources
+(task 2.23, per design D2) that point at destinations (`/es/precios`,
+`/es/proyectos/:slug`) which do not exist as pages until PR 4/PR 5. A visitor
+who follows one of these redirects today lands on a branded, in-locale 404
+(`app/[locale]/not-found.tsx`, since the redirect resolves `locale = "es"`
+correctly and only the nested sub-route is missing) — not a phantom-locale
+page and not the framework default, but also not the destination they were
+looking for. This is different from — and less severe than — a rendered
+`<Link>` to a dead route (nothing in this batch's HTML contains one, verified
+below), but it is a real, honest gap worth naming: these two redirects exist
+today for a destination this PR does not yet build. Design.md D2 explicitly
+authorizes exactly this ("`/portfolio` may exist in a browser history or an
+index; redirect it, do not leave it dead") and tasks.md task 2.23 requires
+all six entries in this batch, so this was not a discretionary choice — it
+is a deliberate, designed interim state, not an oversight, and is resolved
+automatically once PR 4/PR 5 ship (no further code change needed here).
+
+## Build result (verbatim, PR 2c's final commit `ac6b72f`)
 
 ```
 > website-studio@0.1.0 build
@@ -418,39 +600,100 @@ on PR 2c's routing work, not yet started.
 ▲ Next.js 16.1.1 (Turbopack)
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1694.5ms
+✓ Compiled successfully in 1926.3ms
   Running TypeScript ...
   Collecting page data using 11 workers ...
-  Generating static pages using 11 workers (0/4) ...
-  Generating static pages using 11 workers (1/4)
-  Generating static pages using 11 workers (2/4)
-  Generating static pages using 11 workers (3/4)
-✓ Generating static pages using 11 workers (4/4) in 480.7ms
+  Generating static pages using 11 workers (0/6) ...
+  Generating static pages using 11 workers (1/6)
+  Generating static pages using 11 workers (2/6)
+  Generating static pages using 11 workers (4/6)
+✓ Generating static pages using 11 workers (6/6) in 523.8ms
   Finalizing page optimization ...
 
 Route (app)
-┌ ○ /
-└ ○ /_not-found
+┌ ○ /_not-found
+├ ● /[locale]
+│ └ /es
+├ ○ /robots.txt
+└ ○ /sitemap.xml
 
 ○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
 ```
 
-## Lint result (verbatim, final commit `4440bf9`)
+Ran once with a stale `.next/dev/types/validator.ts` (referencing the just-
+deleted `app/page.tsx`) which failed with `Cannot find module
+'../../../app/page.js'`; `rm -rf .next` before rebuilding resolved it — a
+generated-types cache staleness issue, not a real code defect. Recorded here
+in case a reviewer hits the same thing locally.
+
+## Lint result (verbatim, PR 2c's final commit `ac6b72f`)
 
 ```
 > website-studio@0.1.0 lint
 > eslint
 
 D:\Programming\Frontend\website-studio\components\ui\hover-border-gradient.tsx
-  59:6   warning  React Hook useEffect has missing dependencies: 'duration' and 'rotateDirection'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
-  63:22  warning  'event' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
+  60:6   warning  React Hook useEffect has missing dependencies: 'duration' and 'rotateDirection'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  64:22  warning  'event' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
 
 ✖ 2 problems (0 errors, 2 warnings)
 ```
 
-Exit code 0. Both warnings are pre-existing in `hover-border-gradient.tsx`, a
-file this batch did not touch (its `href` retype to `Route` is task 2.24,
-PR 2c).
+Exit code 0. Same two pre-existing warnings as PR 2b's run — line numbers
+shifted from 59/63 to 60/64 because this batch's `Route` import added one
+line above them. No new warnings introduced; not made worse, per this
+batch's explicit constraint on this hand-authored file.
+
+## Link-resolution verification (PR 2c, automated, against compiled output)
+
+Every internal `href` rendered on the compiled `/es` static page
+(`grep -oE 'href="[^"]*"' .next/server/app/es.html | sort -u`):
+
+| href | Target |
+|---|---|
+| `/es` | The locale landing itself (brand link, `site-header`/`site-footer`) |
+| `/es#precios` | Same-page anchor, no target element yet (see honest-gap note in `site-header.tsx`/`site-footer.tsx`) — not a route-level dead link |
+| `/es#proyectos` | Same-page anchor, real target (`<div id="proyectos">` in `app/[locale]/page.tsx`) — also `blu`'s hero card link, via the `publicLink()` fallback fixed this batch |
+| `https://luang.com.pe/`, `https://www.atemporalarq.com/`, `https://blucafe.vercel.app/` | External, unchanged from PR 1 |
+| `http://localhost:3000/es` | The `og:url`/canonical absolute URL, built from the `NEXT_PUBLIC_SITE_URL` fallback |
+
+**Zero** `/es/precios`, `/es/proyectos/*`, or bare `/` hrefs appear anywhere
+in the compiled output. Confirmed by direct `grep` on the generated static
+HTML, not by reading source and assuming it compiles as intended.
+
+`.next/routes-manifest.json`'s `redirects` array (all six, all `307`):
+
+| source | destination |
+|---|---|
+| `/` | `/es` |
+| `/precios` | `/es/precios` |
+| `/gracias` | `/es/gracias` |
+| `/proyectos/:slug` | `/es/proyectos/:slug` |
+| `/portfolio` | `/es#proyectos` |
+| `/:locale(es)/proyectos` | `/:locale#proyectos` |
+
+## Files changed (PR 2c)
+
+| File | Action | What was done |
+|---|---|---|
+| `next.config.ts` | Modified | `typedRoutes: true`; `redirects()` (6 entries, D2) |
+| `components/ui/hover-border-gradient.tsx` | Modified | `href?: string` → `href?: Route` |
+| `lib/content/projections.ts` | Modified | `publicLink()` falls back to `landingAnchor()` for non-`"live"` evidence (the 4th cross-batch defect fix) |
+| `app/[locale]/layout.tsx` | Created | `generateStaticParams`, `dynamicParams = false`, `assertLocale()`, `assertContentInvariants()`, header/footer wrap |
+| `app/[locale]/page.tsx` | Created | Composes `HeroHeader` + `toHeroProducts(locale)` into `HeroParallax` |
+| `app/page.tsx` | Deleted | Superseded by `app/[locale]/page.tsx` |
+| `components/layout/site-header.tsx` | Modified | Accepts `locale` prop; brand link → `/{locale}`; anchors locale-prefixed |
+| `components/layout/site-footer.tsx` | Modified | Same as `site-header.tsx` |
+| `components/ui/hero-parallax.tsx` | Modified | Deleted `InterimHeader` + `header ?? ...` fallback; widened `products` to `readonly`; `product.link as Route` cast |
+| `components/sections/hero-header.tsx` | Modified | `landingAnchor(...) as Route` cast at its `HoverBorderGradient` call site |
+| `app/not-found.tsx` | Created | Root 404, locale-neutral |
+| `app/[locale]/not-found.tsx` | Created | In-locale 404, dictionary-driven |
+| `lib/dictionaries/types.ts` | Modified | Added `NotFoundDictionary`, `Dictionary.notFound` |
+| `lib/dictionaries/es.ts` | Modified | Added `notFound` entry |
+| `app/sitemap.ts` | Created | Home entry per locale (deviation: no precios/case-study entries yet) |
+| `app/robots.ts` | Created | Allow crawling, reference sitemap |
+| `app/layout.tsx` | Modified | `metadataBase`, `alternates` (canonical/languages/x-default) |
 
 ## Files changed (PR 2b)
 
@@ -498,42 +741,54 @@ PR 2c).
 13. `4aa5a73` — `feat(content): add hero and portfolio grid projections`
 14. `8ceaf91` — `feat(content): add build-time content integrity assertion`
 15. `4440bf9` — `feat(i18n): add Spanish dictionary and hero copy slot`
+16. `3fb8e2a` — `docs(sdd): mark PR 2b tasks complete, record apply progress`
+17. `fc80d83` — `fix(hero-parallax): keep an interim header until PR 2c wires the slot`
+
+**PR 2c** (this batch, on `feat/locale-routing`, based on
+`feat/content-model-projections`):
+18. `a7eaf52` — `fix(ui): retype HoverBorderGradient href for typedRoutes`
+19. `45c8201` — `feat(config): enable typedRoutes and add locale redirects`
+20. `bf66704` — `fix(content): fall back hero links to portfolio anchor before case studies exist`
+21. `3d174a6` — `feat(routing): wire locale segment layout, page, and header/footer`
+22. `a15ebd6` — `feat(routing): add root and locale-aware 404 pages`
+23. `ac6b72f` — `feat(seo): add sitemap, robots, and root brand metadata`
 
 No push performed. No PR opened. Local commits only, per instructions.
 
 ## Workload / PR boundary
 
 - Mode: chained PR slice (`auto-chain` / `stacked-to-main`)
-- Current work unit: PR 2b — projects/projections/invariants/dictionaries
-  (complete, self-contained content/data layer; zero routing work)
-- **Diff vs `feat/content-model-core`: 18 files touched (16 created, 2
-  modified), 945 insertions(+), 32 deletions(-) across the 5 PR 2b commits**
-  (`git diff --stat` against PR 2a's tip) — **well above** tasks.md's ~400
-  estimate for this slice ("watch this one — near budget alone"). This is a
-  real forecast miss, flagged here rather than silently absorbed: the actual
-  content (7 fully-fleshed project entries with all required fields, 7
-  approach stub modules, the invariants file with 8 documented checks, and
-  the dictionary/hero-header split) is more voluminous than a ~400-line
-  estimate anticipated. No task was skipped or shortened to fit the
-  original budget — the estimate was optimistic, not the implementation
-  oversized for its assigned scope. Recommend the orchestrator/reviewer treat
-  this PR's review as a single cohesive content-layer unit (5 internal
-  work-unit commits tell the story) rather than trying to force a
-  sub-400-line slice after the fact.
-- Boundary: starts from PR 2a's tip (core content types + pricing/retainer/
-  authority/contact data, zero routing); ends with the full project catalog,
-  its projections, the (inert-until-PR-4) integrity assertion, and the
-  Spanish dictionary all in place — zero routing changes, zero `app/page.tsx`
-  changes. Rollback: revert the 5 PR 2b commits (or the squashed merge once
-  this reaches `main`) — no data, no infra, no route changes to unwind;
-  PR 2a's state is fully restored. Note the known interim hero-copy
-  regression (see "Issues found") self-resolves once PR 2c also merges — it
-  is not something rollback needs to separately account for.
-- Next batch: PR 2c (`app/[locale]/**` routing, `next.config.ts`,
-  `hover-border-gradient.tsx` retype, wiring `hero-header.tsx` +
-  `toHeroProducts()` into the real page) — base branch should be this
-  batch's tip, per `stacked-to-main`. PR 2c is also what resolves the interim
-  hero-copy regression flagged above.
+- Current work unit: PR 2c — `app/[locale]/**` routing, `next.config.ts`,
+  `hover-border-gradient.tsx` retype, hero-header wiring (complete)
+- **Diff vs `feat/content-model-projections` (PR 2b's tip): 17 files
+  touched (10 created, 6 modified, 1 deleted), 338 insertions(+), 108
+  deletions(-) across the 6 PR 2c commits** (`git diff --stat` against PR
+  2b's tip, excluding `openspec/**` and `.next/**`) — **above** tasks.md's
+  ~370-line estimate for this slice, though closer to budget than PR 2b's
+  945-line overshoot was. Real forecast miss, flagged rather than absorbed:
+  the not-found pages (root + locale, plus a new dictionary entry), the
+  sitemap/robots files, and the root metadata block were not weighted as
+  heavily in the ~370 estimate as they turned out to cost. No task was
+  skipped or shortened to fit the original budget. Six work-unit commits
+  tell the story; none is individually oversized (largest is 138+103 across
+  7 files for the core routing wire-up).
+- Boundary: starts from PR 2b's tip (full content model, projections,
+  dictionary, zero routing); ends with the site reachable at `/es`, `/`
+  redirecting there, a real branded 404 at both the root and in-locale
+  boundaries, a sitemap/robots pair, and the hero rendering real dictionary
+  copy with zero dead internal links in the compiled output (verified
+  above). Rollback: revert the 6 PR 2c commits (or the squashed merge once
+  this reaches `main`) — restores PR 2b's state, i.e. only `/` exists again
+  (no `/es`, no locale routing). Since only `/` exists in the wild before
+  this slice merges (per design.md D2's own rollback note), reverting costs
+  nothing.
+- Next batch: per tasks.md's corrected delivery order, PR 4 (pricing page)
+  ships next, then PR 5 (case studies), THEN PR 3a/3b (landing narrative) —
+  **not** PR 3, despite PR 3's lower number. This order is required, not
+  optional: PR 3's sections link to `/precios` and case-study slugs that
+  must already exist. PR 5 is also what should replace this batch's
+  `publicLink()` fallback (the 4th cross-batch defect fix above) with real
+  `caseStudyPath()` links once "blu"'s case study is published.
 
 ## Human verification still outstanding (not performed by this agent)
 
@@ -547,21 +802,34 @@ Carried forward from PR 1 (unchanged):
 - [ ] 1.V5 — visually confirm `HoverBorderGradient`'s hover animation after
       the href change
 
-New from PR 2b:
+Carried forward from PR 2b:
 - [ ] 3.H1/3.H2 (carried forward numbering from tasks.md) — supply consent +
       screenshot captures for `blu`, `blu-biolink`, and
       `wedding-invitation-piero` before any of them can graduate past their
       current `anonymised`/`withheld` state.
-- [ ] Confirm the interim hero-copy regression (no heading/subtitle/CTA on
-      `main` between this PR's merge and PR 2c's) is an acceptable, brief
-      window for this delivery chain, or reprioritize PR 2c immediately
-      after this merges.
 
-Not yet reached — will apply once PR 2c ships:
-- [ ] 2.H1 — confirm fragment redirects behave as expected
-- [ ] 2.H2 — supply `NEXT_PUBLIC_SITE_URL`
-- [ ] 2.V3-2.V6 — locale routing, unknown-segment 404, `/es` parity, `<head>`
-      metadata checks
+Resolved by PR 2c (no longer outstanding):
+- [x] The interim hero-copy regression flagged in PR 2b — `app/[locale]/
+      page.tsx` now wires `<HeroHeader>` and `InterimHeader` is deleted; the
+      hero renders real dictionary copy (verified against compiled HTML
+      above).
+
+New from PR 2c:
+- [ ] 2.H1 — confirm `#proyectos`/`#precios` fragment redirects and anchors
+      behave as expected once deployed (not independently verified in a
+      browser by this agent).
+- [ ] 2.H2 — supply `NEXT_PUBLIC_SITE_URL` for the target deployment.
+- [ ] 2.V3-2.V6 — live HTTP requests for the unprefixed-path redirects, the
+      unknown-segment 404, `/` vs `/es` parity, and `<head>` metadata
+      inspection. All four have an automated substitute performed in this
+      batch (routes-manifest.json inspection, route-table inspection, source
+      inspection) but no live browser/server request was made.
+- [ ] Confirm the interim, honest gap flagged above (the `/precios` and
+      `/proyectos/:slug` redirects pointing at pages that do not exist until
+      PR 4/PR 5) is an acceptable, brief window for this delivery chain. It
+      self-resolves once PR 4/PR 5 ship — no further code change is needed
+      here, unlike the hero-copy regression PR 2b flagged (which this batch
+      did have to actively resolve, see above).
 
 ## Status
 
@@ -570,15 +838,31 @@ and 3 human verification items remain open (unchanged from batch 1).
 
 **PR 2a**: 7/7 code tasks (2.1-2.7) complete. 2/2 automated gates pass.
 
-**PR 2b**: 9/9 code tasks (2.8-2.16) complete. 2/2 automated gates pass
-(`npm run build`, `npm run lint`) on the final commit. Zero React imports
-confirmed under `lib/content/**`. Zero invented prices, currencies, external
-URLs (beyond the 3 exploration.md-VERIFIED ones), metrics, or consent flags
-confirmed by targeted grep. All 4 static image imports verified against
-files on disk. One real, flagged interim regression (hero copy missing on
-`main` until PR 2c) and one real, flagged budget miss (945 vs ~400 estimated
-lines) — both documented above, neither hidden.
+**PR 2b**: 9/9 code tasks (2.8-2.16) complete. 2/2 automated gates pass.
+Zero React imports confirmed under `lib/content/**`. Zero invented prices,
+currencies, external URLs (beyond the 3 exploration.md-VERIFIED ones),
+metrics, or consent flags confirmed by targeted grep. All 4 static image
+imports verified against files on disk. One real, flagged budget miss (945
+vs ~400 estimated lines) — documented above, not hidden. The interim
+hero-copy regression it flagged is resolved by PR 2c (below).
 
-**Overall**: 25/25 assigned code tasks across PR 1 + PR 2a + PR 2b complete.
-Ready for `sdd-apply` to continue with PR 2c, or `sdd-verify` to validate
-what has shipped so far.
+**PR 2c**: 10/10 code tasks (2.17-2.26) complete. 2/2 automated gates pass
+(`npm run build`, `npm run lint`) on the final commit `ac6b72f`. A fourth
+cross-batch dead-link defect was found and fixed (`lib/content/
+projections.ts`'s `publicLink()`, the "blu" hero card) beyond the three
+named in this batch's brief. Verified against the compiled static output
+(not only source): zero dead internal `<Link>`/`<a>` hrefs in `.next/server/
+app/es.html`, all six `redirects()` entries compiled with `statusCode: 307`,
+`InterimHeader` fully removed and the dictionary's real copy confirmed
+present in the compiled HTML. One real, flagged budget miss (338+108 = 446
+vs ~370 estimated lines) and one real, flagged honest gap (two `redirects()`
+entries pointing at pages that do not exist until PR 4/PR 5) — both
+documented above, neither hidden. `sitemap.ts` deliberately deviates from
+design.md §3's full table (home entry only, not precios/case-study
+entries) — flagged as a deviation, not silently narrower.
+
+**Overall**: 35/35 assigned code tasks across PR 1 + PR 2a + PR 2b + PR 2c
+complete. Per tasks.md's corrected delivery order, the next slice is **PR 4**
+(pricing page), not PR 3 — PR 3's sections depend on routes PR 4/PR 5 create.
+Ready for `sdd-apply` to continue with PR 4, or `sdd-verify` to validate what
+has shipped so far.
