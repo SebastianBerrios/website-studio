@@ -16,6 +16,13 @@ export type HeroDictionary = {
   readonly cta: string;
 };
 
+export type NotFoundDictionary = {
+  readonly heading: string;
+  readonly message: string;
+  readonly backLink: string;
+};
+
 export type Dictionary = {
   readonly hero: HeroDictionary;
+  readonly notFound: NotFoundDictionary;
 };
