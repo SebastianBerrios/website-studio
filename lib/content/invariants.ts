@@ -65,6 +65,16 @@
  *    not `live` must not link to `/[locale]/proyectos/{slug}` unless
  *    `caseStudyPublished` is `true` for that project — the route does not
  *    exist until PR 5.
+ * 10. **Academy stays `no-link` while unverified as reachable** (task 3.5,
+ *     PR 3b) — `ACADEMY_VERIFIED_UNREACHABLE` records this batch's verified
+ *     fact (private repo, deployment 404s). Flipping `ACADEMY.state` to
+ *     `"linked"` without also updating that flag fails the build on
+ *     purpose, as a reminder to re-verify reachability rather than silently
+ *     shipping an unverified link.
+ * 11. **No retainer commitment marked `"set"` is blank** (task 3.6, PR 3b) —
+ *     `lib/content/retainer.ts`'s `RETAINER_COMMITMENTS`. A `"pending"`
+ *     commitment is exempt (that is the designed unresolved state); a
+ *     `"set"` one must actually carry non-blank content for every locale.
  */
 
 import "server-only";
@@ -77,6 +87,9 @@ import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
 import { caseStudyPath, isExternalHref } from "@/lib/links";
 import type { ProjectSlug } from "./projects";
+import { ACADEMY } from "./authority";
+import { RETAINER_COMMITMENTS } from "./retainer";
+import type { Localized } from "./types";
 
 /**
  * Task 4.10 flips this to `true` once PR 4 populates real price figures in
@@ -109,6 +122,16 @@ const HERO_FLOOR = 4;
 
 /** The one service line that legitimately has no project proof. */
 const LINE_EXEMPT_FROM_PROOF: ServiceLine = "D";
+
+/**
+ * This batch's (sdd-apply, PR 3b, task 3.5) verified fact: ElectroCode
+ * Academy's repository is PRIVATE and its deployment returns 404. Flip this
+ * to `false` ONLY alongside a fresh verification that the deployment is
+ * actually reachable — never bump `ACADEMY.state` to `"linked"` without also
+ * updating this flag, or `checkAuthorityNoLinkWhileUndeployed` below fails
+ * the build. That failure is deliberate: a reminder to re-verify, not a bug.
+ */
+const ACADEMY_VERIFIED_UNREACHABLE = true;
 
 function isStrictMode(): boolean {
   if (process.env.SITE_CONTENT_GATE === "warn") return false;
@@ -465,6 +488,75 @@ function checkPendingPricesInProduction(violations: string[]): void {
 }
 
 /**
+ * Task 3.5's compensating control: the academy must stay `no-link` for as
+ * long as `ACADEMY_VERIFIED_UNREACHABLE` records that its deployment has not
+ * been re-verified as reachable. See that constant's own comment.
+ */
+function checkAuthorityNoLinkWhileUndeployed(violations: string[]): void {
+  if (ACADEMY_VERIFIED_UNREACHABLE && ACADEMY.state !== "no-link") {
+    violations.push(
+      `ACADEMY.state is "${ACADEMY.state}" but ACADEMY_VERIFIED_UNREACHABLE is still true in ` +
+        "lib/content/invariants.ts. Flip that flag only alongside a fresh verification that the " +
+        "academy's deployment is actually reachable — do not upgrade the state on its own.",
+    );
+  }
+}
+
+function isBlankLocalized(value: Localized<string>): boolean {
+  return LOCALES.some((locale) => isBlank(value[locale]));
+}
+
+/**
+ * Task 3.6's compensating control: a retainer commitment marked `"set"` in
+ * `lib/content/retainer.ts` must actually carry non-blank content for every
+ * locale. A `"pending"` commitment is exempt — that is the designed
+ * unresolved state, not a defect.
+ */
+function checkRetainerCommitmentsNotBlank(violations: string[]): void {
+  const {
+    responseWindow,
+    channels,
+    scopeModel,
+    includedScope,
+    excludedScope,
+    bugVsFeatureBoundary,
+    contentChangeScope,
+    cancellationTerms,
+  } = RETAINER_COMMITMENTS;
+
+  if (responseWindow.status === "set") {
+    for (const tier of responseWindow.value) {
+      if (isBlankLocalized(tier.severity) || isBlankLocalized(tier.window)) {
+        violations.push(
+          'RETAINER_COMMITMENTS.responseWindow is "set" but one of its tiers has a blank severity or window.',
+        );
+      }
+    }
+  }
+  if (channels.status === "set" && channels.value.length === 0) {
+    violations.push('RETAINER_COMMITMENTS.channels is "set" but its value is empty.');
+  }
+  if (scopeModel.status === "set" && isBlankLocalized(scopeModel.value)) {
+    violations.push('RETAINER_COMMITMENTS.scopeModel is "set" but blank.');
+  }
+  if (includedScope.status === "set" && includedScope.value.some(isBlankLocalized)) {
+    violations.push('RETAINER_COMMITMENTS.includedScope is "set" but one of its entries is blank.');
+  }
+  if (excludedScope.status === "set" && excludedScope.value.some(isBlankLocalized)) {
+    violations.push('RETAINER_COMMITMENTS.excludedScope is "set" but one of its entries is blank.');
+  }
+  if (bugVsFeatureBoundary.status === "set" && isBlankLocalized(bugVsFeatureBoundary.value)) {
+    violations.push('RETAINER_COMMITMENTS.bugVsFeatureBoundary is "set" but blank.');
+  }
+  if (contentChangeScope.status === "set" && isBlankLocalized(contentChangeScope.value)) {
+    violations.push('RETAINER_COMMITMENTS.contentChangeScope is "set" but blank.');
+  }
+  if (cancellationTerms.status === "set" && isBlankLocalized(cancellationTerms.value)) {
+    violations.push('RETAINER_COMMITMENTS.cancellationTerms is "set" but blank.');
+  }
+}
+
+/**
  * Runs every check above. Throws in strict mode (`VERCEL_ENV === "production"`
  * unless `SITE_CONTENT_GATE=warn`); otherwise logs a warning and returns.
  *
@@ -487,6 +579,8 @@ export async function assertContentInvariants(): Promise<void> {
   checkHeroFloor(violations);
   checkEvidenceMediaShape(violations);
   checkPendingPricesInProduction(violations);
+  checkAuthorityNoLinkWhileUndeployed(violations);
+  checkRetainerCommitmentsNotBlank(violations);
 
   if (violations.length === 0) return;
 

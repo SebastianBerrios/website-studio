@@ -33,10 +33,21 @@ import type { Locale } from "@/lib/content/locales";
  * five-phase, approval-gated sequence itself), never through implied
  * headcount (design.md §4.4 / landing-narrative spec's "Copy Voice
  * Constraint").
+ *
+ * **Approval-deadline addition (this batch)**: renders
+ * `PROCESS.clientApprovalDeadlineBusinessDays` and its pause/recalculation
+ * consequence — stated up front, not raised later as a complaint. This
+ * closes the open item this section's previous batch recorded: a process
+ * gating 3 of 5 phases on client approval stalls when the client goes quiet,
+ * with no stated consequence. See `lib/content/process.ts`'s doc comment.
  */
 export function Process({ locale }: { locale: Locale }) {
   const { process } = getDictionary(locale);
-  const { phases, revisionRoundsIncluded } = PROCESS;
+  const {
+    phases,
+    revisionRoundsIncluded,
+    clientApprovalDeadlineBusinessDays,
+  } = PROCESS;
 
   return (
     <section id="proceso" className="py-16 md:py-24">
@@ -68,6 +79,10 @@ export function Process({ locale }: { locale: Locale }) {
         <p className="mt-8 text-sm text-muted-foreground">
           {revisionRoundsIncluded} {process.revisionsLabel}{" "}
           {process.revisionsExtra}
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {process.approvalDeadlinePrefix} {clientApprovalDeadlineBusinessDays}{" "}
+          {process.approvalDeadlineSuffix}
         </p>
       </div>
     </section>
