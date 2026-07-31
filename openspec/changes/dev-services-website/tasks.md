@@ -92,25 +92,25 @@ Design decisions: D4, D6.
 
 ### Code tasks
 
-- [ ] 1.1 `app/layout.tsx`: replace `title: "Website Studio"` / empty
+- [x] 1.1 `app/layout.tsx`: replace `title: "Website Studio"` / empty
       `description` with "ElectroCode Studio" branding and a real
       description; add matching `openGraph` fields. — *site-shell: Brand
       Metadata Requirement*
-- [ ] 1.2 `app/page.tsx`: remove the 5 duplicate `products` entries (indices
+- [x] 1.2 `app/page.tsx`: remove the 5 duplicate `products` entries (indices
       4-8); keep the 4 unique entries. Change the "Blu Finances" entry's
       `link` from `"/"` to `"/#proyectos"` (interim internal anchor — no
       case-study route exists yet; replace with `/es/proyectos/blu` in PR 5).
       Add a code comment noting this is temporary. — *project-portfolio: No
       Self-Referential Links*
-- [ ] 1.3 Create `lib/links.ts` exporting pure `isExternalHref(href: string):
+- [x] 1.3 Create `lib/links.ts` exporting pure `isExternalHref(href: string):
       boolean` per design D6's regex (`//` protocol or `mailto|tel:`).
-- [ ] 1.4 `components/ui/hero-parallax.tsx` — `ProductCard`: branch on
+- [x] 1.4 `components/ui/hero-parallax.tsx` — `ProductCard`: branch on
       `isExternalHref(product.link)`. External → `<a target="_blank"
       rel="noopener noreferrer">` (adds the missing `rel`). Internal →
       `<Link>` (import from `next/link`), no `target`. **FLAGGED: hand-built
       component, extra review required.** — *design D6; project-portfolio:
       Conditional Card Link Target*
-- [ ] 1.5 `components/ui/hero-parallax.tsx` — row derivation: replace the
+- [x] 1.5 `components/ui/hero-parallax.tsx` — row derivation: replace the
       fixed `0-5/5-10/10-15` slices with `SINGLE_ROW_MAX = 4;
       splitAt = products.length <= 4 ? products.length :
       Math.ceil(products.length / 2)`; delete the third `motion.div` track;
@@ -118,46 +118,52 @@ Design decisions: D4, D6.
       referenced; render row 2 only when non-empty. **FLAGGED: hand-built
       component, extra review required.** — *design D4; project-portfolio:
       Row Derivation From Array Length*
-- [ ] 1.6 `components/ui/hero-parallax.tsx` — `Header()`: change CTA `href`
+- [x] 1.6 `components/ui/hero-parallax.tsx` — `Header()`: change CTA `href`
       from `/portfolio` to `/#proyectos`. Keep copy hardcoded for now
       (dictionary extraction is PR 2c's job — do not write the strings
       twice). — *site-shell: Header Navigation, CTA no longer targets a dead
       route*
-- [ ] 1.7 Create `components/layout/site-header.tsx` (Server Component):
+- [x] 1.7 Create `components/layout/site-header.tsx` (Server Component):
       brand name + nav links to `#proyectos`, `#precios` (same-page anchor
       until PR 4 ships the real route), WhatsApp link from 1.9. Render above
       `<HeroParallax>` in `app/page.tsx`.
-- [ ] 1.8 Create `components/layout/site-footer.tsx` (Server Component):
+- [x] 1.8 Create `components/layout/site-footer.tsx` (Server Component):
       brand, nav links, WhatsApp reference, no locale-switcher implication
       (only `es` ships). Render below `<HeroParallax>`. — *site-shell:
       Footer Navigation*
-- [ ] 1.9 Create `lib/contact.ts` (temporary, pre-content-model shape):
-      exports `WHATSAPP_URL` built from the human-supplied number (1.H1).
-      Superseded by `lib/content/contact.ts` in PR 2a (delete this file
-      then). — *lead-capture: WhatsApp Escape Hatch*
+- [x] 1.9 Create `lib/contact.ts` (temporary, pre-content-model shape):
+      exports a `ContactChannel` discriminated union and `WHATSAPP` in its
+      `pending` state — the human-supplied number (1.H1) was not available
+      this batch, so nothing was invented; the pending state renders no
+      WhatsApp affordance at all. Superseded by `lib/content/contact.ts` in
+      PR 2a (delete this file then). — *lead-capture: WhatsApp Escape Hatch*
 
 ### Human tasks (blocking)
 
 - [ ] 1.H1 **[HUMAN, blocks 1.7/1.8/1.9]** Supply the studio's real WhatsApp
-      business number.
+      business number. **Still open** — not supplied this batch;
+      `lib/contact.ts` stays in `pending` state.
 - [ ] 1.H2 **[HUMAN]** Confirm `https://www.atemporalarq.com/` is live
       (currently UNVERIFIED). If unreachable, flag the Atemporal entry for a
       future evidence-state downgrade (affects PR 5, not this slice's
-      structure).
+      structure). **Still open** — not independently reverified this batch.
 
 ### Verification
 
-- [ ] 1.V1 `npm run build` passes.
-- [ ] 1.V2 `npm run lint` passes.
+- [x] 1.V1 `npm run build` passes.
+- [x] 1.V2 `npm run lint` passes.
 - [ ] 1.V3 **Human**: check the hero at ~375px, ~768px, ~1440px, ~1920px+ —
       one row of 4 cards, no empty row, parallax slides symmetrically (no
       dragging a short row across empty space). No automated check exists
-      for this.
+      for this. **Not performed by the apply agent** — requires a browser.
 - [ ] 1.V4 **Human**: click every internal/external link (nav, footer, hero
       CTA, every product card) — confirm none targets `/portfolio` or bare
-      `/`.
+      `/`. **Partially substituted**: a repo-wide text search confirms zero
+      remaining `/portfolio` or `link: "/"` occurrences, but the live
+      browser click-through was not performed by the apply agent.
 - [ ] 1.V5 **Human**: confirm `HoverBorderGradient`'s CTA still renders its
-      hover-gradient animation correctly after the href change.
+      hover-gradient animation correctly after the href change. **Not
+      performed by the apply agent** — requires a browser.
 
 **Rollback**: revert the single squashed merge commit — restores today's page
 including its bugs. Zero data, zero infra.
