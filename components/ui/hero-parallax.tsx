@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   motion,
   useScroll,
@@ -10,6 +11,12 @@ import {
   MotionValue,
 } from "motion/react";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { isExternalHref } from "@/lib/links";
+
+// A row of 5+ cards overflows every viewport, which is what makes the
+// parallax slide read as motion instead of dragging a short row through
+// empty space (see design.md D4). Below this count a single row is used.
+const SINGLE_ROW_MAX = 4;
 
 export const HeroParallax = ({
   products,
@@ -20,9 +27,12 @@ export const HeroParallax = ({
     thumbnail: string;
   }[];
 }) => {
-  const firstRow = products.slice(0, 5);
-  const secondRow = products.slice(5, 10);
-  const thirdRow = products.slice(10, 15);
+  const splitAt =
+    products.length <= SINGLE_ROW_MAX
+      ? products.length
+      : Math.ceil(products.length / 2);
+  const firstRow = products.slice(0, splitAt);
+  const secondRow = products.slice(splitAt);
   const ref = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -78,24 +88,17 @@ export const HeroParallax = ({
             />
           ))}
         </motion.div>
-        <motion.div className="flex flex-row mb-10 space-x-20 ">
-          {secondRow.map((product) => (
-            <ProductCard
-              product={product}
-              translate={translateXReverse}
-              key={product.title}
-            />
-          ))}
-        </motion.div>
-        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20">
-          {thirdRow.map((product) => (
-            <ProductCard
-              product={product}
-              translate={translateX}
-              key={product.title}
-            />
-          ))}
-        </motion.div>
+        {secondRow.length > 0 && (
+          <motion.div className="flex flex-row mb-10 space-x-20 ">
+            {secondRow.map((product) => (
+              <ProductCard
+                product={product}
+                translate={translateXReverse}
+                key={product.title}
+              />
+            ))}
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
@@ -116,7 +119,7 @@ export const Header = () => {
         <HoverBorderGradient
           containerClassName="rounded-full"
           as="button"
-          href="/portfolio"
+          href="/#proyectos"
           className=" dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
         >
           <span>Explora nuestros proyectos</span>
@@ -137,6 +140,22 @@ export const ProductCard = ({
   };
   translate: MotionValue<number>;
 }) => {
+  const cardBody = (
+    <div className="relative">
+      <Image
+        src={product.thumbnail}
+        height={600}
+        width={600}
+        className="object-contain max-h-96 max-w-120"
+        alt={product.title}
+      />
+      <div className="absolute inset-0 opacity-0 group-hover/product:opacity-80 bg-black pointer-events-none"></div>
+      <h3 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-white z-10">
+        {product.title}
+      </h3>
+    </div>
+  );
+
   return (
     <motion.div
       style={{
@@ -148,25 +167,23 @@ export const ProductCard = ({
       key={product.title}
       className="group/product h-96 w-120 relative shrink-0 flex items-center justify-center"
     >
-      <a
-        target="_blank"
-        href={product.link}
-        className="inline-block group-hover/product:shadow-2xl relative max-h-full max-w-full"
-      >
-        <div className="relative">
-          <Image
-            src={product.thumbnail}
-            height={600}
-            width={600}
-            className="object-contain max-h-96 max-w-120"
-            alt={product.title}
-          />
-          <div className="absolute inset-0 opacity-0 group-hover/product:opacity-80 bg-black pointer-events-none"></div>
-          <h3 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-white z-10">
-            {product.title}
-          </h3>
-        </div>
-      </a>
+      {isExternalHref(product.link) ? (
+        <a
+          href={product.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block group-hover/product:shadow-2xl relative max-h-full max-w-full"
+        >
+          {cardBody}
+        </a>
+      ) : (
+        <Link
+          href={product.link}
+          className="inline-block group-hover/product:shadow-2xl relative max-h-full max-w-full"
+        >
+          {cardBody}
+        </Link>
+      )}
     </motion.div>
   );
 };
