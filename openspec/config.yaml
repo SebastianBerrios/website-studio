@@ -1,0 +1,52 @@
+schema: spec-driven
+
+context: |
+  Tech: Next.js 16.1.1 (App Router), React 19.2.3, TypeScript 5, Tailwind v4.
+  UI: shadcn/ui (new-york, RSC, base neutral) + Aceternity registry; motion for animation.
+  Architecture: app/ pages+layouts (RSC by default), components/ui/ client components,
+  lib/utils.ts cn() helper. Alias @/* -> project root.
+  Content language: Spanish (lang="es") for all site UI copy. SDD artifacts: English.
+  Product: freelance portfolio/services site (showcase, about, pricing). Currently only "/".
+  Testing: no test runner installed (see testing-capabilities below).
+
+strict_tdd: false
+
+testing:
+  runner: none
+  reason: "No test framework configured. package.json has no test script and no
+    test runner (vitest/jest/playwright) is in dependencies or devDependencies."
+  candidates:
+    unit_integration: "Vitest + React Testing Library (fits Next.js 16 + Vite-based
+      tooling already implied by Tailwind v4/PostCSS pipeline)"
+    e2e: "Playwright (already available as a user-level skill: webapp-testing,
+      playwright-cli)"
+  note: "Not installed by sdd-init. Recommend as a future change if the user wants
+    automated regression coverage before adding routes/pricing/forms."
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Content copy in proposals may reference Spanish UI strings as product content
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Spec/requirement text itself stays in English; only quoted UI copy may be Spanish
+  design:
+    - Include rationale for App Router route/layout decisions
+    - Document any new shadcn/Aceternity component additions and why
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Forecast 400-line PR review budget per shared SDD guard
+  apply:
+    - Follow existing conventions: Server Components by default, "use client" only
+      when interactivity requires it, PascalCase component exports
+    - Preserve product data shape { title: string; link: string; thumbnail: string }
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
