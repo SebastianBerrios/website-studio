@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,7 @@ export function HoverBorderGradient({
     className?: string;
     duration?: number;
     clockwise?: boolean;
-    href?: string;
+    href?: Route;
   } & React.HTMLAttributes<HTMLElement>
 >) {
   const [hovered, setHovered] = useState<boolean>(false);
