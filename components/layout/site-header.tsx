@@ -12,11 +12,13 @@ import type { Locale } from "@/lib/content/locales";
 // even though `/` itself redirects and never 404s (next.config.ts's
 // `redirects()`, design.md D2).
 //
-// The "Precios" nav target has no rendered section on the page yet (PR 3b
-// ships it) — same accepted temporary state PR 1 introduced for this exact
-// anchor, now correctly locale-prefixed. It resolves to a real page (`/es`);
-// it just does not scroll anywhere yet. See tasks.md task 4.8, which is
-// where the real `/[locale]/precios#<line>` anchors replace this.
+// There is deliberately NO "Precios" nav item yet. `/[locale]/precios` ships
+// in PR 4 and the landing's pricing summary section ships in PR 3b, so today
+// the anchor would resolve to a real page but scroll nowhere. A nav item
+// labelled "Precios" that does nothing when clicked is worse than no nav item
+// — the visitor reads it as broken, and every slice must stand on its own
+// because `chain_strategy` is `stacked-to-main` (tasks.md §9). PR 4 adds it
+// back pointing at the real route.
 export function SiteHeader({ locale }: { locale: Locale }) {
   return (
     <header className="w-full border-b border-border/60">
@@ -30,9 +32,6 @@ export function SiteHeader({ locale }: { locale: Locale }) {
         <nav className="flex items-center gap-6 text-sm">
           <Link href={landingAnchor(locale, "proyectos") as Route}>
             Proyectos
-          </Link>
-          <Link href={landingAnchor(locale, "precios") as Route}>
-            Precios
           </Link>
           {WHATSAPP.status === "set" && (
             <a

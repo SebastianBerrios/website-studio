@@ -177,13 +177,17 @@ export const ProductCard = ({
         </a>
       ) : (
         <Link
-          // `product.link` is `string` by the preserved `HeroProduct`/legacy
-          // prop contract (design.md §6, "Data-driven hrefs"), so
-          // `typedRoutes` cannot verify it structurally — it is produced by
-          // `lib/content/projections.ts`'s `publicLink()`, a single
-          // boundary. The cast is contained to this one call site; what it
-          // waives is covered instead by `lib/content/invariants.ts`'s
-          // `checkNoSelfReferentialLinks` (design.md D7 consequence 2).
+          // `product.link` is `string` by the preserved `{ title, link,
+          // thumbnail }` prop contract, because it holds either an external
+          // URL or an internal route and no single `Route` type covers both.
+          // So `typedRoutes` cannot verify it structurally here, and this cast
+          // genuinely waives that protection for internal hero links.
+          //
+          // What replaces it is `lib/content/invariants.ts`'s
+          // `checkInternalLinksResolve`, which fails the production build when
+          // an internal hero link is not a live target. NOT
+          // `checkNoSelfReferentialLinks` — that one only catches a link equal
+          // to `/` or `/{locale}`, which is a different property entirely.
           href={product.link as Route}
           className="inline-block group-hover/product:shadow-2xl relative max-h-full max-w-full"
         >

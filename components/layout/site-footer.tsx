@@ -19,9 +19,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <Link href={landingAnchor(locale, "proyectos") as Route}>
             Proyectos
           </Link>
-          <Link href={landingAnchor(locale, "precios") as Route}>
-            Precios
-          </Link>
+          {/* No "Precios" item yet — see the note in site-header.tsx. PR 4
+              adds it back pointing at the real `/[locale]/precios` route. */}
           {WHATSAPP.status === "set" && (
             <a href={WHATSAPP.url} target="_blank" rel="noopener noreferrer">
               WhatsApp

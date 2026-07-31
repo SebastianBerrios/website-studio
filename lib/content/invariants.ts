@@ -66,6 +66,7 @@ import { toHeroProducts } from "./projections";
 import { PRICES } from "./pricing";
 import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
+import { isExternalHref } from "@/lib/links";
 import type { ProjectSlug } from "./projects";
 
 /**
@@ -102,6 +103,40 @@ function checkNoSelfReferentialLinks(violations: string[]): void {
       if (product.link === "/" || product.link === `/${locale}`) {
         violations.push(
           `Project "${product.title}" resolves to a self-referential link ("${product.link}") for locale "${locale}".`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Every internal hero link must resolve to something that actually exists.
+ *
+ * This is the real compensating control for the `product.link as Route` cast
+ * in `components/ui/hero-parallax.tsx`. The preserved `{ title, link,
+ * thumbnail }` prop contract types `link` as `string` because it holds either
+ * an external URL or an internal route, and no single `Route` type covers
+ * both — so `typedRoutes` cannot check it structurally. That check has to
+ * happen here instead.
+ *
+ * `checkNoSelfReferentialLinks` does NOT cover this. It only catches a link
+ * equal to `/` or `/{locale}`. Route existence is a different property.
+ *
+ * LIVE_TARGETS must be extended as each slice lands: `/{locale}/precios` in
+ * PR 4, `/{locale}/proyectos/{slug}` in PR 5, and the `#precios` anchor when
+ * the pricing summary section ships in PR 3b. A link added before its target
+ * fails the build — which is the point, since that exact mistake has already
+ * been caught four times in this change set.
+ */
+function checkInternalLinksResolve(violations: string[]): void {
+  for (const locale of LOCALES) {
+    const liveTargets = new Set<string>([`/${locale}`, `/${locale}#proyectos`]);
+    for (const product of toHeroProducts(locale)) {
+      if (isExternalHref(product.link)) continue;
+      if (!liveTargets.has(product.link)) {
+        violations.push(
+          `Project "${product.title}" links to "${product.link}", which is not a live target for locale "${locale}". ` +
+            `Either the route/anchor has not shipped yet, or LIVE_TARGETS in checkInternalLinksResolve needs updating.`,
         );
       }
     }
@@ -205,6 +240,7 @@ export async function assertContentInvariants(): Promise<void> {
 
   checkUniqueSlugs(violations);
   checkNoSelfReferentialLinks(violations);
+  checkInternalLinksResolve(violations);
   checkServiceLineProof(violations);
   checkNoEmptyLocalizedValues(violations);
   await checkNonEmptyApproach(violations);
