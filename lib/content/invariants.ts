@@ -187,6 +187,60 @@ function checkInternalLinksResolve(violations: string[]): void {
   }
 }
 
+/**
+ * No two hero cards may share a label.
+ *
+ * `HeroParallax` keys its cards by `product.title`, so a collision is not
+ * merely a cosmetic ambiguity — it produces duplicate React keys on
+ * motion-animated siblings, which can reconcile the wrong element mid-
+ * animation. It is also an a11y defect, because the cards' `alt` text is the
+ * same label.
+ *
+ * This fired for real: `blucafe` (the client's public site) and `blu` (that
+ * same client's internal system) both carry `client: "Blu Café"`, and
+ * `publicTitle()` used to return `client` for named projects, so both rendered
+ * as "Blu Café". Caught by reading compiled HTML, not by any gate — hence this
+ * check.
+ */
+function checkUniqueHeroTitles(violations: string[]): void {
+  for (const locale of LOCALES) {
+    const seen = new Set<string>();
+    for (const product of toHeroProducts(locale)) {
+      if (seen.has(product.title)) {
+        violations.push(
+          `Two hero cards share the label "${product.title}" for locale "${locale}". ` +
+            `HeroParallax keys cards by title, so this also collides React keys. ` +
+            `Give each project a distinct "title" that identifies the work, not just the client.`,
+        );
+      }
+      seen.add(product.title);
+    }
+  }
+}
+
+/**
+ * A project whose consent is granted but NOT `namedClient` must not name its
+ * client in its own `title`, because `publicTitle()` renders that title
+ * verbatim. Without this, a title like "Sistema interno de Blu Café" would
+ * leak the client the consent state says to withhold.
+ *
+ * This guards a case that does not exist today — every granted project is also
+ * `namedClient` — which is exactly when it is cheap to add.
+ */
+function checkGrantedTitlesDoNotLeakClient(violations: string[]): void {
+  for (const project of PROJECTS) {
+    const { consent } = project;
+    if (consent.status !== "granted" || consent.namedClient) continue;
+    if (project.title.includes(project.client)) {
+      violations.push(
+        `Project "${project.slug}" has granted consent WITHOUT namedClient, but its title ` +
+          `("${project.title}") contains its client name ("${project.client}"). ` +
+          `publicTitle() renders the title verbatim, so this would leak the client.`,
+      );
+    }
+  }
+}
+
 function checkServiceLineProof(violations: string[]): void {
   const linesWithProof = new Set<ServiceLine>(PROJECTS.map((p) => p.serviceLine));
   for (const line of Object.keys(SERVICE_LINES) as ServiceLine[]) {
@@ -285,6 +339,8 @@ export async function assertContentInvariants(): Promise<void> {
   checkUniqueSlugs(violations);
   checkNoSelfReferentialLinks(violations);
   checkInternalLinksResolve(violations);
+  checkUniqueHeroTitles(violations);
+  checkGrantedTitlesDoNotLeakClient(violations);
   checkServiceLineProof(violations);
   checkNoEmptyLocalizedValues(violations);
   await checkNonEmptyApproach(violations);

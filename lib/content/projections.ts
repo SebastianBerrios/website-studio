@@ -37,12 +37,32 @@ export type PortfolioCard = {
  * The public-facing label for a project, honouring its `consent` state.
  * Never returns `client` for anything other than `granted` +
  * `namedClient: true` — see design.md §5, "Consent gates identification".
+ *
+ * Returns `project.title` (the PROJECT's name), not `project.client`, even
+ * when the client may be named. Two projects can share one client — `blucafe`
+ * (the public site) and `blu` (that client's internal management system) both
+ * have `client: "Blu Café"` — so labelling by client produced two identical
+ * hero cards. That was three defects from one root cause: ambiguous UI labels,
+ * two images with identical `alt` text, and colliding React keys, since
+ * `HeroParallax` keys its cards by `product.title`.
+ *
+ * The client is still named wherever the project's own title names it, e.g.
+ * "Sistema de gestión interno de Blu Café". For the three projects whose
+ * `title` equals their `client`, the rendered label is unchanged.
+ *
+ * `checkUniqueHeroTitles` in `lib/content/invariants.ts` makes a future
+ * collision a build failure rather than something a reviewer has to notice.
  */
 function publicTitle(project: Project): string {
   const { consent } = project;
   switch (consent.status) {
     case "granted":
-      return consent.namedClient ? project.client : project.title;
+      // `namedClient` is deliberately not branched on here. When it is false
+      // the label must not identify the client, and a `title` that embeds the
+      // client's name would leak it — so that guarantee belongs in a check
+      // over the data, not in a ternary that silently picks the same value
+      // either way. `checkGrantedTitlesDoNotLeakClient` enforces it.
+      return project.title;
     case "anonymised":
       return `${consent.industry} — ${consent.size}`;
     case "withheld":
