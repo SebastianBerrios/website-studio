@@ -10,7 +10,6 @@ import {
   useSpring,
   MotionValue,
 } from "motion/react";
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { isExternalHref } from "@/lib/links";
 
 // A row only reads as parallax motion if it overflows the viewport; otherwise
@@ -36,12 +35,20 @@ const MIN_ROW_CARDS = 4;
 
 export const HeroParallax = ({
   products,
+  header,
 }: {
   products: {
     title: string;
     link: string;
     thumbnail: string;
   }[];
+  /**
+   * Server-rendered title/subtitle/CTA slot (design.md D5). Copy moved to
+   * `lib/dictionaries/es.ts`; render it via `components/sections/
+   * hero-header.tsx`. Optional so this component has no hardcoded-copy
+   * fallback of its own.
+   */
+  header?: React.ReactNode;
 }) => {
   const splitAt =
     products.length >= MIN_ROW_CARDS * 2
@@ -86,7 +93,7 @@ export const HeroParallax = ({
       ref={ref}
       className="py-20 overflow-hidden antialiased relative flex flex-col self-auto perspective-[1000px] transform-3d"
     >
-      <Header />
+      {header}
       <motion.div
         style={{
           rotateX,
@@ -116,34 +123,6 @@ export const HeroParallax = ({
           </motion.div>
         )}
       </motion.div>
-    </div>
-  );
-};
-
-export const Header = () => {
-  return (
-    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full  left-0 top-0">
-      <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
-        Tu proyecto es único, <br /> tu web también
-      </h1>
-      <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
-        Tu negocio merece más que una plantilla aburrida. Diseñamos webs únicas,
-        flexibles y listas para atraer clientes. Tú pones la idea, nosotros la
-        magia.
-      </p>
-      <div className="mt-4">
-        <HoverBorderGradient
-          containerClassName="rounded-full"
-          as="button"
-          // INTERIM: same-page anchor, replacing the `/portfolio` route that
-          // never existed and 404'd in production. Points at the real
-          // portfolio section once PR 3a ships it (tasks.md task 1.6).
-          href="/#proyectos"
-          className=" dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
-        >
-          <span>Explora nuestros proyectos</span>
-        </HoverBorderGradient>
-      </div>
     </div>
   );
 };
