@@ -11,7 +11,7 @@ export function HoverBorderGradient({
   children,
   containerClassName,
   className,
-  as: Tag = "button",
+  as = "button",
   duration = 1,
   clockwise = true,
   href,
@@ -28,6 +28,14 @@ export function HoverBorderGradient({
 >) {
   const [hovered, setHovered] = useState<boolean>(false);
   const [direction, setDirection] = useState<Direction>("TOP");
+
+  // When `href` is set, the returned element is wrapped in `<Link>`, which
+  // renders as an `<a>`. HTML forbids nested interactive elements, so the
+  // inner wrapper must never render as another interactive control (its
+  // `as="button"` default included) in that case — the anchor becomes the
+  // sole interactive element and owns focus/keyboard activation. `as` is
+  // only honored when there is no `href` to wrap it in.
+  const Tag = href ? "div" : as;
 
   const rotateDirection = (currentDirection: Direction): Direction => {
     const directions: Direction[] = ["TOP", "LEFT", "BOTTOM", "RIGHT"];
