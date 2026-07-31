@@ -10,7 +10,7 @@ import type { Locale } from "./locales";
 import type { Consent, Evidence, Project } from "./types";
 import type { ServiceLine } from "./service-lines";
 import { PROJECTS } from "./projects";
-import { caseStudyPath } from "@/lib/links";
+import { landingAnchor } from "@/lib/links";
 
 /**
  * The exact prop shape `HeroParallax` has always consumed. Preserved
@@ -62,11 +62,35 @@ function publicTitle(project: Project): string {
   }
 }
 
-/** The link a visitor should follow for this project, from any surface. */
+/**
+ * The link a visitor should follow for this project, from any surface.
+ *
+ * **Deviation from design.md §5's literal table** (`link: externalUrl when
+ * evidence.state === 'live', else caseStudyPath(locale, slug)`), flagged
+ * rather than silently applied. `/[locale]/proyectos/[slug]` does not exist
+ * until PR 5, which under `stacked-to-main` ships strictly AFTER this PR
+ * (tasks.md "Delivery order correction" reorders PR 4/PR 5 ahead of PR 3, but
+ * PR 3 is not where the hero is wired — PR 2c is, and the hero is wired
+ * before PR 5 in every ordering). The curated set already includes
+ * non-"live" evidence projects today (e.g. "blu", `evidence.state:
+ * "gated"`), so applying the design's literal rule here would render a real
+ * dead link on `main` the moment PR 2c merges — the exact class of defect
+ * this change set exists to remove (see specs/site-shell/spec.md, "Zero Dead
+ * Internal Links": the built output must have zero dead internal links at
+ * every point in the chain, not only after the last merge).
+ *
+ * Falls back to the landing's portfolio anchor instead, following the same
+ * pattern PR 1 already established for this exact situation (`app/page.tsx`'s
+ * former "Blu Finances" entry, `link: "/#proyectos"`). PR 5 (or PR 3a's
+ * published-state derivation, task 3.4) must replace this fallback with
+ * `caseStudyPath(locale, project.slug)` once that project's case study is
+ * actually published — tracked as a follow-up in apply-progress.md, not left
+ * silently broken.
+ */
 function publicLink(locale: Locale, project: Project): string {
   return project.evidence.state === "live"
     ? project.evidence.externalUrl
-    : caseStudyPath(locale, project.slug);
+    : landingAnchor(locale, "proyectos");
 }
 
 /** The primary media asset's `.src`, or `undefined` for `no-visual`. */
