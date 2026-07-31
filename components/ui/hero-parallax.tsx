@@ -10,6 +10,7 @@ import {
   useSpring,
   MotionValue,
 } from "motion/react";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { isExternalHref } from "@/lib/links";
 
 // A row only reads as parallax motion if it overflows the viewport; otherwise
@@ -93,7 +94,7 @@ export const HeroParallax = ({
       ref={ref}
       className="py-20 overflow-hidden antialiased relative flex flex-col self-auto perspective-[1000px] transform-3d"
     >
-      {header}
+      {header ?? <InterimHeader />}
       <motion.div
         style={{
           rotateX,
@@ -123,6 +124,53 @@ export const HeroParallax = ({
           </motion.div>
         )}
       </motion.div>
+    </div>
+  );
+};
+
+/**
+ * INTERIM scaffolding — delete in PR 2c along with the `header ?? ...`
+ * fallback above, once `app/[locale]/page.tsx` passes `<HeroHeader />` into
+ * the `header` slot (tasks.md task 2.18).
+ *
+ * Why this still exists: PR 2b introduced the `header` slot and the
+ * dictionary-driven `HeroHeader`, but the page that wires them lives under
+ * `/[locale]`, which PR 2c creates. Deleting this now would ship a hero with
+ * no title, subtitle, or CTA — `chain_strategy` is `stacked-to-main`, so
+ * every PR reaches production and every slice must stand on its own
+ * (tasks.md §9).
+ *
+ * Wiring `HeroHeader` early is NOT the alternative: its CTA resolves through
+ * `landingAnchor()` to `/es#proyectos`, and `/es` does not exist until PR 2c.
+ * That would trade a missing heading for a dead link — the exact defect this
+ * change set exists to remove. So: expand, then contract.
+ *
+ * The copy here is duplicated in `lib/dictionaries/es.ts`. That duplication
+ * is deliberate and ends when this function is deleted.
+ */
+const InterimHeader = () => {
+  return (
+    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full left-0 top-0">
+      <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
+        Desarrollo web <br /> que hace crecer tu negocio
+      </h1>
+      <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
+        Tu negocio merece más que una plantilla aburrida. Diseñamos webs únicas,
+        flexibles y listas para atraer clientes. Tú pones la idea, nosotros la
+        magia.
+      </p>
+      <div className="mt-4">
+        <HoverBorderGradient
+          containerClassName="rounded-full"
+          as="button"
+          // Same-page anchor, valid on the current `/` route. Becomes the real
+          // portfolio section link when PR 2c wires `HeroHeader`.
+          href="/#proyectos"
+          className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+        >
+          <span>Explora nuestros proyectos</span>
+        </HoverBorderGradient>
+      </div>
     </div>
   );
 };
