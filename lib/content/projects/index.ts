@@ -47,23 +47,6 @@ const PENDING_OUTCOME = {
   },
 } as const;
 
-/**
- * Slugs whose `evidence.state: "live"` classification could not be
- * independently re-verified from this batch's environment.
- *
- * `atemporalarq.com` returned no response (`curl` failed in ~1ms, which
- * reads as a local network/DNS restriction rather than a confirmed outage —
- * exploration.md §4.2) and is currently linked live on the production site.
- * This is deliberately NOT a `Project` field: `lib/content/types.ts` is PR
- * 2a's already-shipped scope, and `Evidence` has no fifth "unverified"
- * state to add here without touching it. This side-list is the honest
- * middle ground the task explicitly asked for: it neither silently treats
- * the URL as confirmed live, nor marks it broken (both would be dishonest),
- * and it keeps the uncertainty visible in the data module itself, not only
- * in a comment. Carried forward as human tasks 1.H2/3.H3 until resolved.
- */
-export const UNVERIFIED_LIVENESS: readonly ProjectSlug[] = ["atemporal"];
-
 export const PROJECTS: readonly Project[] = [
   {
     slug: "luang",
@@ -93,22 +76,32 @@ export const PROJECTS: readonly Project[] = [
     title: "Atemporal Studio",
     client: "Atemporal Studio",
     serviceLine: "A",
+    // `evidence.state` is `not-deployed`, not `live`: `atemporalarq.com`
+    // returns NXDOMAIN on both the apex and `www`, verified with `nslookup`
+    // and `curl` from the same resolver that, in the same run, correctly
+    // resolved the other three project domains — so this is a confirmed
+    // non-resolving domain, not a local network/DNS restriction (the
+    // explanation this comment previously — and wrongly — recorded). Task
+    // 1.H2 is now answerable negatively; a single independent cross-network
+    // check is still recommended before treating this as permanent. See
+    // `sdd/dev-services-website/verify-report.md` finding C2. The captured
+    // screenshot is kept: it is a marketing homepage capture, not a private
+    // system, so it stays as visual evidence even though the link does not.
     summary: {
-      es: "Sitio público enlazado para Atemporal Studio. Su disponibilidad en vivo no pudo reconfirmarse de forma independiente en este lote — ver `UNVERIFIED_LIVENESS` arriba y las tareas 1.H2/3.H3.",
+      es: "Sitio de Atemporal Studio. El dominio atemporalarq.com no resuelve (NXDOMAIN confirmado en el apex y en www) — no hay despliegue público accesible hoy. Ver la tarea 1.H2.",
     },
     problem: PENDING_PROBLEM,
     role: PENDING_ROLE,
     stack: [],
     outcome: PENDING_OUTCOME,
     evidence: {
-      state: "live",
-      externalUrl: "https://www.atemporalarq.com/",
+      state: "not-deployed",
       media: [MEDIA.atemporal],
     },
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 2,
-    link: "https://www.atemporalarq.com/",
+    link: "/es/proyectos/atemporal",
     thumbnail: "/projects/atemporal.png",
   },
   {
@@ -156,13 +149,16 @@ export const PROJECTS: readonly Project[] = [
       "Vitest 4.1.5",
     ],
     outcome: PENDING_OUTCOME,
-    evidence: {
-      state: "gated",
-      disclosure: {
-        es: "Este producto funciona detrás de un inicio de sesión, por lo que no es un enlace navegable públicamente. La confirmación de que la captura mostrada no expone datos reales de clientes queda pendiente (ver tarea 3.H2).",
-      },
-      media: [MEDIA.blucafefinance],
-    },
+    // `evidence.state` is `no-visual`, not `gated`: the only capture ever on
+    // file for this project (`blucafefinance.png`) was not a login screen —
+    // it was the AUTHENTICATED dashboard, naming the client repeatedly
+    // (sidebar logo, "Bienvenido a Blu Café" heading, full nav tree). It has
+    // been removed from `public/projects/` and from `lib/content/projects/
+    // media.ts`. Consent to publish any capture of this back-office is
+    // still open (task 3.H2), so no image ships until a genuinely
+    // sanitized, authorized capture lands. See
+    // `sdd/dev-services-website/verify-report.md` finding C1.
+    evidence: { state: "no-visual", media: [] },
     // Not granted: no recorded consent to name the client behind this
     // login-walled back-office product. Industry is a factual read of the
     // repo's own domain (recipes, orders, sales -> food & beverage); size
@@ -175,7 +171,7 @@ export const PROJECTS: readonly Project[] = [
     featured: true,
     order: 4,
     link: "/es/proyectos/blu",
-    thumbnail: "/projects/blucafefinance.png",
+    thumbnail: "",
   },
   {
     slug: "fast-route",
