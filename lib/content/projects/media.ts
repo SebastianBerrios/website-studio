@@ -11,19 +11,20 @@
  * captured, consented asset — see `lib/content/projects/index.ts` for how
  * those honestly render as `evidence.state: "no-visual"` instead.
  *
- * The former `blu` back-office capture was removed from this map — and
- * from `public/projects/` on disk — by the `fix/content-honesty`
- * remediation slice. It was never a login screen: it was the authenticated
- * `blu` back-office dashboard, naming the client repeatedly (sidebar logo,
- * "Bienvenido a Blu Café" heading, full nav tree). Consent to publish any
- * capture of that back-office is still open (task 3.H2). See
- * `sdd/dev-services-website/verify-report.md` finding C1.
+ * `blu`'s back-office capture (`blucafefinance.png`) was removed by the
+ * `fix/content-honesty` remediation slice pending consent, and restored by
+ * the `fix/restore-consented-content` slice once the client authorized its
+ * use (session-dated user-stated consent, not a signed agreement — see
+ * `lib/content/projects/index.ts`). It is the AUTHENTICATED `blu` back-office
+ * dashboard (sidebar logo, "Bienvenido a Blu Café" heading, full nav tree),
+ * never a login screen — `alt` below describes it accurately.
  */
 
 import type { MediaAsset } from "@/lib/content/types";
 import luang from "@/public/projects/luang.png";
 import atemporal from "@/public/projects/atemporal.png";
 import blucafe from "@/public/projects/blucafe.png";
+import blucafefinance from "@/public/projects/blucafefinance.png";
 
 export const MEDIA = {
   luang: {
@@ -42,6 +43,12 @@ export const MEDIA = {
     asset: blucafe,
     alt: {
       es: "Captura de pantalla de la página de inicio del sitio público de Blu Café",
+    },
+  },
+  blu: {
+    asset: blucafefinance,
+    alt: {
+      es: "Captura de pantalla del panel administrativo autenticado de Blu Café: pantalla de bienvenida con el logo del cliente y el menú lateral de Categorías, Productos, Ingredientes, Recetas y Ventas — mostrada con autorización del cliente",
     },
   },
 } as const satisfies Record<string, MediaAsset>;

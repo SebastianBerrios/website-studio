@@ -42,8 +42,10 @@
  *    so this check is itself `async`.
  * 6. **Hero projection has at least `HERO_FLOOR` entries** — per every
  *    locale's `toHeroProducts()` (design.md D4/§13 risk 1 introduced a floor
- *    of 4; the `fix/content-honesty` slice lowered it to 3 as a documented,
- *    temporary launch-quality signal — see the constant's own comment).
+ *    of 4; the `fix/content-honesty` slice temporarily lowered it to 3, and
+ *    `fix/restore-consented-content` raised it back to 4 once `blu` and
+ *    `atemporal` were both honestly restored — see the constant's own
+ *    comment).
  * 7. **Evidence/media shape** — mostly a compile-time guarantee already
  *    (`Evidence`'s discriminated union in `lib/content/types.ts` makes a
  *    mismatched state/media pair a type error before this file ever runs).
@@ -78,17 +80,27 @@ import type { ProjectSlug } from "./projects";
 const PRICE_INTEGRITY_CHECK_ACTIVE = false;
 
 /**
- * Minimum hero entry count. Lowered from the original design floor of 4 to
- * 3 by the `fix/content-honesty` remediation slice, which honestly demoted
- * `blu` to `no-visual` (unconsented capture, finding C1) and `atemporal` to
- * `not-deployed` (domain does not resolve, finding C2) rather than
- * fabricating a fourth entry to keep the old floor. This is a **launch-
- * quality signal, not a permanent target**: it exists so a future accidental
- * drop to 0-2 entries still fails the build loudly, not so 3 is treated as
- * good enough. Raise it back toward 4+ as real captures and consent (tasks
- * 3.H1/3.H2) land. See `sdd/dev-services-website/verify-report.md` §7.
+ * Minimum hero entry count. Originally 4 by design. The
+ * `fix/content-honesty` remediation slice temporarily lowered it to 3
+ * because it had to honestly demote `blu` to `no-visual` (unconsented
+ * capture, finding C1) and `atemporal` to `not-deployed` (domain did not
+ * resolve, finding C2) rather than fabricate a fourth entry to keep the old
+ * floor — that dip was a real, temporary consequence of removing dishonest
+ * content, not churn.
+ *
+ * The `fix/restore-consented-content` slice raises it back to 4 because both
+ * underlying facts reversed: the client granted consent for the `blu`
+ * capture (task 3.H2, now `evidence.state: "gated"` with media), and
+ * Atemporal's site was found live at a new URL,
+ * `https://atemporalarq.vercel.app/` (task 1.H2, now `evidence.state:
+ * "live"`) — the old `atemporalarq.com` domain still does not resolve, it
+ * simply moved. With Luang, Atemporal, Blu Café, and `blu` all honest again,
+ * the hero naturally has 4 entries, so 4 is once again both the design
+ * target and the enforced floor — not a new, stricter requirement, just the
+ * original one restored now that the content backing it is honest. See
+ * `sdd/dev-services-website/verify-report.md` §7.
  */
-const HERO_FLOOR = 3;
+const HERO_FLOOR = 4;
 
 /** The one service line that legitimately has no project proof. */
 const LINE_EXEMPT_FROM_PROOF: ServiceLine = "D";

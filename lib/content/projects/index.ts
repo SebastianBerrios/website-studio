@@ -76,32 +76,30 @@ export const PROJECTS: readonly Project[] = [
     title: "Atemporal Studio",
     client: "Atemporal Studio",
     serviceLine: "A",
-    // `evidence.state` is `not-deployed`, not `live`: `atemporalarq.com`
-    // returns NXDOMAIN on both the apex and `www`, verified with `nslookup`
-    // and `curl` from the same resolver that, in the same run, correctly
-    // resolved the other three project domains — so this is a confirmed
-    // non-resolving domain, not a local network/DNS restriction (the
-    // explanation this comment previously — and wrongly — recorded). Task
-    // 1.H2 is now answerable negatively; a single independent cross-network
-    // check is still recommended before treating this as permanent. See
-    // `sdd/dev-services-website/verify-report.md` finding C2. The captured
-    // screenshot is kept: it is a marketing homepage capture, not a private
-    // system, so it stays as visual evidence even though the link does not.
+    // `evidence.state` is `live` again: the old `atemporalarq.com` domain
+    // genuinely does not resolve (NXDOMAIN confirmed on the apex and `www`,
+    // finding C2 — that part of the prior finding stands), but the site
+    // simply moved. The orchestrator verified `https://atemporalarq.vercel.app/`
+    // directly: HTTP 200, `<title>Atemporal</title>`, no login wall,
+    // responds in ~0.36s. Task 1.H2 is closed positively with this new URL.
+    // The existing `atemporal.png` thumbnail is kept — same marketing
+    // homepage, just reachable at a new host.
     summary: {
-      es: "Sitio de Atemporal Studio. El dominio atemporalarq.com no resuelve (NXDOMAIN confirmado en el apex y en www) — no hay despliegue público accesible hoy. Ver la tarea 1.H2.",
+      es: "Sitio público en producción para Atemporal Studio — verificado accesible en atemporalarq.vercel.app (el antiguo dominio atemporalarq.com ya no resuelve).",
     },
     problem: PENDING_PROBLEM,
     role: PENDING_ROLE,
     stack: [],
     outcome: PENDING_OUTCOME,
     evidence: {
-      state: "not-deployed",
+      state: "live",
+      externalUrl: "https://atemporalarq.vercel.app/",
       media: [MEDIA.atemporal],
     },
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 2,
-    link: "/es/proyectos/atemporal",
+    link: "https://atemporalarq.vercel.app/",
     thumbnail: "/projects/atemporal.png",
   },
   {
@@ -129,13 +127,24 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     slug: "blu",
-    // Anonymised per consent below: no client name is used anywhere,
-    // including this internal `title`/`client` pair.
-    title: "Sistema de back-office para negocio de alimentos y bebidas",
-    client: "Cliente no identificado (back-office con acceso restringido)",
+    // Named per consent: the client authorized use of this capture
+    // (user-stated consent, dated the `fix/restore-consented-content`
+    // session — not a signed agreement). The capture itself already names
+    // the client repeatedly (sidebar logo, "Bienvenido a Blu Café" heading),
+    // so anonymising the title/client fields on top of a named screenshot
+    // would be incoherent.
+    title: "Sistema de gestión interno de Blu Café",
+    client: "Blu Café",
     serviceLine: "B",
+    // Accurate description: this is the AUTHENTICATED back-office dashboard
+    // (client logo, "Bienvenido a Blu Café" heading, sidebar nav —
+    // Categorías, Productos, Ingredientes, Recetas, Ventas), never a login
+    // screen. A prior version of this file called it "la pantalla de inicio
+    // de sesión", which was false and is why the unconsented-capture issue
+    // (finding C1) went unnoticed for a full slice — do not repeat that
+    // mistake.
     summary: {
-      es: "Sistema de back-office y operaciones: usuarios, auditorías, estadísticas, compras, programación, inventario, pedidos, ventas, recetas y finanzas — protegido por inicio de sesión.",
+      es: "Panel administrativo interno de Blu Café: gestión de categorías, productos, ingredientes, recetas y ventas — protegido por inicio de sesión, mostrado con autorización del cliente.",
     },
     problem: PENDING_PROBLEM,
     role: PENDING_ROLE,
@@ -149,29 +158,28 @@ export const PROJECTS: readonly Project[] = [
       "Vitest 4.1.5",
     ],
     outcome: PENDING_OUTCOME,
-    // `evidence.state` is `no-visual`, not `gated`: the only capture ever on
-    // file for this project was not a login screen — it was the
-    // AUTHENTICATED dashboard, naming the client repeatedly
-    // (sidebar logo, "Bienvenido a Blu Café" heading, full nav tree). It has
-    // been removed from `public/projects/` and from `lib/content/projects/
-    // media.ts`. Consent to publish any capture of this back-office is
-    // still open (task 3.H2), so no image ships until a genuinely
-    // sanitized, authorized capture lands. See
+    // `evidence.state` is `gated`, not `no-visual`: the client authorized
+    // this capture (3.H2, granted), so it ships again — but the product
+    // itself genuinely sits behind a login (`blucafefinance.vercel.app`
+    // returns 200 with a password field, VERIFIED), so `gated` is the
+    // honest state, not `live`. `disclosure` carries the required explicit
+    // login note plus the permission line (specs/project-portfolio/spec.md,
+    // "Evidence State Rendering"). See
     // `sdd/dev-services-website/verify-report.md` finding C1.
-    evidence: { state: "no-visual", media: [] },
-    // Not granted: no recorded consent to name the client behind this
-    // login-walled back-office product. Industry is a factual read of the
-    // repo's own domain (recipes, orders, sales -> food & beverage); size
-    // is honestly unknown rather than guessed.
-    consent: {
-      status: "anonymised",
-      industry: "Alimentos y bebidas (back-office / punto de venta)",
-      size: "Tamaño no determinado",
+    evidence: {
+      state: "gated",
+      disclosure: {
+        es: "Este panel se encuentra protegido por inicio de sesión (blucafefinance.vercel.app requiere credenciales). Captura mostrada con autorización del cliente.",
+      },
+      media: [MEDIA.blu],
     },
+    // Granted: the client authorized use of this capture, so the client may
+    // be named (see `title`/`client` above).
+    consent: { status: "granted", namedClient: true },
     featured: true,
     order: 4,
     link: "/es/proyectos/blu",
-    thumbnail: "",
+    thumbnail: "/projects/blucafefinance.png",
   },
   {
     slug: "fast-route",
