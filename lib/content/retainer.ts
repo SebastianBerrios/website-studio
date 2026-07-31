@@ -38,13 +38,16 @@
  * fixed rule exists yet — rather than a fabricated threshold. A future fixed
  * rule replaces the same field's `value` later; nothing about
  * `components/sections/retainer.tsx` needs to change for that.
+ *
+ * **PR 4 note**: `Commitment<T>` itself moved to `lib/content/types.ts` (task
+ * 4.1) so `lib/content/pricing.ts`'s tier anatomy (turnaround, exclusions,
+ * payment schedule) can reuse the same discriminant instead of duplicating
+ * it. Re-exported here for source compatibility with existing imports.
  */
 
-import type { Localized } from "./types";
+import type { Commitment, Localized } from "./types";
 
-export type Commitment<T> =
-  | { readonly status: "pending" }
-  | { readonly status: "set"; readonly value: T };
+export type { Commitment } from "./types";
 
 /**
  * One severity tier of the response-time commitment. The studio supplied

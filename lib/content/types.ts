@@ -22,6 +22,24 @@ import type { StaticImageData } from "next/image";
 export type Localized<T> = Record<Locale, T>;
 
 /**
+ * A commitment the studio has either settled or not, for any figure or claim
+ * whose value is not the same question as whether the key itself must exist.
+ *
+ * Originally introduced in `lib/content/retainer.ts` for `RetainerCommitments`
+ * (design.md D8's `pending`/`set` discriminant, generalised beyond `Money`);
+ * promoted here so `lib/content/pricing.ts`'s tier anatomy (turnaround,
+ * exclusions, payment schedule — none of which the studio has settled per
+ * figure, only per policy) can reuse the same pattern instead of duplicating
+ * it. Every required key still exists (a missing key is a compile error); an
+ * undecided key's *value* renders honestly absent until it is actually
+ * decided — see `PriceEntry` in `lib/content/pricing.ts` for the
+ * `Money`-specific sibling of this same idea.
+ */
+export type Commitment<T> =
+  | { readonly status: "pending" }
+  | { readonly status: "set"; readonly value: T };
+
+/**
  * One locally-imported media asset. `asset` is a static `import` of a file
  * under `public/`, never a string path — a missing file becomes a build
  * error instead of a silent runtime 404 (design.md §8).
