@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WHATSAPP } from "@/lib/contact";
+import { WHATSAPP } from "@/lib/content/contact";
 
 // Server Component: no interactivity, so it stays out of the client bundle.
 // Nav targets `#proyectos` and `#precios` are same-page anchors until the

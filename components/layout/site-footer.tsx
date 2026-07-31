@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WHATSAPP } from "@/lib/contact";
+import { WHATSAPP } from "@/lib/content/contact";
 
 // Server Component. Only `es` ships today, so no locale-switcher is
 // rendered — see design.md §7 and tasks.md task 1.8.
