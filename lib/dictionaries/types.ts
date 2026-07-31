@@ -49,17 +49,51 @@ export type PortfolioDictionary = {
 
 /**
  * Landing section 3, "Proceso" (landing-narrative spec, "Proceso Section
- * Contract", task 3.2). The phase names/descriptions and the
- * `requiresApproval` flag are domain facts and live in
- * `lib/content/process.ts`; these four keys are structural UI labels around
- * that data — the heading, the per-phase approval badge, and the sentence
- * wrapping `PROCESS.revisionRoundsIncluded`.
+ * Contract", task 3.2). The phase names/descriptions, the
+ * `requiresApproval` flag, and `clientApprovalDeadlineBusinessDays` are
+ * domain facts and live in `lib/content/process.ts`; these keys are
+ * structural UI labels around that data — the heading, the per-phase
+ * approval badge, the sentence wrapping `PROCESS.revisionRoundsIncluded`,
+ * and the prefix/suffix wrapping the approval-deadline number.
  */
 export type ProcessDictionary = {
   readonly heading: string;
   readonly approvalBadge: string;
   readonly revisionsLabel: string;
   readonly revisionsExtra: string;
+  readonly approvalDeadlinePrefix: string;
+  readonly approvalDeadlineSuffix: string;
+};
+
+/**
+ * Landing section 5, "Autoridad" (trust-signals spec, "Academy Block
+ * Placement" / "Academy No-Link State While Undeployed"). The academy's
+ * name/description are domain facts and live in `lib/content/authority.ts`;
+ * `heading`/`intro` are structural framing copy around that data, and
+ * `visitCta` is a UI label reserved for the `linked` state — unused today
+ * because `ACADEMY.state` is `no-link`, but declared here so upgrading the
+ * academy's state later needs no new dictionary key.
+ */
+export type AuthorityDictionary = {
+  readonly heading: string;
+  readonly intro: string;
+  readonly visitCta: string;
+};
+
+/**
+ * Landing section 7, "Retainer/Mantenimiento" (landing-narrative spec,
+ * "Retainer Section Contract"; trust-signals spec, "Retainer Published
+ * Commitments" / "Itemized Maintenance Scope"). The commitment values
+ * themselves are domain facts and live in `lib/content/retainer.ts`'s
+ * `RETAINER_COMMITMENTS`; these keys are the structural headings/labels
+ * around that data.
+ */
+export type RetainerDictionary = {
+  readonly heading: string;
+  readonly responseHeading: string;
+  readonly includedHeading: string;
+  readonly excludedHeading: string;
+  readonly cancellationLabel: string;
 };
 
 export type Dictionary = {
@@ -67,5 +101,7 @@ export type Dictionary = {
   readonly services: ServicesDictionary;
   readonly process: ProcessDictionary;
   readonly portfolio: PortfolioDictionary;
+  readonly authority: AuthorityDictionary;
+  readonly retainer: RetainerDictionary;
   readonly notFound: NotFoundDictionary;
 };

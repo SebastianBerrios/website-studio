@@ -44,6 +44,16 @@
  * `components/sections/process.tsx`'s doc comment for why. Adding it later
  * is one new optional field on `ProcessContent`, read by the same single
  * exported constant every consumer already imports — not a restructuring.
+ *
+ * **`clientApprovalDeadlineBusinessDays` closes a different, now-answered
+ * question**: not "how fast does the studio respond", but "how long can a
+ * client sit on a gated phase before it affects the timeline". The studio
+ * supplied this directly: the client has 5 business days to approve a gated
+ * phase; past that, the project pauses and the delivery date is
+ * recalculated. This is stated up front in the rendered copy, not raised
+ * later as a complaint — it closes the open item the previous batch (task
+ * 3.2) recorded: a process gating 3 of 5 phases on client approval stalls
+ * when the client goes quiet, with no stated consequence.
  */
 
 import type { Localized } from "./types";
@@ -82,6 +92,13 @@ export type ProcessContent = {
     ProcessPhase,
   ];
   readonly revisionRoundsIncluded: number;
+  /**
+   * Business days a client has to approve a gated phase (one that has
+   * `requiresApproval: true`) before the project pauses and the delivery
+   * date is recalculated. Stated up front in the rendered copy — see this
+   * module's top doc comment.
+   */
+  readonly clientApprovalDeadlineBusinessDays: number;
 };
 
 export const PROCESS: ProcessContent = {
@@ -128,4 +145,5 @@ export const PROCESS: ProcessContent = {
     },
   ],
   revisionRoundsIncluded: 2,
+  clientApprovalDeadlineBusinessDays: 5,
 };
