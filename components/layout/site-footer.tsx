@@ -2,12 +2,13 @@ import Link from "next/link";
 import type { Route } from "next";
 import { WHATSAPP } from "@/lib/content/contact";
 import { getDictionary } from "@/lib/dictionaries";
-import { landingAnchor } from "@/lib/links";
+import { landingAnchor, pricingPath } from "@/lib/links";
 import type { Locale } from "@/lib/content/locales";
 
 // Server Component. Only `es` ships today, so no locale-switcher is
 // rendered — see design.md §7 and tasks.md task 1.8. Link rationale matches
-// `site-header.tsx`: never bare `/`, both anchors locale-prefixed.
+// `site-header.tsx`: never bare `/`, both anchors locale-prefixed. The
+// "Precios" item is back as of PR 4 — see site-header.tsx's note.
 export function SiteFooter({ locale }: { locale: Locale }) {
   const { footer } = getDictionary(locale);
 
@@ -22,8 +23,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           <Link href={landingAnchor(locale, "proyectos") as Route}>
             {footer.projectsLink}
           </Link>
-          {/* No "Precios" item yet — see the note in site-header.tsx. PR 4
-              adds it back pointing at the real `/[locale]/precios` route. */}
+          <Link href={pricingPath(locale)}>{footer.pricingLink}</Link>
           {WHATSAPP.status === "set" && (
             <a href={WHATSAPP.url} target="_blank" rel="noopener noreferrer">
               {footer.whatsappLink}

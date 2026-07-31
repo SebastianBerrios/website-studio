@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { WHATSAPP } from "@/lib/content/contact";
 import { getDictionary } from "@/lib/dictionaries";
-import { landingAnchor } from "@/lib/links";
+import { landingAnchor, pricingPath } from "@/lib/links";
 import type { Locale } from "@/lib/content/locales";
 
 // Server Component: no interactivity, so it stays out of the client bundle.
@@ -13,13 +13,9 @@ import type { Locale } from "@/lib/content/locales";
 // even though `/` itself redirects and never 404s (next.config.ts's
 // `redirects()`, design.md D2).
 //
-// There is deliberately NO "Precios" nav item yet. `/[locale]/precios` ships
-// in PR 4 and the landing's pricing summary section ships in PR 3b, so today
-// the anchor would resolve to a real page but scroll nowhere. A nav item
-// labelled "Precios" that does nothing when clicked is worse than no nav item
-// — the visitor reads it as broken, and every slice must stand on its own
-// because `chain_strategy` is `stacked-to-main` (tasks.md §9). PR 4 adds it
-// back pointing at the real route.
+// The "Precios" nav item is back as of PR 4, now pointing at the real
+// `/[locale]/precios` route (`pricingPath()`, which returns a template
+// literal type — no `as Route` cast needed, see that helper's doc comment).
 export function SiteHeader({ locale }: { locale: Locale }) {
   const { header } = getDictionary(locale);
 
@@ -36,6 +32,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           <Link href={landingAnchor(locale, "proyectos") as Route}>
             {header.projectsLink}
           </Link>
+          <Link href={pricingPath(locale)}>{header.pricingLink}</Link>
           {WHATSAPP.status === "set" && (
             <a
               href={WHATSAPP.url}
