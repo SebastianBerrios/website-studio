@@ -2129,3 +2129,214 @@ rendered anywhere.
 Ready for `sdd-verify` to re-validate this batch against the spec/design, or
 `sdd-apply` to continue once the user supplies the content blocking PR 3b,
 PR 4, PR 5, or PR 6b.
+
+---
+
+## Batch 10 — Partial PR 3b: Autoridad, Retainer, and the Proceso approval deadline
+
+Branch: `feat/landing-autoridad-retainer`, based on
+`feat/landing-servicios-proyectos` (PR 3a, complete, merged conceptually — no
+push/merge performed, local branches only). MERGED with all prior batches
+(1-9, unchanged — see above for full detail).
+
+**What**: Implemented tasks 3.5 (Autoridad) and 3.6 (Retainer), plus one
+addition to the already-shipped Proceso section (a 5-business-day
+client-approval deadline). Tasks 3.7 (moved to PR 4 as 4.0) and 3.8 (Precios
+summary) remain explicitly OUT of scope — no price figure or currency has
+been supplied for any of the 8 tokens in `lib/content/pricing.ts`; every
+entry is honestly `pending`. No pricing summary block was built and no price
+figure was invented. PR 4, PR 5, PR 6b also remain unimplemented.
+
+**Why**: The user supplied, for the first time, the retainer's full terms
+(tiered response window, no monthly-hour model, itemized inclusions/
+exclusions, cancellation terms) and the academy's honesty constraints
+(already modeled in `lib/content/authority.ts` from an earlier batch, now
+finally consumed by a rendering component), plus the studio's 5-business-day
+client-approval deadline for the Proceso section — closing the open item
+batch 9 recorded (a process gating 3 of 5 phases on approval stalls when the
+client goes quiet, with no stated consequence).
+
+**Where**:
+
+- `lib/content/retainer.ts` (rewritten) — `RETAINER_COMMITMENTS` populated:
+  - `responseWindow`: `set`, two `ResponseTier` entries (`"Sitio caído"` →
+    `"Mismo día hábil"`; `"Cualquier otro caso"` → `"2 días hábiles"`).
+  - `channels`: stays `pending` — not supplied this batch.
+  - `scopeModel` (new field, **replaces** the old stub `monthlyHours:
+    Commitment<number>`): `set`, states scope is bound by task type, not an
+    hour bucket. Verified `monthlyHours` had zero call sites anywhere in the
+    codebase before this change, so the rename/replacement is free.
+  - `includedScope`: `set`, 4 entries (security/dependency patches; uptime
+    monitoring + backups; changes to existing content; bug fixes).
+  - `excludedScope`: `set`, 4 entries (new functionality; visual redesign;
+    content creation; third-party costs — managed, not absorbed).
+  - `bugVsFeatureBoundary` / `contentChangeScope` (new fields): both `set`,
+    both state honestly that the boundary is resolved case-by-case in
+    conversation because no fixed rule exists yet — not a fabricated
+    threshold, and not silently omitted either. A future fixed rule replaces
+    the same field's `value` later; no restructuring needed.
+  - `cancellationTerms`: `set`, "30 días de aviso, sin penalidad."
+  - All scalar/tuple values upgraded from plain `string`/`string[]` to
+    `Localized<string>`/`Localized<string>[]` for consistency with every
+    other rendered domain-content type in `lib/content/**` (e.g.
+    `ServiceLineDefinition`, `ProcessPhase`) — a deviation from the original
+    PR 2a stub shape, justified because that stub predates any real content
+    and had zero consumers to break.
+- `components/sections/authority.tsx` (new) — landing section 5. Renders
+  `ACADEMY.name`/`description` plus a conditional media slot (empty today —
+  no capture exists, blocked on 3.H1). The link is rendered by
+  `renderLink()`, an exhaustive switch on `ACADEMY.state`: the `no-link`
+  branch returns `null` (structurally absent, not conditionally hidden); the
+  `linked` branch (unreachable today) renders the anchor. No number appears
+  anywhere in this component or in `ACADEMY`'s data — `Authority`'s `no-link`
+  variant has no field to hold a scale claim.
+- `components/sections/retainer.tsx` (new) — landing section 7. Renders each
+  `RETAINER_COMMITMENTS` field only when its `Commitment` is `"set"` — a
+  `"pending"` field (today: `channels`) renders nothing, never a fabricated
+  value or a visible placeholder. No price or hour figure anywhere. No
+  testimonial markup exists in the component at all.
+- `app/[locale]/page.tsx` — composes `<Authority>` and `<Retainer>` after
+  `<Portfolio>`. Section 6 (Precios summary) is the one deliberate gap
+  between them, documented in the updated doc comment.
+- `lib/content/process.ts` — added
+  `ProcessContent.clientApprovalDeadlineBusinessDays: number`, set to `5`.
+  Distinct from the still-open "client-side approval response time" item
+  batch 9 recorded — this is "how long can the client sit on a phase before
+  the timeline moves", not "how fast does the studio respond".
+- `components/sections/process.tsx` — renders the new field as a sentence:
+  "Tienes 5 días hábiles para aprobar una fase pendiente de tu revisión;
+  pasado ese plazo, el proyecto se pausa y la fecha de entrega se
+  recalcula."
+- `lib/dictionaries/types.ts` / `es.ts` — added `AuthorityDictionary`
+  (`heading`, `intro`, `visitCta`) and `RetainerDictionary` (`heading`,
+  `responseHeading`, `includedHeading`, `excludedHeading`,
+  `cancellationLabel`); extended `ProcessDictionary` with
+  `approvalDeadlinePrefix`/`approvalDeadlineSuffix`. All Spanish, neutral
+  professional register, no regional slang.
+- `lib/content/invariants.ts` — two new checks (requirement per this batch's
+  launch instructions, hard constraint 6):
+  - `checkAuthorityNoLinkWhileUndeployed`: fails the build if `ACADEMY.state`
+    is ever `"linked"` while the new `ACADEMY_VERIFIED_UNREACHABLE` constant
+    (`true`, recording this batch's verified fact: private repo, 404
+    deployment) is still `true`. Flipping the academy's state without also
+    updating that flag is the exact class of silent-drift bug this file's
+    other 9 checks already guard against.
+  - `checkRetainerCommitmentsNotBlank`: fails the build if any
+    `RETAINER_COMMITMENTS` field marked `"set"` is blank for any locale.
+    `"pending"` fields are exempt (the designed unresolved state).
+- `openspec/changes/dev-services-website/tasks.md` — tasks 3.5/3.6 marked
+  `[x]` with full deviation notes; task 3.2's note extended with the
+  approval-deadline addendum; PR 3b's `3.9` entry and PR 3's `3.V3`/`3.V4`/
+  `3.V5` verification entries updated to reflect Autoridad/Retainer now being
+  implemented; 3.7/3.8 explicitly re-confirmed as still out of scope.
+
+**Learned**:
+
+- The literal `monthlyHours: Commitment<number>` field from the PR 2a stub
+  could not honestly hold "the studio deliberately has no hour-bucket
+  model" — `pending` would misrepresent a *settled* decision as an *open*
+  one. Renaming it to `scopeModel: Commitment<Localized<string>>` (zero
+  existing consumers, confirmed by repo-wide grep before the change) was
+  the honest fix, not a `pending` placeholder that would never resolve.
+- Two retainer boundaries (bug-fix-vs-feature, content-edit size) were
+  explicitly named as undefined by the launch instructions, with an
+  explicit warning not to silently invent or drop them. Modeled both as
+  `Commitment<Localized<string>>` fields whose *current, true* value states
+  the boundary is resolved conversationally — this is not the same as
+  `pending` (which would imply nothing is decided) nor a fabricated
+  threshold (which would misrepresent an open question as closed). A real
+  threshold later is a value swap on the same field, not a restructuring.
+- `specs/trust-signals/spec.md`'s "Retainer Published Commitments"
+  requirement literally lists "monthly hours" as a checkable value. This
+  batch's actual supplied content rejects an hour model entirely. Per this
+  codebase's established discipline (see `lib/content/process.ts`'s and
+  `components/sections/services.tsx`'s own deviation notes from earlier
+  batches), the deviation is documented rather than silently applied: the
+  requirement's underlying intent — a structured, checkable scope
+  commitment, not a vague promise — is satisfied by `scopeModel`, just not
+  by the literal noun "hours".
+- Verification performed (no browser, all evidenced via compiled HTML/build
+  output):
+  - `npm run build` exit 0, only the pre-existing non-strict
+    `NEXT_PUBLIC_SITE_URL` warning (task 2.H2, still open — not a new
+    condition).
+  - `npm run lint` exit 0, only the 2 pre-existing
+    `hover-border-gradient.tsx` warnings, zero new.
+  - `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://example.test npm run
+    build` exit 0, clean.
+  - Compiled `.next/server/app/es.html` (fresh production build), extracted
+    `id="autoridad"`: zero `href`/`<a` elements, zero numeric scale claims.
+  - Extracted `id="retainer"`: both response tiers, all 4 inclusions, all 4
+    exclusions, cancellation line, both boundary notes all render as
+    structured elements; grepped the extracted markup for a price/hour
+    figure — none found.
+  - Extracted `id="proceso"`: confirms the 5-business-day deadline sentence
+    and its pause/recalculation consequence render, alongside the unchanged
+    5-phase sequence and 2-revision-round sentence from batch 9.
+  - Section order by string offset in the fresh compiled `es.html`: hero
+    heading (2665) < `id="servicios"` (7864) < `id="proceso"` (9812) <
+    `id="proyectos"` (12594) < `id="autoridad"` (22830) < `id="retainer"`
+    (23667) — Hero < Servicios < Proceso < Proyectos < Autoridad < Retainer,
+    with the Precios (section 6) gap sitting, as intended, between Autoridad
+    and Retainer.
+  - Headcount grep (`equipo`/`nuestros`/`nosotros`/`staff`, case-insensitive)
+    against the fresh compiled `es.html`: same 2 pre-existing hits as batch
+    9 ("Tú pones la idea, nosotros la magia" — figure of speech; "Explora
+    nuestros proyectos" — possessive), both unmodified hero copy from
+    earlier batches. Zero new hits from this batch's Autoridad/Retainer/
+    Proceso additions — all new copy checked and confirmed impersonal
+    (no "nuestro equipo"/"nuestros desarrolladores"/"staff" anywhere).
+  - Confirmed zero new `"use client"` files: `grep -rl '"use client"'
+    components app` still returns only the two pre-existing files
+    (`hero-parallax.tsx`, `hover-border-gradient.tsx`).
+  - Confirmed zero new `as Route` casts: `grep -n "as Route"` across the new
+    /changed files returns nothing.
+  - Fault-injection re-proof of the two new invariants: blanked
+    `RETAINER_COMMITMENTS.cancellationTerms`'s value to `{ es: "" }`, ran
+    `VERCEL_ENV=production npm run build` → real exit code 1
+    (`RETAINER_COMMITMENTS.cancellationTerms is "set" but blank.`), restored
+    the exact original string via `Edit`, rebuilt clean (`npm run build`
+    exit 0, same single pre-existing warning as before).
+- **Open items, explicitly not closed by this batch**:
+  - The client-side approval RESPONSE-TIME question (how fast the studio
+    turns around a client's review) remains open — distinct from the
+    approval DEADLINE now closed (`clientApprovalDeadlineBusinessDays`).
+  - The two retainer boundaries (bug-fix-vs-feature, content-edit size) are
+    modeled but not resolved to a fixed rule — see "Learned" above.
+  - Tasks 3.7/3.8/4.0 (pricing components + summary) remain blocked on
+    task 4.H1 (price figures + currency decision) — still entirely
+    unsupplied. No figure was invented anywhere in this batch.
+  - `channels` (retainer support channels — email/WhatsApp/phone/ticket)
+    remains `pending` — not asked this batch.
+  - PR 4, PR 5, PR 6b remain entirely unimplemented, same as batch 9.
+
+### Commits (in order, `feat/landing-autoridad-retainer`, this batch)
+
+1. `967be31` — feat(content): give the retainer real commitments and the
+   process a client approval deadline
+2. `2d2bcef` — feat(landing): render Autoridad and Retainer sections,
+   surface the approval deadline in Proceso
+3. (this docs commit) — docs(sdd): mark tasks 3.5/3.6 complete, record
+   PR 3b apply progress
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
+## Status (cumulative, through Batch 10)
+
+39/39 PR 1-2c/6a code tasks + 5/5 `fix/content-honesty` tasks + 4/4
+`fix/restore-consented-content` tasks + 6/6 PR 3a code tasks (unchanged, see
+above) + **2/4 PR 3b code tasks complete (3.5 Autoridad, 3.6 Retainer — both
+done; 3.7 moved to PR 4 as task 4.0, still blocked on pricing figures; 3.8
+Precios summary, still blocked on 4.0 and 4.H1)**.
+
+PR 4, PR 5, PR 6b remain entirely unimplemented — all blocked on business
+content the user has not supplied (pricing figures + currency, case-study
+write-up approval/content, WhatsApp number, DNS domain verification,
+remaining project consent/captures). Retainer `channels` remains `pending`.
+The two retainer boundary notes (bug-vs-feature, content-edit size) and the
+client-side approval response-time question remain open items, not rendered
+as fixed commitments anywhere.
+
+Ready for `sdd-verify` to re-validate this batch against the spec/design, or
+`sdd-apply` to continue once the user supplies the pricing figures/currency
+blocking the rest of PR 3b (3.7/3.8) and PR 4.

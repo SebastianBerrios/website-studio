@@ -390,6 +390,15 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
       unsupplied. Adding it later is one new optional field on
       `ProcessContent`, not a restructuring — every consumer already reads
       through the single exported `PROCESS` constant.
+      **Addendum, closed in the PR 3b batch**: the user supplied a *different*
+      but related fact — not how fast the studio responds, but how long the
+      client may sit on a gated phase: 5 business days to approve, after
+      which the project pauses and the delivery date is recalculated, stated
+      up front. `ProcessContent.clientApprovalDeadlineBusinessDays: number`
+      (set to `5`) and `components/sections/process.tsx`'s rendered sentence
+      close this. The client-side approval RESPONSE-TIME question above
+      remains open and distinct; only the client-side approval DEADLINE
+      question is resolved.
 - [x] 3.3 Create `components/portfolio/project-card.tsx`,
       `components/portfolio/evidence.tsx` (switches on the 4 evidence
       states), `components/portfolio/service-badge.tsx` (Server). — *design
@@ -436,25 +445,87 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 
 ### PR 3b — Autoridad, Retainer, Precios summary
 
-- [ ] 3.5 Create `components/sections/authority.tsx` (Server): renders
+> **Partial-PR note (this apply batch):** implemented tasks 3.5 (Autoridad)
+> and 3.6 (Retainer) on `feat/landing-autoridad-retainer` (based on
+> `feat/landing-servicios-proyectos`), plus the Proceso 5-business-day
+> approval-deadline addition recorded under task 3.2 above. Tasks 3.7 (moved
+> to PR 4 as 4.0) and 3.8 (Precios summary) remain explicitly OUT of scope
+> for this batch — no price figure or currency has been supplied for any of
+> the 8 tokens in `lib/content/pricing.ts`; every entry is honestly
+> `pending`. Building a pricing summary or the `Price`/`PricePending`
+> components without real figures would either invent a number or render an
+> empty shell — both rejected. See apply-progress.md for the full reasoning.
+
+- [x] 3.5 Create `components/sections/authority.tsx` (Server): renders
       `ACADEMY` from `lib/content/authority.ts` in `no-link` state — brand
       mark/local screenshot only, no CTA/link. — *design §8.1; trust-
       signals: Academy Block Placement, No-Link State, No-Scale-Claim*
-- [ ] 3.6 Create `components/sections/retainer.tsx` (Server): renders
+      Implemented as specified: `ACADEMY.media` is empty (no capture exists
+      yet, blocked on 3.H1), so the image slot renders nothing rather than a
+      broken frame; the link is rendered via an exhaustive switch on
+      `ACADEMY.state` whose `no-link` branch returns `null` (structurally,
+      not conditionally, absent) — same discipline as
+      `components/portfolio/evidence.tsx`. No student/course/review count
+      anywhere; `Authority`'s `no-link` variant has no field to hold one.
+      `lib/content/invariants.ts`'s new `checkAuthorityNoLinkWhileUndeployed`
+      fails the build if `ACADEMY.state` ever flips to `"linked"` without a
+      matching update to the verification flag. Verified by fault injection
+      (blanking a different retainer field — see task 3.6's note; both new
+      checks share the same test run) — see apply-progress.md.
+- [x] 3.6 Create `components/sections/retainer.tsx` (Server): renders
       `RETAINER_COMMITMENTS` structured fields — no testimonial. — *design
       §8.2; trust-signals: Retainer Published Commitments, Itemized
       Maintenance Scope, No Testimonial Without Consent*
+      Implemented with the content the user supplied this batch: a two-tier
+      response window (site down → same business day; everything else → 2
+      business days), a task-type scope model (explicitly no monthly hour
+      allowance — see `lib/content/retainer.ts`'s deviation note replacing
+      the stub `monthlyHours` field with `scopeModel`), 4 inclusions, 4
+      exclusions, and 30-days-notice/no-penalty cancellation. `channels`
+      stays `pending` — not supplied this batch. No monthly price or hour
+      figure appears anywhere (confirmed in compiled markup — see
+      apply-progress.md).
+      **Two undefined boundaries, modeled rather than invented or silently
+      dropped**: `bugVsFeatureBoundary` (bug fix vs. new functionality) and
+      `contentChangeScope` (a size bound on "changes to existing content").
+      Both are `Commitment<Localized<string>>` fields set to the honest
+      current answer — resolved case-by-case in conversation, no fixed rule
+      yet — so a future fixed rule replaces the same field's value later
+      without restructuring the type or the component.
+      `lib/content/invariants.ts`'s new `checkRetainerCommitmentsNotBlank`
+      fails the build if any commitment marked `"set"` is blank. Verified by
+      fault injection: blanked `cancellationTerms`'s value, ran
+      `VERCEL_ENV=production npm run build` → real exit code 1
+      (`RETAINER_COMMITMENTS.cancellationTerms is "set" but blank.`),
+      restored the exact original string, rebuilt clean (exit 0).
 - [ ] ~~3.7~~ **Moved to PR 4 as task 4.0** — `components/pricing/price.tsx`
       and `price-pending.tsx`. PR 4 is their first consumer, so leaving them
       here would make PR 4 depend on a later PR. See "Delivery order
-      correction".
+      correction". **Still out of scope**: no price figure supplied.
 - [ ] 3.8 Create `components/sections/pricing-summary.tsx` (Server): subset
       of the full tier anatomy + link to `/[locale]/precios`, which resolves
       because PR 4 shipped before this PR. Reuses `Price`/`PricePending`
       from task 4.0. — *landing-narrative: Precios Summary Section Contract*
-- [ ] 3.9 `app/[locale]/page.tsx`: compose sections 2-7 in the fixed order
+      **Still out of scope, explicitly excluded from this batch**: blocked on
+      task 4.H1 (price figures + currency decision) and on task 4.0
+      (`Price`/`PricePending` components) — neither exists. Building this
+      section now would mean either inventing a figure or shipping an empty
+      shell; both are worse than the honest gap in
+      `app/[locale]/page.tsx` between Autoridad (section 5) and Retainer
+      (section 7).
+- [x] 3.9 `app/[locale]/page.tsx`: compose sections 2-7 in the fixed order
       between the hero (section 1, PR 2) and the brief/footer placeholders
       (sections 8-9, PR 6). — *landing-narrative: Fixed Section Order*
+      **Partial, updated this batch**: now composes sections 1 (Hero), 2
+      (Servicios), 3 (Proceso), 4 (Proyectos), 5 (Autoridad, this batch), and
+      7 (Retainer, this batch). Section 6 (Precios summary) is the one
+      deliberate gap — task 3.8 above. Relative order among rendered
+      sections is correct (Hero < Servicios < Proceso < Proyectos <
+      Autoridad < Retainer); the section-6 gap is filled once PR 4 supplies
+      pricing figures, not reordered around. Marked `[x]` because every
+      section this batch is responsible for composing is composed in the
+      correct relative order — the remaining gap is task 3.8's, not this
+      task's, to close.
 
 ### Human tasks
 
@@ -493,17 +564,31 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 - [x] 3.V3 **Human** (performed by the apply agent via compiled HTML, not a
       browser): verify section order top-to-bottom matches Hero → Servicios
       → Proceso → Proyectos → Autoridad → Precios → Retainer.
-      **Partially checkable this batch**: confirmed in `.next/server/app/
-      es.html` that Hero (2665) < Servicios (7864) < Proceso (9812) <
-      Proyectos (12368) by string offset of each section's heading/id;
-      Autoridad/Precios/Retainer are not built yet (3.5-3.8 out of this
-      batch's scope, PR 3b).
-- [ ] 3.V4 **Human**: verify the Academy block has no clickable link/CTA and
-      no scale claims. **Not applicable this batch** — Autoridad (task 3.5)
-      is PR 3b scope, not implemented.
-- [ ] 3.V5 **Human**: verify the retainer section shows structured values,
-      not prose promises, and no testimonial. **Not applicable this batch**
-      — Retainer (task 3.6) is PR 3b scope, not implemented.
+      **Updated this batch**: confirmed in `.next/server/app/es.html` (fresh
+      `VERCEL_ENV=production` build) that Hero (2665) < Servicios (7864) <
+      Proceso (9812) < Proyectos (12594) < Autoridad (22830) < Retainer
+      (23667) by string offset of each section's heading/id. Precios
+      (section 6) is the one deliberate gap between Autoridad and Retainer —
+      no price figure exists yet (task 3.8/4.H1). Every section this batch
+      is responsible for is in the correct relative order.
+- [x] 3.V4 **Human** (performed by the apply agent via compiled HTML, not a
+      browser): verify the Academy block has no clickable link/CTA and no
+      scale claims. **Implemented this batch**: extracted the compiled
+      `id="autoridad"` section — contains zero `href`/`<a` elements and zero
+      numeric scale claims (no student/course/review count anywhere). Text
+      content is exactly `ACADEMY.name` + `ACADEMY.description.es` + the
+      dictionary's framing sentence — no CTA markup rendered at all, because
+      `renderLink()`'s `no-link` branch returns `null`.
+- [x] 3.V5 **Human** (performed by the apply agent via compiled HTML, not a
+      browser): verify the retainer section shows structured values, not
+      prose promises, and no testimonial. **Implemented this batch**:
+      extracted the compiled `id="retainer"` section — both response tiers
+      (`Sitio caído` → `Mismo día hábil`; `Cualquier otro caso` → `2 días
+      hábiles`), all 4 inclusions, all 4 exclusions, and the cancellation
+      line all render as discrete `<dt>/<dd>`/`<li>` structured elements, not
+      a paragraph of prose. No monthly price or hour figure appears anywhere
+      in the section (grepped the extracted markup). No testimonial markup
+      exists in the component at all — nothing to hide or comment out.
 - [x] 3.V6 **Human** (performed by the apply agent via compiled HTML, not a
       browser): verify every portfolio grid card's evidence state renders
       honestly (no broken image frame for `no-visual` entries). Confirmed in
