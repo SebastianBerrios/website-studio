@@ -146,13 +146,14 @@ Design decisions: D4, D6.
 - [x] 1.H2 **[HUMAN]** Confirm `https://www.atemporalarq.com/` is live
       (currently UNVERIFIED). If unreachable, flag the Atemporal entry for a
       future evidence-state downgrade (affects PR 5, not this slice's
-      structure). **Closed, negatively**, by the `fix/content-honesty`
-      remediation slice: `nslookup`/`curl` confirm NXDOMAIN on the apex and
-      `www`, from a resolver that correctly resolved the other three
-      project domains in the same run. `atemporal` is downgraded to
-      `evidence.state: "not-deployed"` (see verify-report.md finding C2).
-      One independent cross-network check is still recommended before
-      treating this as permanent.
+      structure). Closed negatively by `fix/content-honesty`
+      (`atemporalarq.com` confirmed NXDOMAIN), then **re-opened and closed
+      positively** by the `fix/restore-consented-content` remediation slice:
+      the studio moved to `https://atemporalarq.vercel.app/`, verified HTTP
+      200, `<title>Atemporal</title>`, no login wall, ~0.36s response. The
+      old `atemporalarq.com` finding stands (still NXDOMAIN) — the site
+      simply moved. `atemporal` is back to `evidence.state: "live"` pointing
+      at the new URL.
 
 ### Verification
 
@@ -390,6 +391,13 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 - [ ] 3.H2 **[HUMAN]** Confirm consent for `wedding-invitation-piero`
       (couple), `blu-biolink` (proprietary per README), and `blu` (sanitized
       capture) before their entries leave `withheld`/anonymized state.
+      **`blu` closed, granted**, by the `fix/restore-consented-content`
+      remediation slice: the client authorized use of the back-office
+      dashboard capture (user-stated consent, dated that session — not a
+      signed agreement). `blu` flips to `consent: granted, namedClient:
+      true` (client named as "Blu Café") and `evidence: gated` with the
+      restored `blucafefinance.png` capture plus a login-note/permission
+      disclosure. `wedding-invitation-piero` and `blu-biolink` remain open.
 - [x] 3.H3 **[HUMAN]** Carry forward 1.H2 if `atemporalarq.com` liveness is
       still unconfirmed. **Resolved via 1.H2** — see its note above.
 
@@ -701,6 +709,80 @@ findings and the coupled hero-floor decision.
       `/es#proyectos` (confirmed positioned after the CTA in document
       order), `https://luang.com.pe/`, `https://blucafe.vercel.app/`. No
       `atemporalarq.com` link remains anywhere in the built output.
+
+---
+
+## Remediation slice — `fix/restore-consented-content` (post-`fix/content-honesty`)
+
+Reverses two `fix/content-honesty` corrections now that the underlying facts
+changed, and fixes verify-report.md finding W9 (approved by the user). Confined
+to `lib/content/**`, `public/projects/blucafefinance.png`, and
+`components/ui/hover-border-gradient.tsx`. Does not widen scope beyond these
+three items.
+
+- [x] RC1 (reverses R2) Atemporal Studio's site was found live at
+      `https://atemporalarq.vercel.app/` (orchestrator-verified: HTTP 200,
+      `<title>Atemporal</title>`, no login wall, ~0.36s). `atemporal` flips
+      back from `not-deployed` to `evidence.state: "live"`, keeping the
+      existing `atemporal.png` thumbnail. The old `atemporalarq.com` NXDOMAIN
+      finding stands — the site simply moved. Closes task 1.H2 positively.
+- [x] RC2 (reverses R1) The client granted consent to use the `blu`
+      back-office capture (session-dated user-stated consent, not a signed
+      agreement). Restored `public/projects/blucafefinance.png` via
+      `git checkout b6f68cf~1 -- public/projects/blucafefinance.png` (no
+      history rewrite). `blu`'s consent flips to `granted`/`namedClient:
+      true` (client named: "Blu Café"); the anonymised "Alimentos y bebidas
+      … Tamaño no determinado" framing is dropped. `blu`'s evidence flips to
+      `gated` (not `live`): the product itself is genuinely behind a login
+      (`blucafefinance.vercel.app` returns 200 with a password field,
+      VERIFIED). `lib/content/projects/media.ts`'s `alt` text is corrected
+      to describe the AUTHENTICATED dashboard (client logo, "Bienvenido a
+      Blu Café" heading, sidebar: Categorías/Productos/Ingredientes/
+      Recetas/Ventas) — the prior "pantalla de inicio de sesión" description
+      was false and is why finding C1 went unnoticed. `evidence.disclosure`
+      carries the explicit login note plus the permission line
+      (`specs/project-portfolio/spec.md`, "Evidence State Rendering").
+      Closes task 3.H2 for `blu` only (granted); `wedding-invitation-piero`
+      and `blu-biolink` remain open.
+- [x] RC3 (floor) `HERO_FLOOR` back to 4 in `lib/content/invariants.ts` — with
+      Luang, Atemporal, Blu Café, and `blu` all honest again, the hero
+      naturally has 4 entries. Comment explains the temporary dip to 3 during
+      `fix/content-honesty` and why 4 is restored, not a new requirement.
+- [x] RC4 (W9, user-approved) `components/ui/hover-border-gradient.tsx`:
+      when `href` is present, the inner wrapper no longer renders as the
+      `as` prop's tag (which defaults to `"button"`) — it renders as a plain,
+      non-interactive tag instead, so the anchor (`<Link href>` → `<a>`) is
+      the sole interactive element. Fixes the nested `<a><button>` defect
+      (verify-report.md W9, design risk 10) on the hero's sole CTA. Visual
+      output unchanged (same classes/timing, only the tag name changes);
+      `href`-absent behavior unchanged (still defaults to `<button>`).
+
+### Verification (this remediation slice)
+
+- [x] RC.V1 `npm run build` passes with `HERO_FLOOR = 4`.
+- [x] RC.V2 `npm run lint` passes — same 2 pre-existing
+      `hover-border-gradient.tsx` warnings, no new ones.
+- [x] RC.V3 Compiled `.next/server/app/es.html` hero CTA:
+      `<a href="/es#proyectos"><div class="relative flex border ...">` — zero
+      `<button` elements anywhere in the file, zero `<a><button` or
+      `<button><a` nesting.
+- [x] RC.V4 Built output contains `atemporalarq.vercel.app/` and zero
+      occurrences of `atemporalarq.com`.
+- [x] RC.V5 `blucafefinance.png` restored on disk, imported in `media.ts`,
+      referenced by `blu`'s `evidence.media`. **Partial**: the disclosure
+      line and explicit login note are correctly set in the data model
+      (`evidence.disclosure`), but no rendering component consumes them yet
+      — `components/portfolio/evidence.tsx` is PR 3a scope (task 3.3), not
+      yet implemented in this repo state. Today `blu` only reaches the hero
+      (`ProductCard`, title + thumbnail only, via `toHeroProducts()` since
+      `gated` passes its `no-visual` filter) — no portfolio grid card exists
+      to visually confirm the login note/disclosure render. This is reported
+      as a gap, not silently claimed as done.
+- [x] RC.V6 Fault-injection re-proof: blanked `luang`'s Spanish `summary`,
+      ran `VERCEL_ENV=production npm run build` → real exit code 1,
+      `Content integrity check failed: Project "luang" has an empty
+      "summary" for locale "es".` Restored via `Edit` (reverted to the exact
+      prior string) and rebuilt clean (exit 0).
 
 ## Cross-cutting notes
 

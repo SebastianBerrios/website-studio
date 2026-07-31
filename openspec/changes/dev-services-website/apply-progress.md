@@ -1431,3 +1431,199 @@ findings W3-W11/S1-S7, and the already-published copy of
 Ready for `sdd-verify` to re-validate this branch against the verify
 report's CRITICAL/WARNING findings, or for `sdd-apply` to continue with
 whichever of PR 4/PR 5/PR 6b the user unblocks next.
+
+---
+
+## Batch 7 — remediation slice `fix/restore-consented-content`, complete
+
+Branch: `fix/restore-consented-content`, based on `fix/content-honesty`.
+Mode: Standard (no test runner; `strict_tdd: false`).
+
+New facts reversed two `fix/content-honesty` corrections, plus one
+user-approved a11y fix. Scope held strictly to these three items.
+
+**RC1 (reverses R2, closes 1.H2 positively)** — Atemporal Studio's site was
+found live at `https://atemporalarq.vercel.app/`, verified by the
+orchestrator: HTTP 200, `<title>Atemporal</title>`, no login wall, ~0.36s
+response. The old `atemporalarq.com` NXDOMAIN finding stands — the site
+simply moved. `atemporal`'s `evidence` flips back from `not-deployed` to
+`{ state: "live", externalUrl: "https://atemporalarq.vercel.app/", media:
+[MEDIA.atemporal] }`, keeping the existing thumbnail unchanged.
+
+**RC2 (reverses R1, closes 3.H2 for `blu` only)** — the client authorized
+use of the `blu` back-office capture (user-stated consent, dated this
+session — not a signed agreement). Restored `public/projects/
+blucafefinance.png` via `git checkout b6f68cf~1 -- public/projects/
+blucafefinance.png` (working-tree restore only, no history rewrite — the
+file's original deletion commit `b6f68cf` is untouched). Re-imported it in
+`lib/content/projects/media.ts` with an `alt` that accurately describes the
+AUTHENTICATED dashboard (client logo, "Bienvenido a Blu Café" heading,
+sidebar: Categorías/Productos/Ingredientes/Recetas/Ventas) — the previous
+description as "la pantalla de inicio de sesión" was false and is the root
+cause finding C1 went unnoticed. `blu`'s `consent` flips to `{ status:
+"granted", namedClient: true }` (client named: "Blu Café" — read directly
+off the capture's own heading, not invented); the anonymised "Alimentos y
+bebidas … Tamaño no determinado" framing is dropped from `title`/`client`.
+`blu`'s `evidence` flips to `gated` (NOT `live`): the product itself
+genuinely sits behind a login (`blucafefinance.vercel.app` returns 200 with
+a password field, VERIFIED). `evidence.disclosure` carries the required
+explicit login note plus a permission line (`specs/project-portfolio/
+spec.md`, "Evidence State Rendering"). `wedding-invitation-piero` and
+`blu-biolink` remain open under 3.H2 — this only resolves `blu`.
+
+**RC3 (floor)** — `HERO_FLOOR` back to 4 in `lib/content/invariants.ts`. With
+`blu` restored to `gated` (passes the `no-visual` filter in
+`toHeroProducts()`) and `atemporal` back to `live`, the hero naturally has 4
+entries again (Luang, Atemporal, Blu Café, `blu`). Comment rewritten to
+explain the temporary dip to 3 during `fix/content-honesty` and why 4 is
+restored now, not a new stricter requirement.
+
+**RC4 (W9, user-approved)** — `components/ui/hover-border-gradient.tsx`
+returned `href ? <Link href={href}>{content}</Link> : content` where
+`content` was a `<Tag>` defaulting to `"button"`. With `as="button"` and an
+`href` (exactly `hero-header.tsx`'s CTA usage), the compiled output was
+`<a href="..."><button>…</button></a>` — nested interactive elements,
+invalid HTML, a real keyboard/screen-reader defect (verify-report.md W9,
+design risk 10), and the sole CTA on the sole shipped page. Fix: when `href`
+is present, the inner wrapper is now forced to a plain, non-interactive tag
+(`"div"`) regardless of the `as` prop — the anchor becomes the sole
+interactive element, owning focus/keyboard activation. When `href` is
+absent, behavior is unchanged (`as` still defaults to `"button"`). Visual
+output is byte-identical: same classNames, same timing values, same
+`containerClassName`/`className` split — only the rendered tag name changed
+from `button` to `div`, one level of nesting, no structural change. The 2
+pre-existing lint warnings on this file (`react-hooks/exhaustive-deps`,
+unused `event` param) are untouched — not fixed (out of scope), not made
+worse.
+
+### Discovered but not fixed — reported, not silently absorbed
+
+- **Duplicate hero display title.** `lib/content/projections.ts`'s
+  `publicTitle()` returns `project.client` (not `project.title`) whenever
+  `consent.status === "granted" && namedClient`. Both `blucafe` and `blu`
+  now satisfy that condition and both have `client: "Blu Café"` (the same
+  real company, two different products — the public site and the internal
+  back-office). Their hero cards will render the identical label "Blu Café"
+  with nothing distinguishing them (`HeroProduct` only carries `{title,
+  link, thumbnail}` — no subtitle slot). This is a direct, expected
+  consequence of the instructed consent change, not a bug introduced by
+  guesswork, and fixing it would mean changing shared title-derivation logic
+  used by every project — out of this batch's three-item scope. Flagged for
+  a future content/product decision (e.g. a distinguishing subtitle), not
+  fixed here.
+- **`blu`'s login note/disclosure line cannot be visually confirmed.** The
+  data model correctly carries `evidence.disclosure` (login note + the
+  "shown with the client's permission" line), but no rendering component
+  consumes it yet in this repo state: `components/portfolio/evidence.tsx`
+  (task 3.3, PR 3a) has not been implemented. Today `blu` only reaches the
+  hero (`ProductCard`, title + thumbnail only) — there is no portfolio-grid
+  card to inspect. Verification item 5 in the launch prompt asked to confirm
+  "blu's card renders its login note and disclosure line"; that cannot be
+  done honestly until PR 3a ships. Reported as a gap, not claimed as done.
+
+### Verification performed
+
+- `npm run build` (default, non-production) — exit 0. Verbatim:
+  ```
+  ▲ Next.js 16.1.1 (Turbopack)
+    Creating an optimized production build ...
+  ✓ Compiled successfully in 2.5s
+    Running TypeScript ...
+    Collecting page data using 11 workers ...
+  ✓ Generating static pages using 11 workers (6/6) in 607.1ms
+    Finalizing page optimization ...
+  Route (app)
+  ┌ ○ /_not-found
+  ├ ● /[locale]
+  │ └ /es
+  ├ ○ /robots.txt
+  └ ○ /sitemap.xml
+  ```
+- `npm run lint` — exit 0, verbatim:
+  ```
+  D:\Programming\Frontend\website-studio\components\ui\hover-border-gradient.tsx
+    68:6   warning  React Hook useEffect has missing dependencies: 'duration' and 'rotateDirection'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+    72:22  warning  'event' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
+  ✖ 2 problems (0 errors, 2 warnings)
+  ```
+  Same 2 pre-existing warnings as every prior batch; zero new ones.
+- **Nesting proof**: grepped the compiled `.next/server/app/es.html`.
+  `grep -oE '<a[^>]*><button'` and `grep -oE '<button[^>]*><a'` both matched
+  nothing; `grep -o '<button[^>]*>'` matched nothing at all — zero `<button>`
+  elements exist anywhere in the compiled output. Hero CTA markup:
+  `<div class="mt-4"><a href="/es#proyectos"><div class="relative flex
+  border content-center bg-black/20 hover:bg-black/10 transition duration-500
+  dark:bg-white/20 items-center flex-col flex-nowrap gap-10 h-min
+  justify-center overflow-visible p-px box-decoration-clone w-fit
+  cursor-pointer rounded-full">...<span>Explora nuestros proyectos</span>
+  ...</div></a></div>` — exactly one interactive element (the anchor).
+- **Atemporal URL proof**: `grep -o 'atemporalarq[^"&,]*' es.html` →
+  `atemporalarq.vercel.app/` (present, twice — link + flight-data JSON);
+  `grep -o 'atemporalarq\.com[^"&,]*' es.html` → zero matches.
+- **`blu` restoration proof**: `ls public/projects/blucafefinance.png` →
+  file present (1,341,195 bytes, restored from `b6f68cf~1`);
+  `grep -rn blucafefinance lib/content/` → referenced in `media.ts` (import +
+  map entry) and `index.ts` (`thumbnail` field + disclosure comment). See
+  "Discovered but not fixed" above for the rendering-gap caveat.
+- **Production-gate re-proof**: blanked `luang`'s Spanish `summary` to `""`,
+  ran `VERCEL_ENV=production npm run build` after `rm -rf .next` → real exit
+  code `1`:
+  ```
+  Error: Content integrity check failed:
+    - Project "luang" has an empty "summary" for locale "es".
+  Export encountered an error on /[locale]/page: /es, exiting the build.
+  ⨯ Next.js build worker exited with code: 1 and signal: null
+  ```
+  Restored the exact prior string via `Edit` (not `git checkout --`, since
+  the change was not yet committed at that point), confirmed `git diff
+  --stat` showed the file back to its full pre-fault-injection diff against
+  the prior commit, then rebuilt clean (`rm -rf .next && npm run build` —
+  exit 0, same output as the first verification run above).
+
+### Files changed (this batch)
+
+| File | Action | What was done |
+|---|---|---|
+| `public/projects/blucafefinance.png` | Restored (`git checkout b6f68cf~1 --`) | Client-authorized capture back on disk, no history rewrite |
+| `lib/content/projects/media.ts` | Modified | Re-added `blu` entry importing `blucafefinance.png`, with an accurate "authenticated dashboard" `alt` |
+| `lib/content/projects/index.ts` | Modified | `atemporal` → `live` (vercel.app URL); `blu` → `gated` + `consent: granted/namedClient`, named "Blu Café"; fault-injected then restored `luang.summary` for RC.V6 |
+| `lib/content/invariants.ts` | Modified | `HERO_FLOOR = 4` (was `3`); comment rewritten explaining the dip and restoration |
+| `components/ui/hover-border-gradient.tsx` | Modified | Inner wrapper forced non-interactive when `href` is present, fixing the nested `<a><button>` defect (W9) |
+| `openspec/changes/dev-services-website/tasks.md` | Modified | Closed 1.H2 positively (superseding its prior negative closure), closed 3.H2 for `blu` only, added the `fix/restore-consented-content` remediation section (RC1-RC4, RC.V1-RC.V6) |
+
+### Commits (in order, `fix/restore-consented-content`)
+
+1. `5402b1c` — fix(content): restore consented blu capture and atemporal live evidence
+2. `0291388` — fix(a11y): stop nesting a button inside the hero CTA anchor
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
+### Not fixed — explicitly out of scope
+
+- Verify-report findings W3, W5, W6, W8, W10, W11, S1-S7 — untouched,
+  reported not fixed, per the launch instructions.
+- The already-published copy of `blucafefinance.png` in git history — still
+  untouched; that repo-history exposure is the user's own separate decision
+  (noted again per the launch prompt: the `blu` repository is now private,
+  `website-studio` remains public, but repo visibility did not resolve
+  anything here — the client's authorization did).
+- The duplicate hero title (`blucafe`/`blu` both showing "Blu Café") and the
+  missing PR 3a evidence-rendering component — both discovered, both
+  reported above, neither fixed (out of this batch's three-item scope).
+
+## Status (cumulative)
+
+39/39 PR 1-2c/6a code tasks (unchanged) + 5/5 `fix/content-honesty`
+remediation tasks (R1-R5, unchanged) + 4/4 `fix/restore-consented-content`
+remediation tasks (RC1-RC4) complete. Both CRITICAL findings' underlying
+facts have now each flipped twice (dishonest → honestly-corrected →
+honestly-reversed as new facts arrived) and are currently: `blu` = `gated`
+with consented media and a login-note disclosure; `atemporal` = `live` at
+its real current URL. W1 and W2 remain resolved (untouched by this batch).
+W9 is fixed. Human tasks 1.H2 and 3.H2 (for `blu`) are closed.
+
+Ready for `sdd-verify` to re-validate against the verify report, or
+`sdd-apply` to continue with PR 4/PR 5/PR 6b once the user unblocks their
+remaining business-content prerequisites (pricing figures, retainer
+figures, case-study write-up approval, WhatsApp number, DNS domain
+verification, remaining project consent/captures).
