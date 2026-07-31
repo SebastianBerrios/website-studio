@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { DEFAULT_LOCALE } from "@/lib/content/locales";
 import { getDictionary } from "@/lib/dictionaries";
 
@@ -22,7 +21,7 @@ export default function LocaleNotFound() {
       <h1 className="text-3xl font-bold">{notFound.heading}</h1>
       <p className="max-w-md text-muted-foreground">{notFound.message}</p>
       <Link
-        href={`/${DEFAULT_LOCALE}` as Route}
+        href={`/${DEFAULT_LOCALE}`}
         className="underline underline-offset-4"
       >
         {notFound.backLink}

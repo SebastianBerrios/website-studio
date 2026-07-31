@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { DEFAULT_LOCALE } from "@/lib/content/locales";
 
 /**
@@ -26,7 +25,7 @@ export default function NotFound() {
         La página que buscas no existe o fue movida.
       </p>
       <Link
-        href={`/${DEFAULT_LOCALE}` as Route}
+        href={`/${DEFAULT_LOCALE}`}
         className="underline underline-offset-4"
       >
         Volver al inicio

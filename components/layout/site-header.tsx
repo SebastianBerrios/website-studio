@@ -24,7 +24,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     <header className="w-full border-b border-border/60">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 py-4">
         <Link
-          href={`/${locale}` as Route}
+          href={`/${locale}`}
           className="text-lg font-bold tracking-tight"
         >
           ElectroCode Studio
