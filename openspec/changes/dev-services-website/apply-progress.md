@@ -1956,19 +1956,176 @@ section itself).
 
 No push performed. No PR opened. No history rewrite. Local commits only.
 
+---
+
+## PR 3a (continued) — Proceso section (task 3.2), completing PR 3a's code tasks
+
+Batch: 9 of N — **task 3.2 only.** Same branch,
+`feat/landing-servicios-proyectos`, on top of the previous batch's two
+commits (`baef7d2`, `6838456`). PR 3b, PR 4, PR 5, PR 6b remain explicitly
+out of scope for this batch, unchanged from before.
+
+### Unblocking event
+
+The prior batch's "Task 3.2 (Proceso) — explicitly not implemented" note
+(above) recorded this as blocked on the studio's real engagement process and
+its response-time commitment, neither supplied at the time. This batch's
+launch instructions supplied the actual process: five phases — Descubrimiento,
+Propuesta y alcance, Diseño, Desarrollo, Entrega — with the first three
+requiring the client's explicit approval to proceed, plus a settled figure of
+2 included revision rounds (additional rounds quoted separately). The
+client-side approval response deadline was explicitly named as still
+unsupplied — the user was asked and did not answer — and the instructions
+were explicit that no such deadline should be invented or rendered as a
+placeholder resembling a real commitment.
+
+### What shipped
+
+- `lib/content/process.ts` (new): `ProcessPhase` (`id`, locale-keyed
+  `name`/`description`, `requiresApproval: boolean`) and `ProcessContent`
+  (`phases` typed as a 5-tuple — same "exactly N, compile-time guaranteed"
+  discipline as `SERVICE_LINES`'s `Record<ServiceLine, ...>` — plus
+  `revisionRoundsIncluded: number`). `PROCESS` instance: the five phases in
+  order, `requiresApproval: true` on Descubrimiento/Propuesta y
+  alcance/Diseño, `false` on Desarrollo/Entrega; `revisionRoundsIncluded: 2`.
+  Zero React imports, matching every other `lib/content/**` module.
+- `components/sections/process.tsx` (new, Server Component): renders
+  `PROCESS.phases` as an ordered list (`<ol>`), one card per phase (number,
+  name, description, and a visible approval badge rendered via ternary — not
+  `&&` — only when `requiresApproval` is `true`), plus a sentence built from
+  `revisionRoundsIncluded` and two dictionary-sourced label fragments. No
+  link/CTA in this section — nothing it could point at has a live target in
+  this batch's repo state.
+- `lib/dictionaries/types.ts` / `es.ts`: added `ProcessDictionary` (`heading`,
+  `approvalBadge`, `revisionsLabel`, `revisionsExtra`) and its Spanish values.
+  Phase names/descriptions themselves are NOT here — they are domain facts in
+  `lib/content/process.ts`, per design.md §5's dictionary-vs-content line.
+- `app/[locale]/page.tsx`: composes `<Process locale={validLocale} />`
+  between `<Services>` and `<Portfolio>`, completing the Hero → Servicios →
+  Proceso → Proyectos order for every section built so far.
+
+### Deviation, documented rather than silently applied
+
+`specs/landing-narrative/spec.md`'s "Proceso Section Contract" literally
+calls for a "response-time commitment... sourced from content data". No such
+commitment exists for mid-project client turns (the open item below) — only
+`RETAINER_COMMITMENTS.responseWindow` exists, and that covers a different
+phase of the relationship (post-launch maintenance requests), not this one.
+This batch satisfies the requirement's actual mechanism — a claim that
+changes without a component edit when the underlying data changes — using
+`revisionRoundsIncluded`, the one quantifiable commitment actually settled
+for this process. No response-time figure, day count, or deadline was
+invented to satisfy the requirement's literal noun instead of its mechanism.
+See `lib/content/process.ts`'s doc comment for the full reasoning.
+
+### Open item, explicitly not closed by this batch
+
+**The studio's client-side approval response deadline is unresolved.** How
+quickly the studio commits to turning around a client's review of a
+deliverable (discovery brief, proposal, or design draft) is not decided —
+the user was asked and did not answer. Nothing in this batch's code or copy
+renders a number, a day count, or any placeholder resembling a real
+commitment for it. `ProcessContent`'s shape absorbs this cleanly later: one
+new optional field, read by the same single `PROCESS` constant every
+consumer (today, only `process.tsx`) already imports — not a restructuring.
+This is distinct from `RETAINER_COMMITMENTS.responseWindow` (PR 3b, still
+`pending`), which is the tiered same-day/2-business-day retainer response
+window for post-launch requests — that value belongs in the Retainer
+section, not here, and this batch does not render it or contradict it.
+
+### Copy-voice check (no fabricated headcount)
+
+Every phase description uses first-person-plural studio voice matching the
+existing hero copy (`lib/dictionaries/es.ts`'s pre-existing "Diseñamos webs
+únicas..."/"...nosotros la magia"): "Relevamos...", "Definimos...",
+"Diseñamos...", "Construimos...", "Publicamos...". No "nuestro equipo",
+"nuestros diseñadores", "nuestro staff", or any phrase asserting a team of
+developers or employees appears anywhere in `lib/content/process.ts`,
+`components/sections/process.tsx`, or the new dictionary entries — confirmed
+by grepping the compiled `.next/server/app/es.html` for "equipo", "nuestros",
+"nosotros", "staff" (case-insensitive): zero hits inside the Proceso section;
+the only 2 "nuestros"/"nosotros" hits anywhere in the whole compiled page are
+both pre-existing hero copy from PR 2c ("Explora nuestros proyectos" —
+possessive, referring to the studio's own body of work; "nosotros la magia" —
+a figure of speech naming the studio as an entity, not a headcount claim),
+unrelated to and unmodified by this batch.
+
+### Verification performed
+
+- `npm run build` — exit 0. Same non-strict `NEXT_PUBLIC_SITE_URL` warning as
+  every prior non-production run in this change set (task 2.H2 still open);
+  not a new condition introduced by this batch.
+  ```
+  ▲ Next.js 16.1.1 (Turbopack)
+    Creating an optimized production build ...
+  ✓ Compiled successfully in 2.4s
+    Running TypeScript ...
+    Collecting page data using 11 workers ...
+  ✓ Generating static pages using 11 workers (6/6) in 559.5ms
+    Finalizing page optimization ...
+  Route (app)
+  ┌ ○ /_not-found
+  ├ ● /[locale]
+  │ └ /es
+  ├ ○ /robots.txt
+  └ ○ /sitemap.xml
+  ```
+- `npm run lint` — exit 0, same 2 pre-existing `hover-border-gradient.tsx`
+  warnings (`react-hooks/exhaustive-deps`, `no-unused-vars`), zero new ones.
+- `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://example.test npm run
+  build` — exit 0, same route table, no content-integrity violation (the
+  `NEXT_PUBLIC_SITE_URL` check that fires without production `env` no longer
+  fires once it is set; no other production-mode invariant tripped by this
+  batch's new module).
+- **Compiled Proceso section markup** (`.next/server/app/es.html`, extracted
+  by locating `id="proceso"`):
+  ```html
+  <section id="proceso" class="py-16 md:py-24"><div class="max-w-7xl mx-auto px-4">
+    <h2 class="text-2xl md:text-4xl font-bold">Proceso</h2>
+    <ol class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+      <li>...<h3>Descubrimiento</h3>...<span>Requiere tu aprobación para avanzar</span></li>
+      <li>...<h3>Propuesta y alcance</h3>...<span>Requiere tu aprobación para avanzar</span></li>
+      <li>...<h3>Diseño</h3>...<span>Requiere tu aprobación para avanzar</span></li>
+      <li>...<h3>Desarrollo</h3>...</li>  <!-- no approval badge -->
+      <li>...<h3>Entrega</h3>...</li>     <!-- no approval badge -->
+    </ol>
+    <p class="mt-8 text-sm text-muted-foreground">2 rondas de revisión incluidas. Rondas adicionales se cotizan aparte.</p>
+  </div></section>
+  ```
+  Confirms all five phases render in order, with the approval badge present
+  on exactly phases 1-3 and absent on 4-5, and `revisionRoundsIncluded`'s
+  value (`2`) appearing in the rendered sentence, not a hardcoded string.
+- **Section order, confirmed by string offset** in the same compiled file:
+  hero heading ("Tu proyecto es único") at offset 2665 < `id="servicios"` at
+  7864 < `id="proceso"` at 9812 < `id="proyectos"` at 12368 — Hero < Servicios
+  < Proceso < Proyectos, matching `specs/landing-narrative/spec.md`'s "Fixed
+  Section Order" for every section built so far.
+- **No client component created**: `grep -rl '"use client"' components app`
+  returns only the two pre-existing files (`hero-parallax.tsx`,
+  `hover-border-gradient.tsx`). `components/sections/process.tsx` does not
+  carry the directive.
+
+### Commits (in order, `feat/landing-servicios-proyectos`, this batch)
+
+1. `aa85396` — feat(landing): add Proceso section to the landing page
+2. `f98c0b3` — docs(sdd): mark task 3.2 complete, PR 3a code tasks done
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
 ## Status (cumulative, through this batch)
 
 39/39 PR 1-2c/6a code tasks + 5/5 `fix/content-honesty` tasks + 4/4
-`fix/restore-consented-content` tasks (all unchanged, see above) + **5/6 PR
-3a code tasks (3.1, 3.3, 3.4, 3.9, 3.10 complete; 3.2 explicitly blocked on
-user-supplied content, not implemented)**.
+`fix/restore-consented-content` tasks (all unchanged, see above) + **6/6 PR
+3a code tasks complete (3.1, 3.2, 3.3, 3.4, 3.9, 3.10 — all done)**.
 
-PR 3b, PR 4, PR 5, PR 6b remain entirely unimplemented — all blocked on
-business content the user has not supplied (pricing figures, retainer
-figures, case-study write-up approval/content, WhatsApp number, DNS domain
-verification, remaining project consent/captures) or, for task 3.2, on the
-studio's real process/response-time commitment specifically.
+PR 3a's code tasks are now fully complete. PR 3b, PR 4, PR 5, PR 6b remain
+entirely unimplemented — all blocked on business content the user has not
+supplied (pricing figures, retainer figures, case-study write-up
+approval/content, WhatsApp number, DNS domain verification, remaining
+project consent/captures). The client-side approval response deadline
+(distinct open item, see task 3.2 above) remains unsupplied and is not
+rendered anywhere.
 
 Ready for `sdd-verify` to re-validate this batch against the spec/design, or
-`sdd-apply` to continue once the user supplies the content blocking 3.2, PR
-3b, PR 4, PR 5, or PR 6b.
+`sdd-apply` to continue once the user supplies the content blocking PR 3b,
+PR 4, PR 5, or PR 6b.
