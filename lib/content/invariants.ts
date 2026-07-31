@@ -51,15 +51,12 @@
  *    mismatched state/media pair a type error before this file ever runs).
  *    The runtime check here is deliberately redundant defense-in-depth in
  *    case a future dynamic content source bypasses the type system.
- * 8. **Pending price/currency reaching production** — the logic is written
- *    below but gated by `PRICE_INTEGRITY_CHECK_ACTIVE`. Every `PRICES`
- *    entry is honestly `pending` until task 4.H1 supplies real figures
- *    (`lib/content/pricing.ts`), and PR 2c/PR 3 must still build and ship to
- *    production in the meantime (`stacked-to-main`). A check that requires
- *    every price to be `set` before any price has been decided would fail
- *    every intermediate build — exactly the self-defeating assertion
- *    design.md §6 explicitly rejected. Task 4.10 flips the flag once PR 4
- *    populates real figures.
+ * 8. **Pending price reaching production** — gated by
+ *    `PRICE_INTEGRITY_CHECK_ACTIVE`, now `true` (task 4.10): PR 4 populated
+ *    real figures in `lib/content/pricing.ts` for every one of the 8 tokens,
+ *    so a `pending` price reaching a production build is now a real defect,
+ *    not an expected intermediate state. Verified by fault injection — see
+ *    apply-progress.md.
  * 9. **Portfolio grid links only to published case studies** — per every
  *    locale's `toPortfolioCards()` (task 3.4/3.10). A card whose evidence is
  *    not `live` must not link to `/[locale]/proyectos/{slug}` unless
@@ -82,7 +79,7 @@ import "server-only";
 import { LOCALES } from "./locales";
 import { PROJECTS } from "./projects";
 import { toHeroProducts, toPortfolioCards } from "./projections";
-import { PRICES } from "./pricing";
+import { PRICES, type PriceEntry, type PriceToken } from "./pricing";
 import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
 import { caseStudyPath, isExternalHref } from "@/lib/links";
@@ -92,10 +89,11 @@ import { RETAINER_COMMITMENTS } from "./retainer";
 import type { Localized } from "./types";
 
 /**
- * Task 4.10 flips this to `true` once PR 4 populates real price figures in
- * `lib/content/pricing.ts`. See the file header, point 8.
+ * Task 4.10: flipped to `true` now that PR 4 has populated real price
+ * figures in `lib/content/pricing.ts` for every one of the 8 tokens. See the
+ * file header, point 8.
  */
-const PRICE_INTEGRITY_CHECK_ACTIVE = false;
+const PRICE_INTEGRITY_CHECK_ACTIVE = true;
 
 /**
  * Minimum hero entry count. Originally 4 by design. The
@@ -177,15 +175,23 @@ function checkNoSelfReferentialLinks(violations: string[]): void {
  * `checkNoSelfReferentialLinks` does NOT cover this. It only catches a link
  * equal to `/` or `/{locale}`. Route existence is a different property.
  *
- * LIVE_TARGETS must be extended as each slice lands: `/{locale}/precios` in
- * PR 4, `/{locale}/proyectos/{slug}` in PR 5, and the `#precios` anchor when
- * the pricing summary section ships in PR 3b. A link added before its target
- * fails the build — which is the point, since that exact mistake has already
- * been caught four times in this change set.
+ * LIVE_TARGETS must be extended as each slice lands: `/{locale}/precios`
+ * added in this same commit (task 4.10/hard constraint 2), now that
+ * `app/[locale]/precios/page.tsx` exists; `/{locale}/proyectos/{slug}` in
+ * PR 5. This function only walks `toHeroProducts()`, which does not itself
+ * link to `/precios` today — the entry is added anyway so a future hero
+ * change that does link there is covered immediately, not left for someone
+ * to notice this list is stale. A link added before its target fails the
+ * build — which is the point, since that exact mistake has already been
+ * caught four times in this change set.
  */
 function checkInternalLinksResolve(violations: string[]): void {
   for (const locale of LOCALES) {
-    const liveTargets = new Set<string>([`/${locale}`, `/${locale}#proyectos`]);
+    const liveTargets = new Set<string>([
+      `/${locale}`,
+      `/${locale}#proyectos`,
+      `/${locale}/precios`,
+    ]);
     for (const product of toHeroProducts(locale)) {
       // External hrefs are deliberately NOT reachability-checked here. This
       // is the exact gap finding C2 (`sdd/dev-services-website/verify-report.md`)
@@ -480,7 +486,13 @@ function checkEvidenceMediaShape(violations: string[]): void {
 
 function checkPendingPricesInProduction(violations: string[]): void {
   if (!PRICE_INTEGRITY_CHECK_ACTIVE) return;
-  for (const [token, entry] of Object.entries(PRICES)) {
+  // `Object.entries(PRICES)` widened explicitly to `PriceEntry` per value —
+  // task 4.1 populated every token as `"set"`, so without this widening
+  // TypeScript infers the narrower "every entry is literally 'set'" type and
+  // flags the `"pending"` comparison below as provably false. Same fix as
+  // `components/pricing/price.tsx`'s `Price` component.
+  const entries = Object.entries(PRICES) as [PriceToken, PriceEntry][];
+  for (const [token, entry] of entries) {
     if (entry.status === "pending") {
       violations.push(`Price token "${token}" is still "pending" in a production build.`);
     }

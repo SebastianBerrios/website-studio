@@ -10,12 +10,14 @@ export const es: Dictionary = {
   header: {
     brand: "ElectroCode Studio",
     projectsLink: "Proyectos",
+    pricingLink: "Precios",
     whatsappLink: "WhatsApp",
   },
   footer: {
     brand: "ElectroCode Studio",
     tagline: "Desarrollo web a medida, desde Perú.",
     projectsLink: "Proyectos",
+    pricingLink: "Precios",
     whatsappLink: "WhatsApp",
   },
   hero: {
@@ -27,6 +29,7 @@ export const es: Dictionary = {
   services: {
     heading: "Servicios",
     proofCta: "Ver proyectos",
+    pricingCta: "Ver precios",
   },
   process: {
     heading: "Proceso",
@@ -62,6 +65,61 @@ export const es: Dictionary = {
     includedHeading: "Qué incluye",
     excludedHeading: "Qué no incluye",
     cancellationLabel: "Cancelación:",
+  },
+  pricing: {
+    heading: "Precios",
+    introHeading: "Cómo funciona el precio",
+    introBody:
+      "Cada línea de servicio tiene un precio de referencia. Los planes fijos cubren un alcance definido; lo que no encaja en un plan fijo se cotiza a medida.",
+    launchNotePrefix: "Precios de lanzamiento para los primeros",
+    launchNoteSuffix:
+      "proyectos del estudio. Pueden actualizarse más adelante para nuevos proyectos.",
+    lineAHeading: "Landing pages y sitios corporativos",
+    lineCHeading: "Biolinks y microsites de evento",
+    lineBHeading: "Aplicaciones web y dashboards a medida",
+    lineDHeading: "Mantenimiento y evolución",
+    audienceLabel: "Para quién es",
+    deliverablesLabel: "Qué incluye",
+    notIncludedHeading: "Qué no incluye",
+    notIncludedPendingNote: "Exclusiones pendientes de definir.",
+    turnaroundLabel: "Tiempo de entrega",
+    turnaroundPendingNote: "Tiempo de entrega pendiente de definir.",
+    revisionsPrefix: "Incluye",
+    revisionsSuffix: "rondas de revisión.",
+    quoteShapesHeading: "Tipos de proyecto habituales",
+    quoteVariablesHeading: "Qué mueve el precio",
+    quoteProcessHeading: "Cómo cotizamos",
+    quoteFloorPrefix: "Desde",
+    termsHeading: "Condiciones generales",
+    alwaysIncludedHeading: "Siempre incluido",
+    alwaysExtraHeading: "Siempre aparte",
+    paymentScheduleLabel: "Forma de pago",
+    paymentSchedulePendingNote: "Forma de pago pendiente de definir.",
+    ctaHeading: "¿Conversamos sobre tu proyecto?",
+    ctaBody:
+      "Escríbenos por WhatsApp contándonos qué línea te interesa y te respondemos con los siguientes pasos.",
+    ctaButtonLabel: "Escribir por WhatsApp",
+    faq: {
+      heading: "Preguntas frecuentes",
+      priceReasonQuestion: "¿Por qué el precio no es más bajo?",
+      priceReasonAnswer:
+        "Estos ya son precios de lanzamiento, reducidos frente a lo que cobraremos una vez completados los primeros proyectos. Cada proyecto lo desarrolla directamente el estudio, sin intermediarios.",
+      laterChangesQuestion: "¿Qué pasa si necesito cambios más adelante?",
+      laterChangesAnswer:
+        "Cada proyecto incluye rondas de revisión durante el desarrollo (ver \"Condiciones generales\"). Después de la entrega, los cambios se cubren con un plan de mantenimiento (línea Mantenimiento) o se cotizan aparte.",
+      codeOwnershipQuestion: "¿Quién es dueño del código?",
+      codeOwnershipPendingAnswer:
+        "Pendiente de confirmar — todavía no hemos definido esta política públicamente.",
+      howToLeaveQuestion: "¿Cómo puedo dejar de trabajar con el estudio?",
+      howToLeaveAnswer:
+        "En un proyecto puntual no hay permanencia: lo entregado es tuyo al finalizar. Si estás en un plan de mantenimiento, la cancelación requiere 30 días de aviso, sin penalidad.",
+    },
+  },
+  pricingSummary: {
+    heading: "Precios",
+    intro:
+      "Un vistazo rápido a nuestras líneas de servicio. El detalle completo, con alcance y condiciones, está en la página de precios.",
+    viewFullPricingLink: "Ver precios completos",
   },
   notFound: {
     heading: "Página no encontrada",
