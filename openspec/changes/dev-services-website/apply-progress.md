@@ -1162,6 +1162,207 @@ No push performed. No PR opened. Local commits only, per instructions.
 
 ---
 
+## Remediation slice — `fix/content-honesty` (post-`sdd-verify`)
+
+Branch: `fix/content-honesty`, based on `feat/brief-server` (PR 6a's tip).
+Fixes both CRITICAL findings (C1, C2) and two WARNING findings (W1, W2)
+from `sdd/dev-services-website/verify-report.md`, plus the coupled
+`checkHeroFloor` change those two CRITICALs required. Mode: Standard (no
+test runner; `strict_tdd: false`). Scope held strictly to the four findings
+and the floor decision — nothing else was touched.
+
+### R1 (C1) — stop publishing the unconsented `blu` back-office capture
+
+`public/projects/blucafefinance.png` was not a login screen, as
+`lib/content/projects/media.ts`'s `alt` text falsely claimed — it is the
+**authenticated** `blu` back-office dashboard: client logo/wordmark in the
+sidebar, full nav tree (Categorías, Productos, Ingredientes, Recetas,
+Ventas), and the heading "Bienvenido a Blu Café". Consent to publish any
+capture of it is still open (task 3.H2).
+
+- Deleted `public/projects/blucafefinance.png` via `git rm` (working tree
+  only — this removes it from all future builds; the copy already
+  published in git history is explicitly the user's own separate decision,
+  out of this agent's scope).
+- Removed the `blucafefinance` entry and its import from
+  `lib/content/projects/media.ts`.
+- `blu`'s `evidence` flipped from `{ state: "gated", disclosure: {...},
+  media: [MEDIA.blucafefinance] }` to `{ state: "no-visual", media: [] }` —
+  satisfies `specs/project-portfolio/spec.md`'s "`no-visual` degrades
+  honestly" scenario (no broken frame, no grey placeholder). `blu` no
+  longer appears in the hero (`toHeroProducts()` filters `no-visual` out),
+  which is why the hero floor needed a paired decision (see R3).
+- `thumbnail: ""` on the `blu` entry (legacy field, matches the pattern
+  already used by `fast-route`/`blu-biolink`/`wedding-invitation-piero`).
+- Replaced the false "login screen" `alt` text — moot now, since the media
+  entry is deleted, but the comment explaining the removal states the
+  correct fact plainly instead of repeating the error.
+
+### R2 (C2) — correct `atemporal`'s dead evidence claim
+
+`atemporalarq.com` returns NXDOMAIN on both the apex and `www`
+(re-verified with `nslookup`/`curl` before writing this record), from a
+resolver that correctly resolved `luang.com.pe` and `blucafe.vercel.app` in
+the same run. The prior in-code justification ("local network/DNS
+restriction") does not hold against that evidence.
+
+- `atemporal`'s `evidence` flipped from `{ state: "live", externalUrl:
+  "https://www.atemporalarq.com/", media: [...] }` to `{ state:
+  "not-deployed", media: [MEDIA.atemporal] }`. The existing screenshot is
+  kept — it is a public marketing homepage capture, not a private system,
+  so the user's decision was to keep the thumbnail while dropping the dead
+  link. `publicLink()` already falls back to the landing anchor for
+  non-`live` evidence, so no dead external link ships.
+- `link` (legacy field) changed from the external URL to
+  `/es/proyectos/atemporal`, matching the pattern used by other non-`live`
+  entries.
+- `UNVERIFIED_LIVENESS` deleted from `lib/content/projects/index.ts` — it
+  was exported and read by nothing (confirmed by repo-wide grep before
+  deleting), and the liveness question it existed to flag is now answered
+  negatively rather than merely unresolved. A dangling, unread "tracking"
+  list is worse than no list because it looks like a control that isn't one.
+- `checkInternalLinksResolve` (`lib/content/invariants.ts`) is NOT extended
+  to cover external links. Documented in place, plainly: a build-time
+  DNS/HTTP probe of a third party's domain during `next build` is a live
+  network call — non-deterministic (this repo's own build already shows
+  flakiness around `.next/types` without adding external egress
+  dependencies), and often unavailable in sandboxed CI. External liveness
+  stays a periodic human/product check (task 1.H2, now closed negatively),
+  not an automated gate. Chosen over silently pretending coverage exists.
+
+### R3 (floor) — `checkHeroFloor` lowered from 4 to 3
+
+Both R1 and R2 remove an entry from the hero's `no-visual`/non-`live`
+filtering path in different ways (`blu` is filtered out entirely by
+`no-visual`; `atemporal` stays in the hero but loses its external link).
+Net hero count after both fixes: 3 (Luang, Atemporal, Blu Café). Rather
+than fabricate a fourth entry or leave the production build broken, the
+constant `HERO_FLOOR` (new, in `lib/content/invariants.ts`) is set to 3,
+with an in-file comment stating this is a temporary, documented
+launch-quality signal — not a new permanent target — that should rise as
+`fast-route`/`blu-biolink`/`wedding-invitation-piero`/`blu` captures and
+consent (tasks 3.H1/3.H2) land.
+
+### R4 (W1) — corrected the false `checkNoSelfReferentialLinks` claim
+
+`components/sections/hero-header.tsx`'s comment on the hero CTA's
+`landingAnchor(...) as Route` cast claimed `checkNoSelfReferentialLinks`
+covers what the cast waives. It does not: that function only inspects
+`toHeroProducts()` output and only tests equality with `/` or `/{locale}` —
+a different property than "does this anchor target exist". Neither it nor
+`checkInternalLinksResolve` ever sees this component's href. The comment
+now states plainly that no build-time control covers this cast, and why
+the target is safe today regardless (mirrors the already-accurate,
+already-corrected wording in `hero-parallax.tsx`'s sibling comment).
+
+### R5 (W2) — fixed the self-referential `#proyectos` anchor
+
+`id="proyectos"` wrapped the **entire** `<HeroParallax>` in
+`app/[locale]/page.tsx`, including the `header` slot that renders the
+"Explora nuestros proyectos" CTA — so the CTA (and both header/footer
+"Proyectos" nav links, which point at the same anchor) scrolled to the top
+of the section the visitor was already reading.
+
+- `HeroParallax` (`components/ui/hero-parallax.tsx`) gained an optional
+  `productsId` prop, applied only to the products-track wrapper
+  (`motion.div` after `{header}`), documented with a comment explaining the
+  W2 defect and why this placement fixes it.
+- `app/[locale]/page.tsx` now passes `productsId="proyectos"` directly to
+  `HeroParallax` instead of wrapping the whole component in an anchored
+  `<div>`.
+- Verified in compiled output (`.next/server/app/es.html`): exactly one
+  `id="proyectos"` element, positioned strictly after the CTA text
+  ("Explora nuestros proyectos") in document order.
+
+### Verification (remediation slice)
+
+- [x] `npm run build` passes (verbatim below).
+- [x] `npm run lint` passes — same 2 pre-existing
+  `hover-border-gradient.tsx` warnings, no new ones.
+- [x] Production-gate proof re-run: temporarily blanked `luang`'s Spanish
+  `summary`, rebuilt with `VERCEL_ENV=production` — real exit code 1,
+  `Content integrity check failed: Project "luang" has an empty "summary"
+  for locale "es".` Restored via `git checkout --` (safe: change was
+  already committed at that point) and rebuilt clean.
+- [x] `grep -rn "blucafefinance" .next/server/app/*.html lib/` — zero
+  matches (the two residual comment mentions found on the first pass were
+  rephrased to drop the literal filename).
+- [x] Full href/src inventory of `.next/server/app/es.html` and
+  `_not-found.html`: `/es`, `/es#proyectos`, `https://luang.com.pe/`,
+  `https://blucafe.vercel.app/`, `_next` assets, `favicon.ico`, the
+  absolute canonical. No `atemporalarq.com` anywhere in built output; the
+  `atemporal` product's compiled `link` is `/es#proyectos` (confirmed by
+  reading the embedded flight-data JSON in `es.html`).
+
+#### Build result (verbatim, exit 0)
+
+```
+> website-studio@0.1.0 build
+> next build
+▲ Next.js 16.1.1 (Turbopack)
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.1s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+✓ Generating static pages using 11 workers (6/6) in 625.3ms
+  Finalizing page optimization ...
+Route (app)
+┌ ○ /_not-found
+├ ● /[locale]
+│ └ /es
+├ ○ /robots.txt
+└ ○ /sitemap.xml
+```
+
+#### Lint result (verbatim, exit 0)
+
+```
+> website-studio@0.1.0 lint
+> eslint
+components/ui/hover-border-gradient.tsx
+  60:6   warning  react-hooks/exhaustive-deps
+  64:22  warning  @typescript-eslint/no-unused-vars
+✖ 2 problems (0 errors, 2 warnings)
+```
+
+### Files changed (remediation slice)
+
+| File | Action | What was done |
+|---|---|---|
+| `lib/content/projects/media.ts` | Modified | Removed `blucafefinance` entry/import; comment no longer names the deleted file |
+| `lib/content/projects/index.ts` | Modified | `blu` → `no-visual`; `atemporal` → `not-deployed`; deleted `UNVERIFIED_LIVENESS`; comments corrected |
+| `public/projects/blucafefinance.png` | Deleted (`git rm`) | Unconsented capture removed from the working tree going forward |
+| `lib/content/invariants.ts` | Modified | `HERO_FLOOR = 3` (was inline `4`); documented why `checkInternalLinksResolve` does not probe external URLs |
+| `components/sections/hero-header.tsx` | Modified | Corrected false `checkNoSelfReferentialLinks` coverage claim |
+| `components/ui/hero-parallax.tsx` | Modified | Added `productsId` prop, applied to the products-track wrapper |
+| `app/[locale]/page.tsx` | Modified | Passes `productsId="proyectos"` instead of wrapping `<HeroParallax>` in an anchored `<div>` |
+| `openspec/changes/dev-services-website/tasks.md` | Modified | Added Remediation section (R1-R5, R.V1-R.V5); closed 1.H2/3.H3 negatively |
+
+### Commits (in order, this batch, on `fix/content-honesty`)
+
+1. `b6f68cf` — fix(content): stop publishing unconsented blu capture, correct atemporal evidence
+2. `2645167` — fix(content): lower hero floor to 3, document external-link check gap
+3. `a959aaf` — docs(hero): correct false invariant-coverage claim on CTA cast (W1)
+4. `0d9ec22` — fix(hero): anchor #proyectos to the products track, not the whole hero (W2)
+5. `9f9c445` — docs(sdd): record content-honesty remediation slice in tasks.md
+6. `7fae2fd` — docs(content): drop the removed asset's filename from comments
+
+No push performed. No PR opened. Local commits only, per the launch
+constraints (no `git push`, no PR, no history rewrite).
+
+### Not fixed — explicitly out of scope
+
+- The already-published copy of `blucafefinance.png` in git history is
+  untouched. Its exposure is the user's own separate decision (explicitly
+  out of this agent's scope per the launch instructions); no
+  `filter-repo`/`filter-branch`/BFG/`git rm` from history was performed or
+  considered.
+- No other verify-report finding (W3-W11, S1-S7) was touched. If any of
+  those are urgent, they are reported, not fixed, per the launch
+  instructions.
+
+---
+
 ## Status
 
 **PR 1**: 9/9 code tasks complete. 2/2 automated gates pass. 2 human tasks
@@ -1216,6 +1417,17 @@ PR 6a complete. Per tasks.md's corrected delivery order, PR 4 (pricing page)
 and PR 5 (case studies) remain the nominal next slices but are blocked on
 user-supplied business content; PR 6b (`BriefForm` UI, landing wiring,
 `/gracias`) is unblocked and can proceed independently, since it depends only
-on PR 6a. Ready for `sdd-apply` to continue with whichever of PR 4/PR 5/PR 6b
-the user unblocks first, or `sdd-verify` to validate what has shipped so
-far.
+on PR 6a.
+
+**Remediation slice (`fix/content-honesty`)**: 5/5 remediation tasks (R1-R5)
+complete, both CRITICAL verify-report findings (C1, C2) resolved, two
+WARNING findings (W1, W2) resolved, hero floor lowered to 3 with a
+documented reason. `npm run build` and `npm run lint` both pass; the
+production integrity gate was re-proven to genuinely throw. Human tasks
+1.H2/3.H3 closed negatively. Not fixed, and not in scope: verify-report
+findings W3-W11/S1-S7, and the already-published copy of
+`blucafefinance.png` in git history (the user's own separate decision).
+
+Ready for `sdd-verify` to re-validate this branch against the verify
+report's CRITICAL/WARNING findings, or for `sdd-apply` to continue with
+whichever of PR 4/PR 5/PR 6b the user unblocks next.
