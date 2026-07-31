@@ -1,0 +1,141 @@
+/**
+ * Projections from the content model onto specific rendering contracts.
+ *
+ * See `openspec/changes/dev-services-website/design.md` §5, "The hero
+ * receives a projection", and task 2.11. Zero React imports — these are
+ * pure functions over `lib/content/**` data.
+ */
+
+import type { Locale } from "./locales";
+import type { Consent, Evidence, Project } from "./types";
+import type { ServiceLine } from "./service-lines";
+import { PROJECTS } from "./projects";
+import { caseStudyPath } from "@/lib/links";
+
+/**
+ * The exact prop shape `HeroParallax` has always consumed. Preserved
+ * unchanged per `specs/project-portfolio/spec.md`, "Hero Projection
+ * Preserves Prop Contract".
+ */
+export type HeroProduct = {
+  readonly title: string;
+  readonly link: string;
+  readonly thumbnail: string;
+};
+
+/** A grid card for the landing's portfolio section (PR 3a's consumer). */
+export type PortfolioCard = {
+  readonly slug: string;
+  readonly title: string;
+  readonly summary: Project["summary"];
+  readonly serviceLine: ServiceLine;
+  readonly evidence: Evidence;
+  readonly link: string;
+};
+
+/**
+ * The public-facing label for a project, honouring its `consent` state.
+ * Never returns `client` for anything other than `granted` +
+ * `namedClient: true` — see design.md §5, "Consent gates identification".
+ */
+function publicTitle(project: Project): string {
+  const { consent } = project;
+  switch (consent.status) {
+    case "granted":
+      return consent.namedClient ? project.client : project.title;
+    case "anonymised":
+      return `${consent.industry} — ${consent.size}`;
+    case "withheld":
+      // Unreachable in practice: `publishableProjects()` filters these out
+      // before this function is ever called. Kept exhaustive so a future
+      // caller that skips the filter fails loudly instead of leaking a
+      // withheld client's `client`/`title` field.
+      throw new Error(
+        `publicTitle() called on a withheld project ("${project.slug}") — ` +
+          "withheld projects must never reach a rendering function. Filter " +
+          "with publishableProjects() first.",
+      );
+    default: {
+      const exhaustiveCheck: never = consent;
+      throw new Error(`Unhandled consent status: ${String(exhaustiveCheck)}`);
+    }
+  }
+}
+
+/** The link a visitor should follow for this project, from any surface. */
+function publicLink(locale: Locale, project: Project): string {
+  return project.evidence.state === "live"
+    ? project.evidence.externalUrl
+    : caseStudyPath(locale, project.slug);
+}
+
+/** The primary media asset's `.src`, or `undefined` for `no-visual`. */
+function primaryThumbnail(evidence: Evidence): string | undefined {
+  return evidence.state === "no-visual" ? undefined : evidence.media[0].asset.src;
+}
+
+/**
+ * Every project not `withheld`. This is the set case-study routes and the
+ * sitemap enumerate over — broader than "featured" because a project can
+ * be publishable without (yet) being in the curated hero/grid set.
+ */
+export function publishableProjects(): readonly Project[] {
+  return PROJECTS.filter(
+    (project): project is Project & { consent: Exclude<Consent, { status: "withheld" }> } =>
+      project.consent.status !== "withheld",
+  );
+}
+
+/**
+ * The curated, `featured` project set — the same set the hero and the
+ * portfolio grid both project from. See specs/project-portfolio/spec.md,
+ * "Portfolio Grid Consistency With Hero".
+ */
+function featuredProjects(): readonly Project[] {
+  return publishableProjects().filter((project) => project.featured);
+}
+
+/**
+ * `HeroParallax`'s data source. Filters out `no-visual` projects — the
+ * hero is an image grid, and a text-only card inside a parallax row is
+ * incoherent (design.md §5). Those projects still appear in
+ * `toPortfolioCards()`.
+ */
+export function toHeroProducts(locale: Locale): readonly HeroProduct[] {
+  return featuredProjects()
+    .filter((project) => project.evidence.state !== "no-visual")
+    .toSorted((a, b) => a.order - b.order)
+    .map((project) => {
+      const thumbnail = primaryThumbnail(project.evidence);
+      if (thumbnail === undefined) {
+        // Unreachable given the filter above; kept as a loud runtime check
+        // so a future edit to the filter fails immediately instead of
+        // shipping an empty `thumbnail` to `next/image`.
+        throw new Error(
+          `Project "${project.slug}" has no media but was not filtered out of the hero projection.`,
+        );
+      }
+      return {
+        title: publicTitle(project),
+        link: publicLink(locale, project),
+        thumbnail,
+      };
+    });
+}
+
+/**
+ * The landing's portfolio grid data source — the same curated set as the
+ * hero, including `no-visual` entries the hero cannot show.
+ */
+export function toPortfolioCards(locale: Locale): readonly PortfolioCard[] {
+  return featuredProjects()
+    .toSorted((a, b) => a.order - b.order)
+    .map((project) => ({
+      slug: project.slug,
+      title: publicTitle(project),
+      summary: project.summary,
+      serviceLine: project.serviceLine,
+      evidence: project.evidence,
+      link: publicLink(locale, project),
+    }));
+}
