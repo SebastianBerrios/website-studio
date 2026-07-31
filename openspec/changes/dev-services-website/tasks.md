@@ -208,40 +208,40 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 
 ### PR 2b — projects, projections, invariants, dictionaries
 
-- [ ] 2.8 Create `lib/content/projects/index.ts`: `PROJECTS: readonly
+- [x] 2.8 Create `lib/content/projects/index.ts`: `PROJECTS: readonly
       Project[]` — metadata only, no long prose. Cover Luang, Atemporal, Blu
       Café, `blu`, plus stub entries for the remaining curated slots, each
       honestly in `no-visual`/`not-deployed` evidence until captures land. —
       *project-portfolio: Curated Set Size*
-- [ ] 2.9 Create `lib/content/projects/media.ts`: static `import` of the 4
+- [x] 2.9 Create `lib/content/projects/media.ts`: static `import` of the 4
       existing `public/projects/*.png` files into a `MEDIA` map keyed by
       asset id.
-- [ ] 2.10 Create `lib/content/projects/approach/loader.ts` (`async
+- [x] 2.10 Create `lib/content/projects/approach/loader.ts` (`async
       getProjectApproach(slug)`) + one short placeholder `approach/<slug>.ts`
       per project in 2.8 (real write-ups arrive in PR 5). — *design D9 prose
       isolation*
-- [ ] 2.11 Create `lib/content/projections.ts`: `toHeroProducts(locale)`,
+- [x] 2.11 Create `lib/content/projections.ts`: `toHeroProducts(locale)`,
       `toPortfolioCards(locale)`, `publishableProjects()`. — *project-
       portfolio: Hero Projection Preserves Prop Contract*
-- [ ] 2.12 Create `lib/content/invariants.ts` (`import "server-only"`):
+- [x] 2.12 Create `lib/content/invariants.ts` (`import "server-only"`):
       `assertContentInvariants()` implementing design §6 layer-2 checks
       (duplicate slugs, dead internal link, service line without proof,
       evidence/media mismatch, empty `Localized` value, published project
       with empty approach, hero projection below 4 entries). Pending-price
       check activates in PR 4 once pricing data exists. Strict when
       `VERCEL_ENV === 'production'` unless `SITE_CONTENT_GATE=warn`.
-- [ ] 2.13 Create `lib/dictionaries/types.ts`, `lib/dictionaries/es.ts`
+- [x] 2.13 Create `lib/dictionaries/types.ts`, `lib/dictionaries/es.ts`
       (includes the hero `header` key extracted from `hero-parallax.tsx`'s
       `Header()`), `lib/dictionaries/index.ts` (`getDictionary(locale)`). —
       *content-model: Locale Dictionary Structure*
-- [ ] 2.14 `components/ui/hero-parallax.tsx`: add `header?: React.ReactNode`
+- [x] 2.14 `components/ui/hero-parallax.tsx`: add `header?: React.ReactNode`
       prop to `HeroParallax`; remove the internal `Header()` function's
       hardcoded strings. **FLAGGED: hand-built component, extra review
       required.** — *design D5*
-- [ ] 2.15 Create `components/sections/hero-header.tsx` (Server Component):
+- [x] 2.15 Create `components/sections/hero-header.tsx` (Server Component):
       reads `getDictionary(locale).hero`, renders title/subtitle/CTA via
       `HoverBorderGradient`, passed as the `header` prop.
-- [ ] 2.16 Extend `lib/links.ts`: add `caseStudyPath(locale, slug)`,
+- [x] 2.16 Extend `lib/links.ts`: add `caseStudyPath(locale, slug)`,
       `pricingPath(locale)`, `landingAnchor(locale, id)` (pure helpers).
 
 ### PR 2c — routing, config, chrome
