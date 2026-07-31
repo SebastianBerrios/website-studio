@@ -150,8 +150,8 @@ export const PROJECTS: readonly Project[] = [
     ],
     outcome: PENDING_OUTCOME,
     // `evidence.state` is `no-visual`, not `gated`: the only capture ever on
-    // file for this project (`blucafefinance.png`) was not a login screen —
-    // it was the AUTHENTICATED dashboard, naming the client repeatedly
+    // file for this project was not a login screen — it was the
+    // AUTHENTICATED dashboard, naming the client repeatedly
     // (sidebar logo, "Bienvenido a Blu Café" heading, full nav tree). It has
     // been removed from `public/projects/` and from `lib/content/projects/
     // media.ts`. Consent to publish any capture of this back-office is

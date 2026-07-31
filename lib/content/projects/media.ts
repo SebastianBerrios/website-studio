@@ -11,12 +11,13 @@
  * captured, consented asset — see `lib/content/projects/index.ts` for how
  * those honestly render as `evidence.state: "no-visual"` instead.
  *
- * `blucafefinance.png` was removed from this map — and from disk — by the
- * `fix/content-honesty` remediation slice. It was never a login screen: it
- * is the authenticated `blu` back-office dashboard, naming the client
- * repeatedly (sidebar logo, "Bienvenido a Blu Café" heading, full nav
- * tree). Consent to publish any capture of that back-office is still open
- * (task 3.H2). See `sdd/dev-services-website/verify-report.md` finding C1.
+ * The former `blu` back-office capture was removed from this map — and
+ * from `public/projects/` on disk — by the `fix/content-honesty`
+ * remediation slice. It was never a login screen: it was the authenticated
+ * `blu` back-office dashboard, naming the client repeatedly (sidebar logo,
+ * "Bienvenido a Blu Café" heading, full nav tree). Consent to publish any
+ * capture of that back-office is still open (task 3.H2). See
+ * `sdd/dev-services-website/verify-report.md` finding C1.
  */
 
 import type { MediaAsset } from "@/lib/content/types";
