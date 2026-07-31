@@ -332,20 +332,45 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 
 ### PR 3a — Servicios, Proceso, Proyectos
 
-- [ ] 3.1 Create `components/sections/services.tsx` (Server): 4
+> **Partial-PR note (this apply batch):** implemented tasks 3.1, 3.3, 3.4,
+> 3.9, 3.10 only, on `feat/landing-servicios-proyectos` (based on
+> `fix/restore-consented-content`). Task 3.2 is explicitly deferred — see its
+> entry below. PR 3b, PR 4, PR 5, PR 6b were NOT implemented in this batch, so
+> `/[locale]/precios` and `/[locale]/proyectos/[slug]` do not exist yet in
+> this repo state (unlike the "Delivery order correction" section's assumed
+> ordering). Every task below was implemented against that actual reality,
+> not the originally-planned order — see apply-progress.md for the full
+> reasoning and the resulting deviations from each task's literal text.
+
+- [x] 3.1 Create `components/sections/services.tsx` (Server): 4
       `SERVICE_LINES` cards, each linking to its pricing anchor (temporary
       same-page anchor until PR 4 ships `/precios`) and its available proof
       project. — *landing-narrative: Servicios Section Contract; service-
       catalog: Line-to-Pricing Anchor Mapping*
+      **Deviation**: renders exactly ONE CTA per card ("Ver proyectos" →
+      `#proyectos`), not two. `/es/precios` and any `#precios` anchor are
+      both dead targets in this repo state (PR 4/PR 3b not implemented in
+      this batch) and are hard-banned by this batch's own instructions.
+      Linking to either would repeat the exact "ship the reference before
+      the referent" defect this change set exists to stop. Task 4.8 already
+      names this file as what it updates once the real pricing anchor
+      exists — see apply-progress.md.
 - [ ] 3.2 Create `lib/content/process.ts` (data) + `components/sections/
       process.tsx` (Server): discovery→proposal→build→handover sequence,
       response-time value read from the data module, not hardcoded. —
       *landing-narrative: Proceso Section Contract*
-- [ ] 3.3 Create `components/portfolio/project-card.tsx`,
+      **Explicitly BLOCKED, not implemented this batch**: requires the
+      studio's real engagement process and its actual response-time
+      commitment, neither of which the user has supplied. No process, step
+      count, or response window was invented to fill this gap — doing so
+      would violate the project's own no-invented-commitment discipline
+      (compare `RETAINER_COMMITMENTS`'s required, non-fabricated fields).
+      Left for a future batch once the user supplies this content.
+- [x] 3.3 Create `components/portfolio/project-card.tsx`,
       `components/portfolio/evidence.tsx` (switches on the 4 evidence
       states), `components/portfolio/service-badge.tsx` (Server). — *design
       D10; project-portfolio: Evidence State Rendering*
-- [ ] 3.4 Create `components/sections/portfolio.tsx` (Server): renders
+- [x] 3.4 Create `components/sections/portfolio.tsx` (Server): renders
       `toPortfolioCards(locale)`. Internal links via `caseStudyPath()` now
       resolve, because PR 5 shipped before this PR. **Critical constraint:**
       PR 5 publishes only two case studies (Luang, Blu Café) while this grid
@@ -356,9 +381,34 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
       *landing-narrative: Proyectos Section Contract; project-portfolio:
       Portfolio Grid Consistency With Hero; success criterion: zero dead
       internal links*
-- [ ] 3.10 Confirm no card in this section links to an unpublished slug.
+      **Deviation**: PR 5 did NOT ship before this PR in this batch (partial
+      PR 3a only, per explicit instructions) — `/[locale]/proyectos/[slug]`
+      does not exist at all. Added `Project.caseStudyPublished: boolean`
+      (defaulted `false` everywhere) so link-vs-non-link is still derived
+      from published state, exactly as the task requires — it is simply
+      `false` for every project today instead of `true` for Luang/Blu Café.
+      `live`-evidence cards keep their independently-verified external link
+      regardless of this flag. Internal case-study links use a plain `<a>`,
+      never `next/link`, because `typedRoutes` cannot verify a route that
+      does not exist yet and a third `as Route` waiver was explicitly
+      disallowed this batch — see apply-progress.md.
+- [x] 3.9 `app/[locale]/page.tsx`: compose sections 2-7 in the fixed order
+      between the hero (section 1, PR 2) and the brief/footer placeholders
+      (sections 8-9, PR 6). — *landing-narrative: Fixed Section Order*
+      **Partial**: composes only sections 1 (Hero), 2 (Servicios), and 4
+      (Proyectos) — sections 3, 5, 6, 7 are out of scope for this batch and
+      not yet built. Relative order among rendered sections is correct
+      (Hero < Servicios < Proyectos); gaps are filled by later slices, not
+      reordered around.
+- [x] 3.10 Confirm no card in this section links to an unpublished slug.
       (Absorbed from old task 5.7, which checked this from the wrong side of
       the chain.) — *design D7*
+      Implemented as an automated build-time check, not just a manual
+      confirmation: `lib/content/invariants.ts`'s
+      `checkPortfolioLinksOnlyToPublishedCaseStudies` fails the production
+      build if any portfolio card's internal link does not match
+      `caseStudyPath(locale, slug)` for a project with `caseStudyPublished:
+      true`. Verified by fault injection — see apply-progress.md.
 
 ### PR 3b — Autoridad, Retainer, Precios summary
 
@@ -403,25 +453,49 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 
 ### Verification
 
-- [ ] 3.V1 `npm run build` passes **with `assertContentInvariants()` running
+- [x] 3.V1 `npm run build` passes **with `assertContentInvariants()` running
       in production mode** — no warn-mode escape hatch. Under the corrected
       order every internal link this PR renders has an existing target, so the
       assertion passes on its own terms instead of being tolerated. Merging to
       `main` is a production build; a plan that needs the assertion downgraded
       in order to pass is a plan that ships broken links.
-- [ ] 3.V2 `npm run lint` passes.
+      Verified `VERCEL_ENV=production npm run build` exit 0 with the sections
+      built in this batch (Servicios, Proyectos), plus two fault-injection
+      re-proofs (hero floor, and this batch's new
+      `checkPortfolioLinksOnlyToPublishedCaseStudies`) both producing real
+      exit code 1, then a clean rebuild — see apply-progress.md.
+- [x] 3.V2 `npm run lint` passes — same 2 pre-existing
+      `hover-border-gradient.tsx` warnings, no new ones.
 - [ ] 3.V3 **Human**: verify section order top-to-bottom matches Hero →
       Servicios → Proceso → Proyectos → Autoridad → Precios → Retainer.
+      **Not fully checkable this batch**: only Hero → Servicios → Proyectos
+      exist; their relative order is correct, but Proceso/Autoridad/Precios/
+      Retainer are not built yet (3.2 blocked, 3.5-3.8 out of this batch's
+      scope).
 - [ ] 3.V4 **Human**: verify the Academy block has no clickable link/CTA and
-      no scale claims.
+      no scale claims. **Not applicable this batch** — Autoridad (task 3.5)
+      is PR 3b scope, not implemented.
 - [ ] 3.V5 **Human**: verify the retainer section shows structured values,
-      not prose promises, and no testimonial.
-- [ ] 3.V6 **Human**: verify every portfolio grid card's evidence state
-      renders honestly (no broken image frame for `no-visual` entries).
-- [ ] 3.V7 **Human**: verify that portfolio cards for projects without a
+      not prose promises, and no testimonial. **Not applicable this batch**
+      — Retainer (task 3.6) is PR 3b scope, not implemented.
+- [x] 3.V6 **Human** (performed by the apply agent via compiled HTML, not a
+      browser): verify every portfolio grid card's evidence state renders
+      honestly (no broken image frame for `no-visual` entries). Confirmed in
+      `.next/server/app/es.html`: `no-visual` cards (`fast-route`,
+      `blu-biolink`) render service badge + title + summary with zero
+      `<img>` elements and no empty frame; `gated` (`blu`) renders its
+      screenshot plus both the generic login note and its own disclosure
+      line; `live` cards (Luang, Atemporal, Blu Café) render their
+      screenshot inside an external link.
+- [x] 3.V7 **Human** (performed by the apply agent via compiled HTML, not a
+      browser): verify that portfolio cards for projects without a
       published case study render as non-links, with no hover or cursor
       affordance suggesting they are clickable. (Replaces the deleted "accept
       interim 404s" check — that condition no longer exists.)
+      Confirmed: `blu`, `fast-route`, and `blu-biolink` all compile to a
+      plain `<div class="... cursor-default">` — no `<a>`, no hover-border
+      class. Zero occurrences of `/es/precios` or `/es/proyectos/` anywhere
+      in the compiled output.
 
 **Rollback**: additive sections; revert removes sections 2-7, landing
 degrades to PR 2's hero-only state. Earlier slices keep working.

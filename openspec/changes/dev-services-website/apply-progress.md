@@ -1627,3 +1627,348 @@ Ready for `sdd-verify` to re-validate against the verify report, or
 remaining business-content prerequisites (pricing figures, retainer
 figures, case-study write-up approval, WhatsApp number, DNS domain
 verification, remaining project consent/captures).
+
+---
+
+## PR 3a (partial) — Servicios, portfolio components, Proyectos grid
+
+Batch: 8 of N — **partial PR 3a, complete: tasks 3.1, 3.3, 3.4, 3.9, 3.10.**
+Task 3.2 (Proceso) explicitly excluded, not implemented. PR 3b (Autoridad,
+Retainer, Precios summary), PR 4 (pricing page), PR 5 (case studies), PR 6b
+(brief form UI) also explicitly excluded — not implemented.
+
+Branch: `feat/landing-servicios-proyectos`, based on
+`fix/restore-consented-content` (which was already `HEAD` when this batch
+started; two commits landed on top of it before this batch —
+`9fd01af` and `4bdbe6e` — both pre-existing, neither authored by this batch).
+Mode: Standard (no test runner; `strict_tdd: false`).
+
+### Why this batch deviates from `tasks.md`'s stated delivery order, again
+
+`tasks.md`'s "Delivery order correction" assumes PR 4 and PR 5 ship BEFORE
+PR 3a, so that `/[locale]/precios` and `/[locale]/proyectos/[slug]` already
+exist by the time PR 3a's sections link to them. **That did not happen.**
+This repo state has PR 1 / PR 2a / PR 2b / PR 2c / PR 6a plus two remediation
+slices — PR 4 and PR 5 were never implemented. This batch was explicitly
+scoped by the launch instructions to implement a **partial PR 3a** anyway
+(tasks 3.1, 3.3, 3.4, 3.9, 3.10 only), against the *actual* repo state, not
+the originally-planned one. Every deviation below follows from that one
+fact: neither `/precios` nor `/proyectos/[slug]` exists anywhere in this
+codebase yet.
+
+### Task 3.2 (Proceso) — explicitly not implemented
+
+Requires the studio's real engagement process (discovery→proposal→build→
+handover, or whatever the actual sequence is) and its actual response-time
+commitment. The user has not supplied either. No process, no step count, and
+no response window was invented to fill the gap — the same discipline this
+change set already applies to `RETAINER_COMMITMENTS` (every field required,
+never fabricated) and to `PRICES` (never an invented figure). Left for a
+future batch.
+
+### Task 3.1 — `components/sections/services.tsx`
+
+Renders the four `SERVICE_LINES` (from `lib/content/service-lines.ts`,
+already populated with real bilingual name/description copy since PR 2a) as
+self-identification cards.
+
+**Deviation from the literal task text**, flagged rather than silently
+applied (same discipline as `lib/content/projections.ts`'s existing
+`publicLink()` comment): the task says "each linking to its pricing anchor
+... and its available proof project" — TWO links. This batch renders
+exactly ONE CTA per card, "Ver proyectos" → `#proyectos`. Reasons:
+
+- `/es/precios` does not exist (PR 4 not implemented this batch) and is a
+  hard-banned target per the launch instructions.
+- A `#precios` same-page anchor equivalent (the pattern PR 1 established for
+  `#proyectos` before the real section existed) is not available either,
+  because its only possible target — the Precios summary section, task 3.8
+  — is PR 3b scope, also excluded from this batch. Unlike `#proyectos` (which
+  had `HeroParallax`'s products track as a real stand-in target from PR 1
+  onward), there is no stand-in element this batch is allowed to create for
+  `#precios`.
+- `components/layout/site-header.tsx` already documents exactly this
+  reasoning for why it carries no "Precios" nav item: "A nav item labelled
+  'Precios' that does nothing when clicked is worse than no nav item."
+  Applying the same standard to the Servicios section's own CTA is the
+  consistent choice, not a new one.
+
+Task 4.8 ("Update PR 3's `services.tsx`/`pricing-summary.tsx` anchor links to
+the real `/[locale]/precios#<line>` block anchors now that the route
+exists") already names this exact file as what a later batch updates once
+PR 4/PR 3b ship — so this is a tracked, anticipated gap, not a silent one.
+
+The CTA reuses the SAME `landingAnchor(locale, "proyectos") as Route` cast
+pattern already used three times in this codebase (`site-header.tsx`,
+`site-footer.tsx`, `hero-header.tsx`) — a fourth call site of an
+already-established waiver, not a new one.
+
+### Task 3.3 — `components/portfolio/{service-badge,evidence,project-card}.tsx`
+
+All three are Server Components (D10 compliance — zero new client
+components this batch).
+
+- **`service-badge.tsx`**: reads the same `SERVICE_LINES` data the pricing
+  page (PR 4, not yet built) will also read from, so a badge's label and its
+  future pricing block are guaranteed to reference the same identifier
+  (`specs/service-catalog/spec.md`, "Cross-Surface Consistency").
+- **`evidence.tsx`**: exhaustive switch on `Evidence.state`.
+  - `live`: screenshot only (the external link itself is the parent card's
+    wrapping `<a>`).
+  - `gated`: screenshot PLUS a generic dictionary-sourced note ("Acceso
+    restringido: este producto requiere inicio de sesión.") PLUS the
+    project's own specific `evidence.disclosure` text. Both render as
+    separate elements — the generic note names the *kind* of restriction,
+    the disclosure names the *specific, truthful reason*
+    (`specs/case-study/spec.md`, "Truthful Disclosure Line"). This is the
+    first batch that actually renders `blu`'s disclosure at all — a prior
+    batch (`fix/restore-consented-content`) restored the data but reported
+    it unverifiable because no rendering component existed yet. Now
+    verified in compiled HTML (see Verification below).
+  - `not-deployed`: locally-captured screenshot plus a dictionary-sourced
+    "no public deployment" note.
+  - `no-visual`: returns `null` — no `<img>`, no placeholder frame, no gray
+    box. `project-card.tsx` is what keeps the resulting card "reading as
+    complete" (design.md §8's acceptance test): badge, title, and summary
+    render regardless of whether this component renders anything.
+- **`project-card.tsx`**: composes badge + title + evidence + summary,
+  wrapped in a plain `<a>` (not `<div>`) only when `card.link !== undefined`.
+
+### Task 3.4 — `components/sections/portfolio.tsx`, and the `caseStudyPublished` field
+
+**The critical constraint** ("a card MUST render a link ONLY when its
+project has a published case study... today no case study is published, so
+every card renders as a non-link") is satisfied literally, not just in
+spirit, via a new field:
+
+```ts
+// lib/content/types.ts
+readonly caseStudyPublished: boolean;
+```
+
+Added to `Project`, set `false` on all 7 entries in `lib/content/projects/
+index.ts` (PR 5, or a task 5.5 follow-up, flips it per project once that
+project's write-up AND the route both ship). `lib/content/projections.ts`
+gained `portfolioLink()`, replacing the grid's prior reuse of the hero's
+`publicLink()`:
+
+```ts
+function portfolioLink(locale: Locale, project: Project): string | undefined {
+  if (project.evidence.state === "live") return project.evidence.externalUrl;
+  return project.caseStudyPublished
+    ? caseStudyPath(locale, project.slug)
+    : undefined;
+}
+```
+
+`live` evidence always keeps its independently-verified external URL,
+regardless of `caseStudyPublished` — this matches
+`specs/project-portfolio/spec.md`'s "Evidence State Rendering" table
+(`live` → "screenshot + external link") and resolves an apparent tension in
+the launch instructions' own wording ("today no case study is published, so
+every card renders as a non-link") against that same spec table: read
+literally against ALL cards, those two statements would contradict each
+other for Luang/Atemporal/Blu Café. The "published case study" framing is
+about the INTERNAL `/proyectos/[slug]` route specifically (which is what
+"case study" means throughout this codebase) — not about a third-party
+external URL, which trivially "exists" independent of this site's own route
+table. Every non-`live` project (`blu`, `fast-route`, `blu-biolink`) renders
+as a non-link today, exactly as instructed.
+
+**Why `project-card.tsx` never uses `next/link` for the internal case-study
+branch.** `typedRoutes` cannot verify a route that is not generated yet
+(`/[locale]/proyectos/[slug]` does not exist in this repo state at all), so
+a `<Link href={...}>` there would need a THIRD `as Route` waiver — the
+launch instructions explicitly forbid adding one (only two exist/are
+tracked: `hero-parallax.tsx`'s permanent `product.link` cast, compensated by
+`checkInternalLinksResolve`, and `lib/brief/submit.ts`'s temporary one,
+removed by task 6.9b). Since a plain `<a href={string}>` needs no `Route`
+type at all, this batch uses `<a>` for BOTH the external (`live`) and the
+internal (once-published) cases — no cast anywhere in this batch's new
+code. Once PR 5 creates the route, upgrading the internal branch to
+`<Link>` for prefetching is a natural, tracked follow-up, not a defect.
+
+**Compensating build-time control (task 3.10)**:
+`lib/content/invariants.ts` gained
+`checkPortfolioLinksOnlyToPublishedCaseStudies`, which fails the production
+build if any portfolio card's internal link does not exactly match
+`caseStudyPath(locale, slug)` for a project whose `caseStudyPublished` is
+`true`. Today this is redundant with `portfolioLink()`'s own logic (same
+"defense-in-depth over a compile-time-adjacent guarantee" reasoning as the
+file's existing `checkEvidenceMediaShape`) — it earns its keep the moment a
+future edit drifts. Verified by fault injection (see Verification below).
+
+**The `#proyectos` anchor moved.** Before this batch, `#proyectos` targeted
+`HeroParallax`'s products track via its `productsId` prop (the
+`fix/restore-consented-content` remediation's W2 fix — a stand-in, because
+the real Proyectos section did not exist yet). Now that
+`components/sections/portfolio.tsx` exists and owns `id="proyectos"`,
+`app/[locale]/page.tsx` no longer passes `productsId` to `HeroParallax`, so
+there is exactly one element with that id in the compiled output — verified,
+see below. `hero-header.tsx`'s CTA-cast comment (which named the old
+target) was updated to avoid becoming a second false-comment defect of the
+exact kind already fixed once (verify-report.md finding W1).
+
+### Task 3.9 — `app/[locale]/page.tsx` composition
+
+Composes only sections 1 (Hero), 2 (Servicios), 4 (Proyectos) — sections 3,
+5, 6, 7 are out of this batch's scope and not yet built. The relative order
+among what IS rendered is correct per `specs/landing-narrative/spec.md`'s
+"Fixed Section Order" (Hero < Servicios < Proyectos); the gaps are filled by
+later slices, not reordered around, matching how PR 2c shipped a hero-only
+page under the same principle.
+
+### Deviations summary
+
+| Task | Literal text | What actually shipped | Why |
+|---|---|---|---|
+| 3.1 | Two links per card (pricing + proof) | One link (proof only, `#proyectos`) | `/precios`/`#precios` are both dead targets this batch; hard-banned by launch instructions |
+| 3.4 | PR 5 ships before this PR, so `caseStudyPath()` links resolve | PR 5 not implemented this batch; added `caseStudyPublished` flag, `false` everywhere | This batch is an explicitly partial PR 3a, scoped by the launch instructions against the actual (not planned) repo state |
+| 3.9 | Compose sections 2-7 | Composes only 2 and 4 | Sections 3/5/6/7 out of this batch's scope |
+
+None of these are silent — each is a documented, reasoned response to a real
+constraint (a route that does not exist, or a task explicitly excluded by
+this batch's own launch instructions), following the same "flag the
+deviation, do not paper over it" discipline this change set has used
+throughout (`publicLink()`'s comment, the "Delivery order correction"
+section itself).
+
+### Verification performed
+
+- `npm run build` — exit 0.
+  ```
+  ▲ Next.js 16.1.1 (Turbopack)
+    Creating an optimized production build ...
+  ✓ Compiled successfully in 3.1s
+    Running TypeScript ...
+    Collecting page data using 11 workers ...
+  ✓ Generating static pages using 11 workers (6/6) in 542.1ms
+    Finalizing page optimization ...
+  Route (app)
+  ┌ ○ /_not-found
+  ├ ● /[locale]
+  │ └ /es
+  ├ ○ /robots.txt
+  └ ○ /sitemap.xml
+  ```
+- `npm run lint` — exit 0, same 2 pre-existing `hover-border-gradient.tsx`
+  warnings (`react-hooks/exhaustive-deps` at line 68, `no-unused-vars` at
+  line 72), zero new ones.
+- `VERCEL_ENV=production npm run build` (after `rm -rf .next`) — exit 0,
+  same output as above.
+- **Fault injection 1** (hero-floor re-proof, as the launch instructions
+  suggested — "drop a project with media from the hero projection"):
+  temporarily set `blucafe.featured` to `false`. `VERCEL_ENV=production
+  npm run build` → real exit code 1:
+  ```
+  Error: Content integrity check failed:
+    - Hero projection for locale "es" has only 3 entries; the floor is 4.
+  ```
+  Reverted via `Edit` back to `featured: true`; rebuilt clean (exit 0).
+- **Fault injection 2** (this batch's own new check,
+  `checkPortfolioLinksOnlyToPublishedCaseStudies`): temporarily changed
+  `portfolioLink()` to return `caseStudyPath(locale, project.slug)`
+  unconditionally for non-`live` evidence, ignoring `caseStudyPublished`.
+  `VERCEL_ENV=production npm run build` → real exit code 1:
+  ```
+  Error: Content integrity check failed:
+    - Portfolio card "blu" links to "/es/proyectos/blu" but its case study
+      is not published ("caseStudyPublished: false" in
+      lib/content/projects/index.ts). ...
+    - Portfolio card "fast-route" links to "/es/proyectos/fast-route" ...
+    - Portfolio card "blu-biolink" links to "/es/proyectos/blu-biolink" ...
+  ```
+  Reverted via `Edit` back to the guarded version; rebuilt clean (exit 0,
+  confirmed via `git diff --stat` that only the intended feature diff
+  remained on both touched files after both fault injections were reverted).
+- **Compiled `href` inventory** — every `href="..."` in
+  `.next/server/app/es.html`:
+  | `href` | Target exists? |
+  |---|---|
+  | `/_next/static/chunks/*.css`, `/_next/static/chunks/*.js` | Yes — build assets |
+  | `/es` | Yes — locale root |
+  | `/es#proyectos` | Yes — `components/sections/portfolio.tsx`'s `id="proyectos"` |
+  | `/favicon.ico?favicon....ico` | Yes — static asset |
+  | `http://localhost:3000/es` | Yes — absolute canonical/OG URL (via `metadataBase`) |
+  | `https://atemporalarq.vercel.app/` | Yes — verified live (task 1.H2) |
+  | `https://blucafe.vercel.app/` | Yes — verified live |
+  | `https://luang.com.pe/` | Yes — verified live |
+
+  Zero occurrences of `/es/precios` and zero occurrences of
+  `/es/proyectos/` anywhere in `es.html` (`grep -c` both return `0`).
+- **`blu`'s gated card, compiled markup** (from `.next/server/app/es.html`,
+  entity-decoded for readability):
+  ```html
+  <div class="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-5 transition-colors cursor-default">
+    <span class="...">Aplicaciones web y dashboards a medida</span>
+    <h3 class="...">Sistema de gestión interno de Blu Café</h3>
+    <div class="space-y-2">
+      <div class="relative aspect-video ..."><img alt="Captura de pantalla del panel administrativo autenticado de Blu Café: ..." .../></div>
+      <p class="text-xs font-medium text-muted-foreground">Acceso restringido: este producto requiere inicio de sesión.</p>
+      <p class="text-xs text-muted-foreground">Este panel se encuentra protegido por inicio de sesión (blucafefinance.vercel.app requiere credenciales). Captura mostrada con autorización del cliente.</p>
+    </div>
+    <p class="text-sm text-muted-foreground">Panel administrativo interno de Blu Café: ...</p>
+  </div>
+  ```
+  Confirms: non-link (`<div>`, `cursor-default`, no hover class), the
+  generic login note AND the specific disclosure line both render as
+  separate elements, no `target="_blank"` anywhere (it is not an `<a>` at
+  all).
+- **A `no-visual` card, compiled markup** (`fast-route`):
+  ```html
+  <div class="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-5 transition-colors cursor-default">
+    <span class="...">Aplicaciones web y dashboards a medida</span>
+    <h3 class="...">Optimización de rutas de entrega en tiempo real</h3>
+    <p class="text-sm text-muted-foreground">Optimización de rutas de entrega en tiempo real: ...</p>
+  </div>
+  ```
+  Confirms: zero `<img>` elements, no empty image frame, no gray box — the
+  card reads as complete via badge + title + summary alone. Same shape
+  confirmed for `blu-biolink`.
+- **No client component created**: `grep -rl '"use client"' components app`
+  returns only the two pre-existing files (`hero-parallax.tsx`,
+  `hover-border-gradient.tsx`). None of this batch's five new files
+  (`service-badge.tsx`, `evidence.tsx`, `project-card.tsx`, `services.tsx`,
+  `portfolio.tsx`) carry the directive — D10's "exactly one new client
+  component, and it is `BriefForm`" is unbroken.
+
+### Not fixed / not verified — explicitly out of scope
+
+- Tasks 3.5-3.8 (Autoridad, Retainer, Precios summary) — PR 3b, not this
+  batch.
+- Task 3.2 (Proceso) — blocked on user-supplied content, see above.
+- 3.V3 (full section order Hero→...→Retainer) — only checkable for the
+  subset that exists (Hero < Servicios < Proyectos, confirmed correct).
+- 3.V4/3.V5 (Academy/Retainer content checks) — not applicable, those
+  sections do not exist yet.
+- Human-only visual checks (1.V3-1.V5-style breakpoint/hover/motion review,
+  and this section's own visual polish) — no browser was used; every claim
+  above is evidenced from compiled HTML/build output, not a live render.
+- Verify-report findings not in this batch's three-task scope — untouched.
+
+### Commits (in order, `feat/landing-servicios-proyectos`)
+
+1. `baef7d2` — feat(content): derive portfolio grid links from case-study
+   publication state
+2. `6838456` — feat(landing): add Servicios and Proyectos sections to the
+   landing page
+3. (this apply-progress/tasks.md update, committed separately)
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
+## Status (cumulative, through this batch)
+
+39/39 PR 1-2c/6a code tasks + 5/5 `fix/content-honesty` tasks + 4/4
+`fix/restore-consented-content` tasks (all unchanged, see above) + **5/6 PR
+3a code tasks (3.1, 3.3, 3.4, 3.9, 3.10 complete; 3.2 explicitly blocked on
+user-supplied content, not implemented)**.
+
+PR 3b, PR 4, PR 5, PR 6b remain entirely unimplemented — all blocked on
+business content the user has not supplied (pricing figures, retainer
+figures, case-study write-up approval/content, WhatsApp number, DNS domain
+verification, remaining project consent/captures) or, for task 3.2, on the
+studio's real process/response-time commitment specifically.
+
+Ready for `sdd-verify` to re-validate this batch against the spec/design, or
+`sdd-apply` to continue once the user supplies the content blocking 3.2, PR
+3b, PR 4, PR 5, or PR 6b.
