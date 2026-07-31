@@ -126,6 +126,21 @@ export type Project = {
   readonly consent: Consent;
   readonly featured: boolean;
   readonly order: number;
+  /**
+   * Whether `/[locale]/proyectos/{slug}` actually exists as a real,
+   * populated route. `false` for every project until PR 5 (or one of its
+   * task 5.5 follow-ups) ships that project's write-up and the route itself.
+   *
+   * This is deliberately a field on the entity, not something derived from
+   * membership in `PROJECTS` or from `featured`/`consent` — those answer
+   * "is this project curated/publishable", a different question from "does
+   * a case-study page exist for it right now". `toPortfolioCards()`
+   * (`lib/content/projections.ts`) uses this flag, not the project list, to
+   * decide whether a grid card renders as a link — see
+   * `specs/landing-narrative/spec.md`, "Proyectos Section Contract", and
+   * task 3.4's critical constraint in tasks.md.
+   */
+  readonly caseStudyPublished: boolean;
   /** Legacy field, preserved for `ProductCard`'s existing prop contract. */
   readonly link: string;
   /** Legacy field, preserved for `ProductCard`'s existing prop contract. */

@@ -10,7 +10,7 @@ import type { Locale } from "./locales";
 import type { Consent, Evidence, Project } from "./types";
 import type { ServiceLine } from "./service-lines";
 import { PROJECTS } from "./projects";
-import { landingAnchor } from "@/lib/links";
+import { caseStudyPath, landingAnchor } from "@/lib/links";
 
 /**
  * The exact prop shape `HeroParallax` has always consumed. Preserved
@@ -23,14 +23,21 @@ export type HeroProduct = {
   readonly thumbnail: string;
 };
 
-/** A grid card for the landing's portfolio section (PR 3a's consumer). */
+/**
+ * A grid card for the landing's portfolio section (PR 3a's consumer).
+ *
+ * `link` is `undefined` when the card must render as a non-link — see
+ * `portfolioLink()`'s doc comment below and task 3.4's critical constraint
+ * in tasks.md. A component consuming this MUST NOT render an `<a>`/`<Link>`
+ * when `link` is `undefined`.
+ */
 export type PortfolioCard = {
   readonly slug: string;
   readonly title: string;
   readonly summary: Project["summary"];
   readonly serviceLine: ServiceLine;
   readonly evidence: Evidence;
-  readonly link: string;
+  readonly link: string | undefined;
 };
 
 /**
@@ -113,6 +120,37 @@ function publicLink(locale: Locale, project: Project): string {
     : landingAnchor(locale, "proyectos");
 }
 
+/**
+ * The portfolio grid's link derivation — deliberately different from the
+ * hero's `publicLink()` above.
+ *
+ * `live` evidence always links externally, unconditionally: that URL is an
+ * independently-verified third-party site (e.g. task 1.H2's checks), so it
+ * is never gated by this project's OWN case-study route existing. This
+ * matches `specs/project-portfolio/spec.md`'s "Evidence State Rendering"
+ * table (`live` → "screenshot + external link").
+ *
+ * Every other evidence state (`gated`, `not-deployed`, `no-visual`) is a
+ * candidate for an INTERNAL case-study link instead — but
+ * `/[locale]/proyectos/[slug]` does not exist as a route in this repo state
+ * at all (it ships in PR 5). Rendering a `<Link>`/`<a>` at that address
+ * before the route exists is the exact class of defect this change set has
+ * repeatedly had to fix (see this file's own `publicLink()` comment above,
+ * and tasks.md's "Delivery order correction"). So this function returns
+ * `undefined` — "no link" — unless `project.caseStudyPublished` is `true`.
+ *
+ * Today every project in `PROJECTS` has `caseStudyPublished: false`, so
+ * every non-`live` grid card renders as a non-link — see tasks.md task 3.4's
+ * critical constraint. `components/portfolio/project-card.tsx` is the
+ * consumer that must not render an anchor when this returns `undefined`.
+ */
+function portfolioLink(locale: Locale, project: Project): string | undefined {
+  if (project.evidence.state === "live") return project.evidence.externalUrl;
+  return project.caseStudyPublished
+    ? caseStudyPath(locale, project.slug)
+    : undefined;
+}
+
 /** The primary media asset's `.src`, or `undefined` for `no-visual`. */
 function primaryThumbnail(evidence: Evidence): string | undefined {
   return evidence.state === "no-visual" ? undefined : evidence.media[0].asset.src;
@@ -180,6 +218,6 @@ export function toPortfolioCards(locale: Locale): readonly PortfolioCard[] {
       summary: project.summary,
       serviceLine: project.serviceLine,
       evidence: project.evidence,
-      link: publicLink(locale, project),
+      link: portfolioLink(locale, project),
     }));
 }

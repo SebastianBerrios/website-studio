@@ -60,6 +60,11 @@
  *    every intermediate build — exactly the self-defeating assertion
  *    design.md §6 explicitly rejected. Task 4.10 flips the flag once PR 4
  *    populates real figures.
+ * 9. **Portfolio grid links only to published case studies** — per every
+ *    locale's `toPortfolioCards()` (task 3.4/3.10). A card whose evidence is
+ *    not `live` must not link to `/[locale]/proyectos/{slug}` unless
+ *    `caseStudyPublished` is `true` for that project — the route does not
+ *    exist until PR 5.
  */
 
 import "server-only";
@@ -70,7 +75,7 @@ import { toHeroProducts, toPortfolioCards } from "./projections";
 import { PRICES } from "./pricing";
 import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
-import { isExternalHref } from "@/lib/links";
+import { caseStudyPath, isExternalHref } from "@/lib/links";
 import type { ProjectSlug } from "./projects";
 
 /**
@@ -290,6 +295,51 @@ function checkHeroIsSubsetOfGrid(violations: string[]): void {
   }
 }
 
+/**
+ * Task 3.10: no portfolio grid card may link to a case study that is not
+ * actually published.
+ *
+ * `toPortfolioCards()`'s `link` field is `undefined` for exactly this reason
+ * whenever `project.caseStudyPublished` is `false` (`lib/content/
+ * projections.ts`'s `portfolioLink()`), so this check is redundant with that
+ * function's own logic today — same "defense-in-depth over a compile-time
+ * guarantee" reasoning as `checkEvidenceMediaShape` above. It earns its keep
+ * the moment a future edit to `portfolioLink()` (or a data entry) drifts:
+ * this fails the build instead of shipping a real dead link, which is
+ * exactly the class of defect already caught four times in this change set.
+ *
+ * External `live` links are skipped: they are never gated by case-study
+ * publication (see `portfolioLink()`'s doc comment) and are out of scope for
+ * a build-time reachability check for the same non-determinism reason
+ * `checkInternalLinksResolve` gives for skipping external hero links.
+ */
+function checkPortfolioLinksOnlyToPublishedCaseStudies(violations: string[]): void {
+  for (const locale of LOCALES) {
+    for (const card of toPortfolioCards(locale)) {
+      if (card.link === undefined) continue;
+      if (isExternalHref(card.link)) continue;
+
+      const project = PROJECTS.find((p) => p.slug === card.slug);
+      if (!project?.caseStudyPublished) {
+        violations.push(
+          `Portfolio card "${card.slug}" links to "${card.link}" but its case study is not published ` +
+            `("caseStudyPublished: false" in lib/content/projects/index.ts). A card must only link to a ` +
+            `case study once it is actually published — see tasks.md task 3.4's critical constraint.`,
+        );
+        continue;
+      }
+
+      const expected = caseStudyPath(locale, card.slug);
+      if (card.link !== expected) {
+        violations.push(
+          `Portfolio card "${card.slug}" link ("${card.link}") does not match its expected case-study path ` +
+            `("${expected}") for locale "${locale}".`,
+        );
+      }
+    }
+  }
+}
+
 function checkServiceLineProof(violations: string[]): void {
   const linesWithProof = new Set<ServiceLine>(PROJECTS.map((p) => p.serviceLine));
   for (const line of Object.keys(SERVICE_LINES) as ServiceLine[]) {
@@ -391,6 +441,7 @@ export async function assertContentInvariants(): Promise<void> {
   checkUniqueHeroTitles(violations);
   checkGrantedTitlesDoNotLeakClient(violations);
   checkHeroIsSubsetOfGrid(violations);
+  checkPortfolioLinksOnlyToPublishedCaseStudies(violations);
   checkServiceLineProof(violations);
   checkNoEmptyLocalizedValues(violations);
   await checkNonEmptyApproach(violations);

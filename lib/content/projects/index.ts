@@ -13,6 +13,12 @@
  * no real-case-study narrative has been supplied by the user for ANY
  * project yet (not even Luang or Blu Café, PR 5's first two case studies).
  * These are visibly-unresolved stubs, not plausible-sounding filler.
+ *
+ * `caseStudyPublished` is `false` on every entry below because
+ * `/[locale]/proyectos/[slug]` does not exist as a route yet (PR 5). PR 5 (or
+ * a task 5.5 follow-up) flips this to `true` per project once its write-up
+ * and the route both ship — see `lib/content/types.ts`'s doc comment on the
+ * field and task 3.4's critical constraint in tasks.md.
  */
 
 import type { Project } from "@/lib/content/types";
@@ -68,6 +74,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 1,
+    caseStudyPublished: false,
     link: "https://luang.com.pe/",
     thumbnail: "/projects/luang.png",
   },
@@ -99,6 +106,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 2,
+    caseStudyPublished: false,
     link: "https://atemporalarq.vercel.app/",
     thumbnail: "/projects/atemporal.png",
   },
@@ -122,6 +130,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 3,
+    caseStudyPublished: false,
     link: "https://blucafe.vercel.app/",
     thumbnail: "/projects/blucafe.png",
   },
@@ -178,6 +187,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 4,
+    caseStudyPublished: false,
     link: "/es/proyectos/blu",
     thumbnail: "/projects/blucafefinance.png",
   },
@@ -213,6 +223,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 5,
+    caseStudyPublished: false,
     link: "/es/proyectos/fast-route",
     thumbnail: "",
   },
@@ -240,6 +251,7 @@ export const PROJECTS: readonly Project[] = [
     },
     featured: true,
     order: 6,
+    caseStudyPublished: false,
     link: "/es/proyectos/blu-biolink",
     thumbnail: "",
   },
@@ -271,6 +283,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "withheld" },
     featured: false,
     order: 7,
+    caseStudyPublished: false,
     link: "/es/proyectos/wedding-invitation-piero",
     thumbnail: "",
   },
