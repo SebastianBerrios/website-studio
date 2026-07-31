@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { getDictionary } from "@/lib/dictionaries";
 import { landingAnchor } from "@/lib/links";
@@ -30,7 +31,14 @@ export function HeroHeader({ locale }: { locale: Locale }) {
         <HoverBorderGradient
           containerClassName="rounded-full"
           as="button"
-          href={landingAnchor(locale, "proyectos")}
+          // `landingAnchor()` returns a plain `string` by contract (lib/links.ts),
+          // so `typedRoutes` cannot verify it structurally. The cast is safe
+          // here (unlike `caseStudyPath()`/`pricingPath()`): `/es` is a real
+          // route created in this PR, and `#proyectos` is a real anchor
+          // (`app/[locale]/page.tsx` renders `<div id="proyectos">`). See
+          // design.md D7 and `lib/content/invariants.ts`'s
+          // `checkNoSelfReferentialLinks`, which covers what this cast waives.
+          href={landingAnchor(locale, "proyectos") as Route}
           className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
         >
           <span>{hero.cta}</span>
