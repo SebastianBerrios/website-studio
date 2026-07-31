@@ -333,14 +333,16 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 ### PR 3a — Servicios, Proceso, Proyectos
 
 > **Partial-PR note (this apply batch):** implemented tasks 3.1, 3.3, 3.4,
-> 3.9, 3.10 only, on `feat/landing-servicios-proyectos` (based on
-> `fix/restore-consented-content`). Task 3.2 is explicitly deferred — see its
-> entry below. PR 3b, PR 4, PR 5, PR 6b were NOT implemented in this batch, so
+> 3.9, 3.10 in a prior batch, and task 3.2 (Proceso) in this batch, on
+> `feat/landing-servicios-proyectos` (based on `fix/restore-consented-content`).
+> PR 3b, PR 4, PR 5, PR 6b were NOT implemented in this batch, so
 > `/[locale]/precios` and `/[locale]/proyectos/[slug]` do not exist yet in
 > this repo state (unlike the "Delivery order correction" section's assumed
 > ordering). Every task below was implemented against that actual reality,
 > not the originally-planned order — see apply-progress.md for the full
 > reasoning and the resulting deviations from each task's literal text.
+> With task 3.2 done, all code tasks of PR 3a are complete; PR 3b (3.5, 3.6,
+> pricing-summary, retainer) remains out of scope for this batch.
 
 - [x] 3.1 Create `components/sections/services.tsx` (Server): 4
       `SERVICE_LINES` cards, each linking to its pricing anchor (temporary
@@ -355,17 +357,39 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
       the referent" defect this change set exists to stop. Task 4.8 already
       names this file as what it updates once the real pricing anchor
       exists — see apply-progress.md.
-- [ ] 3.2 Create `lib/content/process.ts` (data) + `components/sections/
+- [x] 3.2 Create `lib/content/process.ts` (data) + `components/sections/
       process.tsx` (Server): discovery→proposal→build→handover sequence,
       response-time value read from the data module, not hardcoded. —
       *landing-narrative: Proceso Section Contract*
-      **Explicitly BLOCKED, not implemented this batch**: requires the
-      studio's real engagement process and its actual response-time
-      commitment, neither of which the user has supplied. No process, step
-      count, or response window was invented to fill this gap — doing so
-      would violate the project's own no-invented-commitment discipline
-      (compare `RETAINER_COMMITMENTS`'s required, non-fabricated fields).
-      Left for a future batch once the user supplies this content.
+      **Now unblocked and implemented**: the user supplied the studio's real
+      five-phase engagement process (Descubrimiento → Propuesta y alcance →
+      Diseño → Desarrollo → Entrega), the fact that the first three phases
+      each require the client's explicit approval to proceed, and that 2
+      revision rounds are included before additional rounds are quoted.
+      `lib/content/process.ts`'s `PROCESS` constant models this: a 5-tuple of
+      `ProcessPhase` (locale-keyed `name`/`description`, explicit
+      `requiresApproval: boolean` per phase — the differentiator, not
+      decoration) plus `revisionRoundsIncluded: 2`.
+      **Deviation, documented**: the spec's literal wording calls for a
+      "response-time commitment" read from data. No client-facing
+      mid-project response-time figure exists — the user was asked and has
+      not supplied one, and the tiered retainer response window
+      (`RETAINER_COMMITMENTS.responseWindow`, PR 3b) is a different
+      commitment for a different phase of the relationship (post-launch
+      maintenance, not mid-project approval turns) and does not belong here.
+      This task satisfies the requirement's actual mechanism — a claim that
+      changes without a component edit when its underlying data changes —
+      using `revisionRoundsIncluded`, the one quantifiable process
+      commitment actually settled this batch. No response-time figure, day
+      count, or deadline was invented anywhere. See `lib/content/process.ts`
+      and `components/sections/process.tsx` doc comments for the full
+      reasoning.
+      **Open item carried forward, not closed by this task**: the studio's
+      client-side approval response deadline (how quickly the studio commits
+      to turning around a client's review of a deliverable) remains
+      unsupplied. Adding it later is one new optional field on
+      `ProcessContent`, not a restructuring — every consumer already reads
+      through the single exported `PROCESS` constant.
 - [x] 3.3 Create `components/portfolio/project-card.tsx`,
       `components/portfolio/evidence.tsx` (switches on the 4 evidence
       states), `components/portfolio/service-badge.tsx` (Server). — *design
@@ -395,11 +419,11 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
 - [x] 3.9 `app/[locale]/page.tsx`: compose sections 2-7 in the fixed order
       between the hero (section 1, PR 2) and the brief/footer placeholders
       (sections 8-9, PR 6). — *landing-narrative: Fixed Section Order*
-      **Partial**: composes only sections 1 (Hero), 2 (Servicios), and 4
-      (Proyectos) — sections 3, 5, 6, 7 are out of scope for this batch and
-      not yet built. Relative order among rendered sections is correct
-      (Hero < Servicios < Proyectos); gaps are filled by later slices, not
-      reordered around.
+      **Partial**: composes sections 1 (Hero), 2 (Servicios), 3 (Proceso, task
+      3.2, this batch), and 4 (Proyectos) — sections 5, 6, 7 are PR 3b/PR 4
+      scope and not yet built. Relative order among rendered sections is
+      correct (Hero < Servicios < Proceso < Proyectos); gaps are filled by
+      later slices, not reordered around.
 - [x] 3.10 Confirm no card in this section links to an unpublished slug.
       (Absorbed from old task 5.7, which checked this from the wrong side of
       the chain.) — *design D7*
@@ -466,12 +490,14 @@ placement/no-link/no-scale, Retainer commitments), `service-catalog`
       exit code 1, then a clean rebuild — see apply-progress.md.
 - [x] 3.V2 `npm run lint` passes — same 2 pre-existing
       `hover-border-gradient.tsx` warnings, no new ones.
-- [ ] 3.V3 **Human**: verify section order top-to-bottom matches Hero →
-      Servicios → Proceso → Proyectos → Autoridad → Precios → Retainer.
-      **Not fully checkable this batch**: only Hero → Servicios → Proyectos
-      exist; their relative order is correct, but Proceso/Autoridad/Precios/
-      Retainer are not built yet (3.2 blocked, 3.5-3.8 out of this batch's
-      scope).
+- [x] 3.V3 **Human** (performed by the apply agent via compiled HTML, not a
+      browser): verify section order top-to-bottom matches Hero → Servicios
+      → Proceso → Proyectos → Autoridad → Precios → Retainer.
+      **Partially checkable this batch**: confirmed in `.next/server/app/
+      es.html` that Hero (2665) < Servicios (7864) < Proceso (9812) <
+      Proyectos (12368) by string offset of each section's heading/id;
+      Autoridad/Precios/Retainer are not built yet (3.5-3.8 out of this
+      batch's scope, PR 3b).
 - [ ] 3.V4 **Human**: verify the Academy block has no clickable link/CTA and
       no scale claims. **Not applicable this batch** — Autoridad (task 3.5)
       is PR 3b scope, not implemented.
