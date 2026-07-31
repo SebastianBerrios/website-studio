@@ -22,11 +22,13 @@ export default async function LocalePage({
   const products = toHeroProducts(validLocale);
 
   return (
-    <div id="proyectos">
-      <HeroParallax
-        products={products}
-        header={<HeroHeader locale={validLocale} />}
-      />
-    </div>
+    <HeroParallax
+      products={products}
+      header={<HeroHeader locale={validLocale} />}
+      // Anchors the products track, not the header/CTA above it — see
+      // `productsId`'s doc comment in `hero-parallax.tsx` (verify-report.md
+      // finding W2).
+      productsId="proyectos"
+    />
   );
 }

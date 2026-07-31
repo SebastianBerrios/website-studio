@@ -37,6 +37,7 @@ const MIN_ROW_CARDS = 4;
 export const HeroParallax = ({
   products,
   header,
+  productsId,
 }: {
   products: readonly {
     title: string;
@@ -50,6 +51,18 @@ export const HeroParallax = ({
    * fallback of its own.
    */
   header?: React.ReactNode;
+  /**
+   * `id` applied to the products-track wrapper only — never to this
+   * component's outer element, which also contains `header`.
+   *
+   * Fixes verify-report.md finding W2: the previous caller wrapped the
+   * ENTIRE `<HeroParallax>` (header included) in `<div id="proyectos">`, so
+   * the header's own "Explora nuestros proyectos" CTA — which links to
+   * `#proyectos` — scrolled to the top of the section the visitor was
+   * already reading. `header` renders before this prop is applied, so the
+   * anchor target is always below the CTA in document order.
+   */
+  productsId?: string;
 }) => {
   const splitAt =
     products.length >= MIN_ROW_CARDS * 2
@@ -96,6 +109,7 @@ export const HeroParallax = ({
     >
       {header}
       <motion.div
+        id={productsId}
         style={{
           rotateX,
           rotateZ,
