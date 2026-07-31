@@ -70,13 +70,47 @@ The system MUST define exactly four service lines with stable identifiers, used 
 
 ### Requirement: Pricing Module
 
-Pricing data MUST be a typed module using placeholder tokens (`[PRICE:*]`, `[CURRENCY]`) for every undecided figure — no numeric literal MUST be invented.
+> Amended after `sdd-verify` finding W10. This requirement originally demanded
+> `[PRICE:*]` / `[CURRENCY]` **string tokens**. Design decision D8 rejected
+> string tokens outright and the implementation followed D8, leaving three
+> artifacts disagreeing. D8's reasoning wins: a string token can only ever be
+> caught by scanning text, the weakest available enforcement, whereas a
+> discriminated union is caught by the type checker before anything runs. The
+> requirement is restated to demand the stronger guarantee, not the weaker one.
 
-#### Scenario: Placeholder token is structurally distinct from a real price
+Pricing data MUST be a typed module in which every undecided figure is an
+explicit `pending` state in the type system — never a string token, and never
+an invented numeric literal or currency.
+
+The module MUST give three compile-time guarantees: no price key may be
+missing, no unknown key may be added, and no entry may be malformed. An
+unresolved figure reaching a production build MUST be a build failure, not a
+cosmetic artifact.
+
+#### Scenario: An undecided figure is a designed state, not a plausible number
 
 - GIVEN a pricing entry with no decided figure
-- WHEN it is rendered
-- THEN its value is a `[PRICE:*]`-shaped token, not a plausible-looking number
+- WHEN it is read
+- THEN it carries a `pending` discriminant, and no numeric amount or currency value exists on it
+
+#### Scenario: A missing price key cannot compile
+
+- GIVEN the exhaustive map of price keys to entries
+- WHEN a key is removed or an unknown key is added
+- THEN the type checker rejects it before the build runs
+
+#### Scenario: An unresolved figure cannot silently ship
+
+- GIVEN at least one entry still `pending`
+- WHEN a production build runs with the price integrity check active
+- THEN the build fails and names the unresolved keys
+
+> Implementation note: the production check is currently gated behind
+> `PRICE_INTEGRITY_CHECK_ACTIVE` in `lib/content/invariants.ts` and is `false`,
+> because every figure is legitimately `pending` until real prices are supplied
+> and intermediate slices must still ship. Task 4.10 flips it. Until then the
+> third scenario is satisfied structurally but not enforced at runtime — stated
+> here so nobody mistakes a written gate for an active one.
 
 ### Requirement: Locale Dictionary Structure
 

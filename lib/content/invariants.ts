@@ -66,7 +66,7 @@ import "server-only";
 
 import { LOCALES } from "./locales";
 import { PROJECTS } from "./projects";
-import { toHeroProducts } from "./projections";
+import { toHeroProducts, toPortfolioCards } from "./projections";
 import { PRICES } from "./pricing";
 import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
@@ -241,6 +241,55 @@ function checkGrantedTitlesDoNotLeakClient(violations: string[]): void {
   }
 }
 
+/**
+ * The hero must be a SUBSET of the portfolio grid, and the only honest reason
+ * for a project to be grid-only is that it has no image.
+ *
+ * `specs/project-portfolio/spec.md` originally required the two surfaces to
+ * render an identical set. That is not achievable: the hero is an image-driven
+ * parallax, so a `no-visual` project cannot appear there without a broken or
+ * fake image frame. `sdd-verify` finding W10 flagged that the spec, the design,
+ * and the implementation all disagreed, and that the mismatch would surface as
+ * a false CRITICAL once PR 3a ships the grid. The spec was amended to the
+ * subset rule; this check enforces it.
+ *
+ * Joining the two projections by `title` is sound because `publicTitle()` is
+ * deterministic per project and `checkUniqueHeroTitles` guarantees hero labels
+ * do not collide.
+ */
+function checkHeroIsSubsetOfGrid(violations: string[]): void {
+  for (const locale of LOCALES) {
+    const grid = toPortfolioCards(locale);
+    const heroTitles = new Set(toHeroProducts(locale).map((p) => p.title));
+    const gridTitles = new Set(grid.map((c) => c.title));
+
+    for (const title of heroTitles) {
+      if (!gridTitles.has(title)) {
+        violations.push(
+          `Hero shows "${title}" for locale "${locale}" but the portfolio grid does not. ` +
+            `The hero must be a subset of the grid — the two surfaces would disagree about what the studio has done.`,
+        );
+      }
+    }
+
+    for (const card of grid) {
+      const inHero = heroTitles.has(card.title);
+      if (!inHero && card.evidence.state !== "no-visual") {
+        violations.push(
+          `Project "${card.slug}" has visual evidence ("${card.evidence.state}") but is missing from the hero ` +
+            `for locale "${locale}". The only permitted reason to be grid-only is "no-visual".`,
+        );
+      }
+      if (inHero && card.evidence.state === "no-visual") {
+        violations.push(
+          `Project "${card.slug}" is "no-visual" yet appears in the hero for locale "${locale}", ` +
+            `which cannot render a card without a thumbnail.`,
+        );
+      }
+    }
+  }
+}
+
 function checkServiceLineProof(violations: string[]): void {
   const linesWithProof = new Set<ServiceLine>(PROJECTS.map((p) => p.serviceLine));
   for (const line of Object.keys(SERVICE_LINES) as ServiceLine[]) {
@@ -341,6 +390,7 @@ export async function assertContentInvariants(): Promise<void> {
   checkInternalLinksResolve(violations);
   checkUniqueHeroTitles(violations);
   checkGrantedTitlesDoNotLeakClient(violations);
+  checkHeroIsSubsetOfGrid(violations);
   checkServiceLineProof(violations);
   checkNoEmptyLocalizedValues(violations);
   await checkNonEmptyApproach(violations);

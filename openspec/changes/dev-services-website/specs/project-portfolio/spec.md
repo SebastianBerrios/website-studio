@@ -83,13 +83,47 @@ Each project MUST render according to exactly one of four evidence states.
 
 ### Requirement: Portfolio Grid Consistency With Hero
 
-The landing's portfolio grid MUST render the same curated (`featured: true`) project set the hero projects from — no project appears in one but not the other.
+> Amended after `sdd-verify` finding W10. This requirement originally demanded
+> the grid and hero render "the same set of projects — no project appears in one
+> but not the other". That is not achievable and was never intended to be: the
+> hero is an image-driven parallax, so a project with no visual evidence cannot
+> appear there without rendering a broken or fake image frame — exactly what the
+> `no-visual` evidence state exists to prevent. Design §5 and `toHeroProducts()`
+> therefore exclude those projects from the hero. Left unamended this would have
+> surfaced as a false CRITICAL when PR 3a ships the grid.
+>
+> The real intent — that the hero never shows something the grid hides, and that
+> any divergence has exactly one honest cause — is restated below as a checkable
+> subset rule.
 
-#### Scenario: Grid and hero share the same set
+The hero's entries MUST be a **subset** of the grid's entries, both drawn from
+the same curated (`featured: true`) set.
+
+Every project the hero shows MUST also appear in the grid. A project MAY appear
+in the grid but not the hero, and the ONLY permitted reason is that it has no
+visual evidence (`evidence.state: "no-visual"`), because the hero cannot render
+a card without a thumbnail honestly.
+
+Any other divergence is a defect: it means the two surfaces disagree about what
+the studio has done.
+
+#### Scenario: Hero is a subset of the grid
 
 - GIVEN the featured project set
 - WHEN the hero's entries and the grid's entries are compared
-- THEN they are the same set of projects
+- THEN every hero entry appears in the grid
+
+#### Scenario: A grid-only project is grid-only because it has no image
+
+- GIVEN a project present in the grid but absent from the hero
+- WHEN its evidence state is inspected
+- THEN it is `no-visual`
+
+#### Scenario: A project with imagery cannot be dropped from the hero
+
+- GIVEN a featured project whose evidence carries media
+- WHEN the hero projection is built
+- THEN that project is present in the hero, and its absence fails the build
 
 ### Requirement: No Self-Referential Links
 
