@@ -178,31 +178,31 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 
 ### PR 2a — `lib/content/**` core types and data (no routing)
 
-- [ ] 2.1 Create `lib/content/locales.ts`: `Locale` union (`'es'`), `LOCALES`,
+- [x] 2.1 Create `lib/content/locales.ts`: `Locale` union (`'es'`), `LOCALES`,
       `DEFAULT_LOCALE`, `isLocale()`, `assertLocale()` (calls `notFound()` on
       a miss). — *design D3 layer 3*
-- [ ] 2.2 Create `lib/content/types.ts`: `Localized<T>`, `Project`,
+- [x] 2.2 Create `lib/content/types.ts`: `Localized<T>`, `Project`,
       `Evidence` (4-state discriminated union), `Consent` (3-state
       discriminated union), `Outcome` (metric-with-source vs qualitative),
       `MediaAsset`. — *content-model: Project Entity Shape, Evidence Field,
       Consent Field Semantics; case-study: No Invented Metric*
-- [ ] 2.3 Create `lib/content/service-lines.ts`: `ServiceLine` union +
+- [x] 2.3 Create `lib/content/service-lines.ts`: `ServiceLine` union +
       `SERVICE_LINES` — exactly 4 (A/B/C/D). — *service-catalog: Fixed
       Four-Line Catalog*
-- [ ] 2.4 Create `lib/content/pricing.ts`: `Currency`, `PriceToken` union (8
+- [x] 2.4 Create `lib/content/pricing.ts`: `Currency`, `PriceToken` union (8
       tokens), `Money`, `PriceEntry` (`set` | `pending`), `PRICES` as
       `const satisfies Record<PriceToken, PriceEntry>` — every entry
       `status: 'pending'` (no figures decided yet). — *design D8;
       content-model: Pricing Module*
-- [ ] 2.5 Create `lib/content/retainer.ts`: `RetainerCommitments` type with
+- [x] 2.5 Create `lib/content/retainer.ts`: `RetainerCommitments` type with
       all 6 required fields (`responseWindow`, `channels`, `monthlyHours`,
       `includedScope`, `excludedScope`, `cancellationTerms`); instance with
       placeholder values pending 4.H2. — *trust-signals: Retainer Published
       Commitments*
-- [ ] 2.6 Create `lib/content/authority.ts`: `Authority` union (`no-link` |
+- [x] 2.6 Create `lib/content/authority.ts`: `Authority` union (`no-link` |
       `linked`); instance set to `no-link` (Academy deployment 404s,
       VERIFIED). — *trust-signals: Academy No-Link State*
-- [ ] 2.7 Create `lib/content/contact.ts`: business contact + `WHATSAPP`
+- [x] 2.7 Create `lib/content/contact.ts`: business contact + `WHATSAPP`
       using the same `pending`-style discriminant if the number from 1.H1 is
       still unknown. Delete PR 1's temporary `lib/contact.ts`.
 
