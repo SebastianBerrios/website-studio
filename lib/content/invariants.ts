@@ -340,6 +340,44 @@ function checkPortfolioLinksOnlyToPublishedCaseStudies(violations: string[]): vo
   }
 }
 
+/**
+ * A production build must not fall back to the localhost site URL.
+ *
+ * `app/layout.tsx` and `app/robots.ts` both read
+ * `process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"`. That fallback
+ * is correct for local development and a **silent catastrophe** in production:
+ * `metadataBase` drives the canonical tag, so deploying without the variable
+ * emits `<link rel="canonical" href="http://localhost:3000/es">` and a
+ * `robots.txt` whose `sitemap:` points at localhost. Search engines would be
+ * told the canonical home of every page is a machine they cannot reach — and
+ * the build would pass without a word.
+ *
+ * Setting the variable is human task 2.H2, still open. Until it is done this
+ * check makes the omission loud instead of silent, matching how
+ * `lib/brief/abuse.ts` fails closed when its HMAC secret is absent rather than
+ * accepting submissions it cannot verify.
+ *
+ * Local and preview builds are unaffected: `isStrictMode()` only treats
+ * `VERCEL_ENV === "production"` as strict.
+ */
+function checkSiteUrlConfigured(violations: string[]): void {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured === undefined || isBlank(configured)) {
+    violations.push(
+      "NEXT_PUBLIC_SITE_URL is not set, so metadataBase and robots.txt would " +
+        'fall back to "http://localhost:3000". A production build must not ship ' +
+        "canonical URLs or a sitemap reference pointing at localhost (human task 2.H2).",
+    );
+    return;
+  }
+  if (configured.startsWith("http://localhost")) {
+    violations.push(
+      `NEXT_PUBLIC_SITE_URL is "${configured}", which is a localhost address. ` +
+        "A production build must use the real public origin.",
+    );
+  }
+}
+
 function checkServiceLineProof(violations: string[]): void {
   const linesWithProof = new Set<ServiceLine>(PROJECTS.map((p) => p.serviceLine));
   for (const line of Object.keys(SERVICE_LINES) as ServiceLine[]) {
@@ -441,6 +479,7 @@ export async function assertContentInvariants(): Promise<void> {
   checkUniqueHeroTitles(violations);
   checkGrantedTitlesDoNotLeakClient(violations);
   checkHeroIsSubsetOfGrid(violations);
+  checkSiteUrlConfigured(violations);
   checkPortfolioLinksOnlyToPublishedCaseStudies(violations);
   checkServiceLineProof(violations);
   checkNoEmptyLocalizedValues(violations);
