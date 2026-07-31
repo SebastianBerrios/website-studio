@@ -271,9 +271,22 @@ unlinkable majority of this portfolio.
 - Lives in landing section 5, and MUST NOT appear as a card in the 6–8 grid.
 - Says: ElectroCode Academy is a platform of **free** programming and electronics
   courses, built and maintained by the same studio, under the same brand.
-- Carries three signals at once: domain depth (the studio teaches what it sells),
-  sustained long-term product maintenance (which partially covers the retainer
-  line's missing proof), and shared-brand credibility.
+- Carries two signals: domain depth (the studio teaches what it sells) and
+  shared-brand credibility.
+
+  > **Correction, 2026-07-31.** This originally claimed a third signal —
+  > "sustained long-term product maintenance", said to partially cover the
+  > retainer line's missing proof. That premise is **falsified**. Verified with
+  > `gh repo view`: `electrocode-academy` was created **2026-07-28**, three days
+  > before this correction, with 83 commits and a push the same day. That is
+  > intense activity, but it is not longevity, and a prospect reads "sustained"
+  > as years. The deployment also still returns 404, so nothing about it is in
+  > production.
+  >
+  > Domain depth survives untouched and is the strongest of the signals anyway:
+  > it needs neither a deployment nor an age. The retainer line therefore has
+  > **no** proof from this block and rests entirely on its published
+  > commitments (§8.2 item 1).
 - **Honesty constraints.** The repo is PRIVATE and its deployment returns 404
   (VERIFIED), so the block ships in state `no-link` today: describe the platform,
   show the brand mark or a locally captured screenshot, and offer no clickable
@@ -295,10 +308,17 @@ order of strength:
 2. **Itemized scope of maintenance** — dependency and security updates, uptime
    checks, backups, content edits, small features. The SMB objection here is
    precisely "what am I paying for in a month when nothing breaks".
-3. **Continuity evidence** — the studio already carries multi-product, multi-year
-   relationships (Blu Café's public site plus the `blu` back-office are the same
-   client; ElectroCode Academy is a continuously maintained product). State only
-   what is true and confirmable with the client.
+3. **Continuity evidence** — the studio already carries a multi-product client
+   relationship: Blu Café's public site and the `blu` back-office are the same
+   client. State only what is true and confirmable with the client.
+
+   > **Correction, 2026-07-31.** This originally also cited ElectroCode Academy
+   > as "a continuously maintained product" and described the relationships as
+   > "multi-year". Both are withdrawn. The academy repository is three days old
+   > (created 2026-07-28, verified via `gh repo view`), so it evidences nothing
+   > about continuity. "Multi-year" was never verified for any client and is not
+   > claimed. What remains verifiable is that one client has two shipped
+   > products — which is genuine continuity evidence, just not a duration claim.
 4. **Deferred:** a testimonial from a retainer client. Highest-value signal,
    requires asking a client, OPEN, not in the first scope.
 

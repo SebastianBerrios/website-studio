@@ -34,8 +34,15 @@ export const es: Dictionary = {
   },
   authority: {
     heading: "Un producto propio, bajo la misma marca",
+    // Claims here are deliberately narrow. Two earlier versions over-claimed:
+    // "en producción" contradicted the very next sentence (the deployment
+    // returns 404), and "de forma sostenida" implied longevity a repository
+    // created 2026-07-28 cannot support. What IS verifiable is domain depth —
+    // the studio builds, maintains and teaches in the same field — and that
+    // stands with no deployment and no age. Do not reintroduce claims about
+    // uptime, longevity, or scale.
     intro:
-      "Es la prueba de que este estudio mantiene sus propios productos en producción de forma sostenida, con la misma disciplina que aplica en el trabajo para sus clientes.",
+      "El mismo estudio que construye tu sitio desarrolla y enseña en el mismo terreno: una plataforma propia de cursos gratuitos de programación y electrónica, con la misma disciplina que aplica en el trabajo para sus clientes.",
     visitCta: "Visitar",
   },
   retainer: {
