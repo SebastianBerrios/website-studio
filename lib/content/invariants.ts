@@ -40,8 +40,10 @@
  * 5. **Non-empty `approach` per project** — same "empty string", not
  *    "still a stub", distinction as above; resolved via the async loader,
  *    so this check is itself `async`.
- * 6. **Hero projection has at least 4 entries** — per every locale's
- *    `toHeroProducts()` (design.md D4/§13 risk 1: 4 is today's floor).
+ * 6. **Hero projection has at least `HERO_FLOOR` entries** — per every
+ *    locale's `toHeroProducts()` (design.md D4/§13 risk 1 introduced a floor
+ *    of 4; the `fix/content-honesty` slice lowered it to 3 as a documented,
+ *    temporary launch-quality signal — see the constant's own comment).
  * 7. **Evidence/media shape** — mostly a compile-time guarantee already
  *    (`Evidence`'s discriminated union in `lib/content/types.ts` makes a
  *    mismatched state/media pair a type error before this file ever runs).
@@ -74,6 +76,19 @@ import type { ProjectSlug } from "./projects";
  * `lib/content/pricing.ts`. See the file header, point 8.
  */
 const PRICE_INTEGRITY_CHECK_ACTIVE = false;
+
+/**
+ * Minimum hero entry count. Lowered from the original design floor of 4 to
+ * 3 by the `fix/content-honesty` remediation slice, which honestly demoted
+ * `blu` to `no-visual` (unconsented capture, finding C1) and `atemporal` to
+ * `not-deployed` (domain does not resolve, finding C2) rather than
+ * fabricating a fourth entry to keep the old floor. This is a **launch-
+ * quality signal, not a permanent target**: it exists so a future accidental
+ * drop to 0-2 entries still fails the build loudly, not so 3 is treated as
+ * good enough. Raise it back toward 4+ as real captures and consent (tasks
+ * 3.H1/3.H2) land. See `sdd/dev-services-website/verify-report.md` §7.
+ */
+const HERO_FLOOR = 3;
 
 /** The one service line that legitimately has no project proof. */
 const LINE_EXEMPT_FROM_PROOF: ServiceLine = "D";
@@ -132,6 +147,23 @@ function checkInternalLinksResolve(violations: string[]): void {
   for (const locale of LOCALES) {
     const liveTargets = new Set<string>([`/${locale}`, `/${locale}#proyectos`]);
     for (const product of toHeroProducts(locale)) {
+      // External hrefs are deliberately NOT reachability-checked here. This
+      // is the exact gap finding C2 (`sdd/dev-services-website/verify-report.md`)
+      // exploited: `atemporalarq.com` was `evidence.state: "live"` with a
+      // dead DNS entry, and this loop's `continue` never saw it. It stays
+      // uncovered on purpose, not by oversight — a build-time DNS/HTTP probe
+      // of a third party's domain is a NETWORK CALL during `next build`:
+      // non-deterministic (the same build can pass or fail depending on
+      // network conditions unrelated to any code change — S2 already
+      // documents `next build` being flaky enough without adding a live
+      // egress dependency), slow, and often unavailable in CI/build
+      // sandboxes that block outbound network access entirely. A check that
+      // sometimes fails for reasons that have nothing to do with the commit
+      // being built is worse than no check — it teaches reviewers to retry
+      // past red builds. External liveness is a periodic HUMAN/product
+      // verification (see task 1.H2 and this same finding), not a
+      // build-time gate; do not add automated coverage for it here without
+      // first solving that non-determinism.
       if (isExternalHref(product.link)) continue;
       if (!liveTargets.has(product.link)) {
         violations.push(
@@ -197,9 +229,9 @@ async function checkNonEmptyApproach(violations: string[]): Promise<void> {
 function checkHeroFloor(violations: string[]): void {
   for (const locale of LOCALES) {
     const count = toHeroProducts(locale).length;
-    if (count < 4) {
+    if (count < HERO_FLOOR) {
       violations.push(
-        `Hero projection for locale "${locale}" has only ${count} entries; the design floor is 4.`,
+        `Hero projection for locale "${locale}" has only ${count} entries; the floor is ${HERO_FLOOR}.`,
       );
     }
   }
