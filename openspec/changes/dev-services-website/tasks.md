@@ -600,6 +600,16 @@ Satisfies: `lead-capture` (all requirements). Design decision: D1.
       Route*
 - [ ] 6.9 `app/sitemap.ts`: confirm `/gracias` is excluded now that the
       route exists (mechanism from PR 2c).
+- [ ] 6.9b **Remove the `as Route` cast** at `lib/brief/submit.ts`'s
+      `redirect()` call. PR 6a needed it because `typedRoutes` correctly
+      flagged that `/[locale]/gracias` did not exist; once task 6.8 creates
+      the page, the cast must go so `typedRoutes` resumes checking that call
+      site. There are exactly two waivers of the `typedRoutes` guarantee in
+      this codebase — this one and the documented `product.link as Route` in
+      `hero-parallax.tsx`, which is structural and permanent. This one is
+      temporary, and a comment saying so is an intention, not a commitment;
+      that is why it is a task. Verify by deleting the cast and confirming
+      `npm run build` still passes. — *design D7*
 - [ ] 6.10 Configure a Vercel Firewall rate-limit rule on the brief action's
       path (platform config, not source — apply via Vercel dashboard/CLI).
       Scope depends on 6.H3.
