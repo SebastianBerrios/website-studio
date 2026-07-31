@@ -7,6 +7,26 @@ import { QuoteBlock } from "@/components/pricing/quote-block";
 import { RetainerPlans } from "@/components/pricing/retainer-plans";
 import { TermsTable } from "@/components/pricing/terms-table";
 import { Faq } from "@/components/pricing/faq";
+import { canonicalFor } from "@/lib/seo";
+import type { Metadata } from "next";
+
+/**
+ * This page's own canonical. Without it the page inherited the root layout's
+ * and declared `/es` — the homepage — as its canonical version, which is an
+ * instruction to search engines NOT to index the pricing page as itself. That
+ * defeats the reason this route exists (proposal §5: shareable, sent directly
+ * in DMs, SEO target). See `lib/seo.ts`.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    alternates: { canonical: canonicalFor(assertLocale(locale), "precios") },
+  };
+}
 
 /**
  * The pricing page. Task 4.6. Composes the 8 blocks `specs/pricing/

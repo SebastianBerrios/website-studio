@@ -21,8 +21,20 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     type: "website",
   },
+  // NO `alternates.canonical` here, deliberately.
+  //
+  // A canonical set in the root layout is inherited by every route, so while
+  // `/es` was the only page it looked correct — and became wrong the moment
+  // `/es/precios` shipped, which then declared the homepage as its canonical
+  // version. That tells search engines not to index the pricing page as
+  // itself, defeating the reason it earns a URL at all (proposal §5:
+  // "shareable, sent directly in DMs, SEO target").
+  //
+  // Canonicals belong to routes, not to the shell. Each page sets its own via
+  // `generateMetadata` using `canonicalFor()` in `lib/seo.ts`. A route that
+  // forgets simply emits no canonical, which search engines resolve from the
+  // URL — a strictly better failure than a confidently wrong one.
   alternates: {
-    canonical: `/${DEFAULT_LOCALE}`,
     languages: {
       [DEFAULT_LOCALE]: `/${DEFAULT_LOCALE}`,
       "x-default": `/${DEFAULT_LOCALE}`,

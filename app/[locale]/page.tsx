@@ -8,6 +8,22 @@ import { PricingSummary } from "@/components/sections/pricing-summary";
 import { Retainer } from "@/components/sections/retainer";
 import { assertLocale } from "@/lib/content/locales";
 import { toHeroProducts } from "@/lib/content/projections";
+import { canonicalFor } from "@/lib/seo";
+import type { Metadata } from "next";
+
+/**
+ * Each route owns its canonical. The root layout deliberately declares none,
+ * because a canonical in a shared shell is inherited by every page — see the
+ * note in `app/layout.tsx` and `lib/seo.ts`.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: { canonical: canonicalFor(assertLocale(locale)) } };
+}
 
 /**
  * The locale landing page. All nine sections `specs/landing-narrative/
