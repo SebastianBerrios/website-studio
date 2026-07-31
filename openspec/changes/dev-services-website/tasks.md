@@ -293,6 +293,23 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 - [x] 2.26 Root `app/layout.tsx`: set `metadataBase` from
       `NEXT_PUBLIC_SITE_URL`; add `alternates.canonical` /
       `alternates.languages` / `x-default`. — *design D2 SEO consequences*
+- [ ] 2.27 **DEFERRED — no owner until a second locale ships.**
+      `specs/site-shell/spec.md`'s "Footer Navigation" requirement calls for
+      the footer to carry "navigation links, a contact/WhatsApp reference,
+      **and locale indication**". `components/layout/site-footer.tsx` renders
+      the first two today but nothing for the third (`sdd-verify` W6). This
+      is deliberately not built now: `LOCALES = ['es']` is the only shipped
+      locale, so any visible locale indication (a switcher, a language label)
+      would imply a choice that does not exist — the requirement's own
+      scenario ("Footer renders without a locale switcher assumption") is
+      satisfied precisely by rendering nothing, not by rendering something
+      unfinished. **Trigger**: the moment a second entry is added to
+      `LOCALES` (`lib/content/locales.ts`), this task becomes active — add a
+      minimal locale indicator (e.g. the current locale's label, or a
+      switcher if more than one locale should be user-selectable) to
+      `site-footer.tsx`, sourced from the dictionary like the rest of its
+      copy. Until then this line keeps the requirement visibly owned rather
+      than silently dropped.
 
 ### Human tasks
 
@@ -304,10 +321,19 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 
 ### Verification
 
-- [ ] 2.V1 `npm run build` passes — confirms `generateStaticParams`,
+- [x] 2.V1 `npm run build` passes — confirms `generateStaticParams`,
       `dynamicParams = false`, `typedRoutes`, and `assertContentInvariants()`
       all compile and run without throwing (non-production: warns only).
-- [ ] 2.V2 `npm run lint` passes.
+      **Reconciled by `sdd-verify`/this cleanup slice (W11)**: `apply-
+      progress.md` already recorded this as done and passing (PR 2c's build
+      result, commit `ac6b72f`), and `sdd-verify` independently re-ran and
+      confirmed a clean exit 0 from a clean `.next`. This checkbox was left
+      unchecked in error; corrected here, not newly performed.
+- [x] 2.V2 `npm run lint` passes. **Reconciled by `sdd-verify`/this cleanup
+      slice (W11)**: same as 2.V1 — `apply-progress.md` recorded this
+      passing with only the 2 pre-existing `hover-border-gradient.tsx`
+      warnings, `sdd-verify` re-ran and confirmed it, and the checkbox here
+      was simply never ticked. Corrected here.
 - [ ] 2.V3 **Human**: request `/precios`, `/gracias`, `/proyectos/x`
       unprefixed — confirm 307 to the `/es/...` counterpart, not a 404.
 - [ ] 2.V4 **Human**: request an unknown first segment (e.g. `/xx`) — confirm
@@ -984,3 +1010,21 @@ three items.
   not reopened by this task list. Where a task's phrasing might look like a
   reopening, it is honoring a decision's stated escape hatch (e.g.
   `SITE_CONTENT_GATE=warn`), not revisiting it.
+- **Known, bounded gap — the `#precios` dead-anchor fix (`sdd-verify` W8):**
+  `git show 9809a2b:components/layout/site-header.tsx` shows a nav item
+  linking `/#precios` with no matching `id="precios"` anywhere at that
+  commit, nor at the PR 2a or PR 2b tips. The fix (removing that nav item)
+  landed only at commit `c44bf34`, the last commit of PR 2c. This is not
+  fixed by rewriting history: doing so properly needs an interactive rebase
+  this environment does not support, and the fallback — sequential rebases
+  across dozens of already-verified commits — carries more risk of breaking
+  working code than the defect itself. **Accepted cost**: under
+  `chain_strategy: stacked-to-main`, if PR 1, PR 2a, and PR 2b are each
+  merged to `main` and left to sit before PR 2c follows, each of those three
+  intermediate production states ships a "Precios" nav item that scrolls
+  nowhere for as long as that gap lasts. **Process mitigation, not a code
+  fix**: merge PR 1 through PR 2c in one sitting, so no intermediate state is
+  left running in production long enough for a visitor to hit it. This is a
+  process constraint on whoever performs the merges, not a guarantee the code
+  provides on its own — stating the cost honestly rather than presenting it
+  as resolved.

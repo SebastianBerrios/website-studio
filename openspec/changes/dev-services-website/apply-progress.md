@@ -592,19 +592,51 @@ actual copy ("Tu proyecto es único", "Explora nuestros proyectos") does.
 `/precios` and `/proyectos/:slug` are registered `redirects()` sources
 (task 2.23, per design D2) that point at destinations (`/es/precios`,
 `/es/proyectos/:slug`) which do not exist as pages until PR 4/PR 5. A visitor
-who follows one of these redirects today lands on a branded, in-locale 404
-(`app/[locale]/not-found.tsx`, since the redirect resolves `locale = "es"`
-correctly and only the nested sub-route is missing) — not a phantom-locale
-page and not the framework default, but also not the destination they were
-looking for. This is different from — and less severe than — a rendered
-`<Link>` to a dead route (nothing in this batch's HTML contains one, verified
-below), but it is a real, honest gap worth naming: these two redirects exist
-today for a destination this PR does not yet build. Design.md D2 explicitly
-authorizes exactly this ("`/portfolio` may exist in a browser history or an
-index; redirect it, do not leave it dead") and tasks.md task 2.23 requires
-all six entries in this batch, so this was not a discretionary choice — it
-is a deliberate, designed interim state, not an oversight, and is resolved
-automatically once PR 4/PR 5 ship (no further code change needed here).
+who follows one of these redirects today lands on the **root** 404
+(`app/not-found.tsx`, via Next's single built-in `_not-found` route entry) —
+**correction, `sdd-verify` W3**: an earlier version of this paragraph claimed
+the visitor lands on the in-locale 404 (`app/[locale]/not-found.tsx`) "since
+the redirect resolves `locale = "es"` correctly and only the nested sub-route
+is missing." That claim is false and has been corrected here. Verified two
+ways:
+- **Live, in `sdd-verify`**: `/es/precios`, `/es/proyectos/blu`, and `/es/nope`
+  all render the root 404 (zero `<header`/`<footer` in the response, and the
+  root `not-found.tsx`'s exact `<main>` class string) — not the in-locale one,
+  which is wrapped in `SiteHeader`/`SiteFooter` by `app/[locale]/layout.tsx`
+  and would show both.
+- **In source, in this `sdd-apply` cleanup slice**: Next only enters the
+  `[locale]` segment's render tree — and can therefore hit that segment's own
+  `not-found.tsx` boundary — when a component already inside that tree calls
+  `notFound()` at runtime (`node_modules/next/dist/server/app-render/create-
+  component-tree.js` wires a `not-found.tsx`-per-segment boundary for exactly
+  that case). A request whose full path matches no page file at all — which
+  is every path in this table, since nothing under `app/[locale]/**` besides
+  `page.tsx` exists yet — never enters that tree; it resolves directly to
+  Next's single, separately built `_not-found` route entry
+  (`UNDERSCORE_NOT_FOUND_ROUTE_ENTRY` in `node_modules/next/dist/server/base-
+  server.js`), built from the root layout only. This holds regardless of
+  whether the URL's first segment is a valid locale.
+
+So today `app/[locale]/not-found.tsx` is unreachable by any live request —
+not a phantom-locale page, not the framework default, but also not the
+destination the visitor was looking for. This is different from — and less
+severe than — a rendered `<Link>` to a dead route (nothing in this batch's
+HTML contains one, verified below), but it is a real, honest gap worth
+naming: these two redirects exist today for a destination this PR does not
+yet build. Design.md D2 explicitly authorizes exactly this ("`/portfolio` may
+exist in a browser history or an index; redirect it, do not leave it dead")
+and tasks.md task 2.23 requires all six entries in this batch, so this was
+not a discretionary choice — it is a deliberate, designed interim state, not
+an oversight. The redirect-to-404 gap itself resolves automatically once
+PR 4/PR 5 ship (no further code change needed there); `app/[locale]/
+not-found.tsx` itself becomes reachable once PR 5 adds a dynamic segment
+(e.g. `[slug]`) whose page calls `notFound()` for an unpublished slug from
+inside the already-matched `[locale]` tree — at that point the segment
+boundary described above will render this file instead of bubbling to root.
+Until then, it is intentional infrastructure for that near-term task, not
+dead code to delete: it matches design.md §3's stated file tree, costs
+nothing to keep, and deleting it now would mean recreating it verbatim for
+PR 5.
 
 ## Build result (verbatim, PR 2c's final commit `ac6b72f`)
 
