@@ -13,10 +13,26 @@ import {
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { isExternalHref } from "@/lib/links";
 
-// A row of 5+ cards overflows every viewport, which is what makes the
-// parallax slide read as motion instead of dragging a short row through
-// empty space (see design.md D4). Below this count a single row is used.
-const SINGLE_ROW_MAX = 4;
+// A row only reads as parallax motion if it overflows the viewport; otherwise
+// the preserved 1000px slide drags a short row through empty space (design.md
+// D4). Each card is `w-120` (480px) separated by `space-x-20` (80px), so a row
+// of n spans `560n - 80` px:
+//
+//   2 cards = 1040px   overflows nothing
+//   3 cards = 1600px   overflows 1440px, not 1920px
+//   4 cards = 2160px   overflows both
+//
+// So splitting into two rows is only correct when BOTH rows would hold at
+// least MIN_ROW_CARDS — that is, from 8 products up. Between 5 and 7 a single
+// long row is the right answer.
+//
+// D4 illustrates this rule with "6 -> 3+3", which predates the arithmetic
+// above and contradicts D4's own stated criterion: at 6 products a 3+3 split
+// yields two rows that overflow neither 1920px viewport. The measured rule
+// wins over the illustrative example. Without this guard, counts of 5 and 7
+// produce a stranded second row — and those counts are not hypothetical,
+// because case studies land one at a time (tasks.md task 5.5).
+const MIN_ROW_CARDS = 4;
 
 export const HeroParallax = ({
   products,
@@ -28,9 +44,9 @@ export const HeroParallax = ({
   }[];
 }) => {
   const splitAt =
-    products.length <= SINGLE_ROW_MAX
-      ? products.length
-      : Math.ceil(products.length / 2);
+    products.length >= MIN_ROW_CARDS * 2
+      ? Math.ceil(products.length / 2)
+      : products.length;
   const firstRow = products.slice(0, splitAt);
   const secondRow = products.slice(splitAt);
   const ref = React.useRef(null);
@@ -119,6 +135,9 @@ export const Header = () => {
         <HoverBorderGradient
           containerClassName="rounded-full"
           as="button"
+          // INTERIM: same-page anchor, replacing the `/portfolio` route that
+          // never existed and 404'd in production. Points at the real
+          // portfolio section once PR 3a ships it (tasks.md task 1.6).
           href="/#proyectos"
           className=" dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
         >
