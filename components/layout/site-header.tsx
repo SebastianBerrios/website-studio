@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { WHATSAPP } from "@/lib/content/contact";
+import { getDictionary } from "@/lib/dictionaries";
 import { landingAnchor } from "@/lib/links";
 import type { Locale } from "@/lib/content/locales";
 
@@ -20,6 +21,8 @@ import type { Locale } from "@/lib/content/locales";
 // because `chain_strategy` is `stacked-to-main` (tasks.md §9). PR 4 adds it
 // back pointing at the real route.
 export function SiteHeader({ locale }: { locale: Locale }) {
+  const { header } = getDictionary(locale);
+
   return (
     <header className="w-full border-b border-border/60">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 py-4">
@@ -27,11 +30,11 @@ export function SiteHeader({ locale }: { locale: Locale }) {
           href={`/${locale}`}
           className="text-lg font-bold tracking-tight"
         >
-          ElectroCode Studio
+          {header.brand}
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Link href={landingAnchor(locale, "proyectos") as Route}>
-            Proyectos
+            {header.projectsLink}
           </Link>
           {WHATSAPP.status === "set" && (
             <a
@@ -40,7 +43,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
               rel="noopener noreferrer"
               className="font-medium"
             >
-              WhatsApp
+              {header.whatsappLink}
             </a>
           )}
         </nav>

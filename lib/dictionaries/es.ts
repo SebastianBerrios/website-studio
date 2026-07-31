@@ -7,6 +7,17 @@
 import type { Dictionary } from "./types";
 
 export const es: Dictionary = {
+  header: {
+    brand: "ElectroCode Studio",
+    projectsLink: "Proyectos",
+    whatsappLink: "WhatsApp",
+  },
+  footer: {
+    brand: "ElectroCode Studio",
+    tagline: "Desarrollo web a medida, desde Perú.",
+    projectsLink: "Proyectos",
+    whatsappLink: "WhatsApp",
+  },
   hero: {
     heading: ["Tu proyecto es único,", "tu web también"],
     subtitle:

@@ -23,6 +23,31 @@ export type NotFoundDictionary = {
 };
 
 /**
+ * Site chrome — `components/layout/site-header.tsx`. Renders on every route
+ * under `app/[locale]/**`, not a landing section, so it is keyed separately
+ * from the numbered sections below.
+ */
+export type SiteHeaderDictionary = {
+  readonly brand: string;
+  readonly projectsLink: string;
+  readonly whatsappLink: string;
+};
+
+/**
+ * Site chrome — `components/layout/site-footer.tsx`. `brand`/`projectsLink`/
+ * `whatsappLink` currently repeat `header`'s values; kept as separate keys
+ * (rather than shared with `header`) because the header and footer are
+ * independent components and either copy may diverge later without forcing
+ * a shared-type refactor.
+ */
+export type SiteFooterDictionary = {
+  readonly brand: string;
+  readonly tagline: string;
+  readonly projectsLink: string;
+  readonly whatsappLink: string;
+};
+
+/**
  * Landing section 2, "Servicios" (landing-narrative spec, "Servicios Section
  * Contract"). `proofCta` is the single CTA every service card renders —
  * see `components/sections/services.tsx`'s doc comment for why this PR does
@@ -97,6 +122,8 @@ export type RetainerDictionary = {
 };
 
 export type Dictionary = {
+  readonly header: SiteHeaderDictionary;
+  readonly footer: SiteFooterDictionary;
   readonly hero: HeroDictionary;
   readonly services: ServicesDictionary;
   readonly process: ProcessDictionary;
