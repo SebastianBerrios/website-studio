@@ -47,9 +47,25 @@ export type PortfolioDictionary = {
   readonly notDeployedNote: string;
 };
 
+/**
+ * Landing section 3, "Proceso" (landing-narrative spec, "Proceso Section
+ * Contract", task 3.2). The phase names/descriptions and the
+ * `requiresApproval` flag are domain facts and live in
+ * `lib/content/process.ts`; these four keys are structural UI labels around
+ * that data — the heading, the per-phase approval badge, and the sentence
+ * wrapping `PROCESS.revisionRoundsIncluded`.
+ */
+export type ProcessDictionary = {
+  readonly heading: string;
+  readonly approvalBadge: string;
+  readonly revisionsLabel: string;
+  readonly revisionsExtra: string;
+};
+
 export type Dictionary = {
   readonly hero: HeroDictionary;
   readonly services: ServicesDictionary;
+  readonly process: ProcessDictionary;
   readonly portfolio: PortfolioDictionary;
   readonly notFound: NotFoundDictionary;
 };

@@ -17,6 +17,12 @@ export const es: Dictionary = {
     heading: "Servicios",
     proofCta: "Ver proyectos",
   },
+  process: {
+    heading: "Proceso",
+    approvalBadge: "Requiere tu aprobación para avanzar",
+    revisionsLabel: "rondas de revisión incluidas.",
+    revisionsExtra: "Rondas adicionales se cotizan aparte.",
+  },
   portfolio: {
     heading: "Proyectos",
     gatedNote: "Acceso restringido: este producto requiere inicio de sesión.",

@@ -1,19 +1,21 @@
 import { HeroParallax } from "@/components/ui/hero-parallax";
 import { HeroHeader } from "@/components/sections/hero-header";
 import { Services } from "@/components/sections/services";
+import { Process } from "@/components/sections/process";
 import { Portfolio } from "@/components/sections/portfolio";
 import { assertLocale } from "@/lib/content/locales";
 import { toHeroProducts } from "@/lib/content/projections";
 
 /**
  * The locale landing page. Sections rendered so far: 1 (Hero, PR 2), 2
- * (Servicios, PR 3a task 3.1), 4 (Proyectos, PR 3a task 3.4). Sections 3
- * (Proceso), 5-7 (Autoridad/Precios summary/Retainer, PR 3b), and 8-9
- * (Brief/WhatsApp + Footer wiring, PR 6) are NOT composed here yet — this is
- * a partial slice of PR 3, not the full landing-narrative order. What IS
- * rendered keeps the relative order `specs/landing-narrative/spec.md`'s
- * "Fixed Section Order" requires (Hero < Servicios < Proyectos); the gaps
- * are filled by later slices, not reordered around.
+ * (Servicios, PR 3a task 3.1), 3 (Proceso, PR 3a task 3.2), 4 (Proyectos,
+ * PR 3a task 3.4). Sections 5-7 (Autoridad/Precios summary/Retainer, PR 3b)
+ * and 8-9 (Brief/WhatsApp + Footer wiring, PR 6) are NOT composed here yet —
+ * this is a partial slice of PR 3, not the full landing-narrative order.
+ * What IS rendered keeps the relative order
+ * `specs/landing-narrative/spec.md`'s "Fixed Section Order" requires
+ * (Hero < Servicios < Proceso < Proyectos); the gaps are filled by later
+ * slices, not reordered around.
  *
  * Replaces the former `app/page.tsx` (task 2.18). `toHeroProducts(locale)`
  * is now the single source of truth for the hero's product grid, replacing
@@ -40,6 +42,7 @@ export default async function LocalePage({
         header={<HeroHeader locale={validLocale} />}
       />
       <Services locale={validLocale} />
+      <Process locale={validLocale} />
       <Portfolio locale={validLocale} />
     </>
   );
