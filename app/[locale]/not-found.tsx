@@ -18,7 +18,7 @@ export default function LocaleNotFound() {
 
   return (
     <main className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-3xl font-bold">{notFound.heading}</h1>
+      <h1 className="text-3xl font-medium tracking-tight">{notFound.heading}</h1>
       <p className="max-w-md text-muted-foreground">{notFound.message}</p>
       <Link
         href={`/${DEFAULT_LOCALE}`}

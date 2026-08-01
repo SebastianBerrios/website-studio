@@ -14,6 +14,12 @@ import { PricePending } from "./price-pending";
  * `<PricePending>`; `set` renders the formatted `Money` value via
  * `formatMoney()` (`lib/content/pricing.ts`) — never a raw number assembled
  * inline, so no component anywhere else can accidentally hardcode a figure.
+ *
+ * **`tabular-nums` lives here, not per-consumer** (feat/editorial-design):
+ * every figure on `/[locale]/precios` renders through this one component, so
+ * putting the digit-alignment rule on its own `<span>` guarantees every
+ * price on the page uses fixed-width numerals — the pricing tables align
+ * whether a consumer remembers the utility class or not.
  */
 export function Price({ token }: { token: PriceToken }) {
   // Widened explicitly to `PriceEntry` (not the narrower literal type
@@ -28,7 +34,11 @@ export function Price({ token }: { token: PriceToken }) {
 
   switch (entry.status) {
     case "set":
-      return <span className="font-semibold">{formatMoney(entry.value)}</span>;
+      return (
+        <span className="font-display font-semibold tabular-nums">
+          {formatMoney(entry.value)}
+        </span>
+      );
     case "pending":
       return <PricePending token={token} />;
     default: {

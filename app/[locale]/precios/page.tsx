@@ -68,13 +68,15 @@ export default async function PricingPage({
   const { pricing } = getDictionary(validLocale);
 
   return (
-    <main className="py-16 md:py-24">
+    <main className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-3xl md:text-5xl font-bold">{pricing.heading}</h1>
+        <h1 className="reveal max-w-2xl text-4xl font-medium tracking-tight md:text-6xl">
+          {pricing.heading}
+        </h1>
 
         {/* Block 1: how pricing works */}
-        <section className="mt-8 max-w-2xl">
-          <h2 className="text-xl font-semibold">{pricing.introHeading}</h2>
+        <section className="reveal mt-10 max-w-2xl">
+          <h2 className="text-xl font-medium">{pricing.introHeading}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {pricing.introBody}
           </p>
@@ -85,8 +87,10 @@ export default async function PricingPage({
         </section>
 
         {/* Block 2: Line A fixed tiers */}
-        <section id="linea-a" className="mt-16">
-          <h2 className="text-2xl font-bold">{pricing.lineAHeading}</h2>
+        <section id="linea-a" className="mt-20">
+          <h2 className="reveal text-2xl font-medium md:text-3xl">
+            {pricing.lineAHeading}
+          </h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {LINE_A_TIERS.map((tier) => (
               <TierCard key={tier.token} tier={tier} locale={validLocale} />
@@ -95,8 +99,10 @@ export default async function PricingPage({
         </section>
 
         {/* Block 3: Line C fixed tiers */}
-        <section id="linea-c" className="mt-16">
-          <h2 className="text-2xl font-bold">{pricing.lineCHeading}</h2>
+        <section id="linea-c" className="mt-20">
+          <h2 className="reveal text-2xl font-medium md:text-3xl">
+            {pricing.lineCHeading}
+          </h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             {LINE_C_TIERS.map((tier) => (
               <TierCard key={tier.token} tier={tier} locale={validLocale} />
@@ -105,44 +111,50 @@ export default async function PricingPage({
         </section>
 
         {/* Block 4: Line B quote-on-request */}
-        <section id="linea-b" className="mt-16">
-          <h2 className="text-2xl font-bold">{pricing.lineBHeading}</h2>
+        <section id="linea-b" className="mt-20">
+          <h2 className="reveal text-2xl font-medium md:text-3xl">
+            {pricing.lineBHeading}
+          </h2>
           <div className="mt-6">
             <QuoteBlock locale={validLocale} />
           </div>
         </section>
 
         {/* Block 5: Line D retainer plans */}
-        <section id="linea-d" className="mt-16">
-          <h2 className="text-2xl font-bold">{pricing.lineDHeading}</h2>
+        <section id="linea-d" className="mt-20">
+          <h2 className="reveal text-2xl font-medium md:text-3xl">
+            {pricing.lineDHeading}
+          </h2>
           <div className="mt-6">
             <RetainerPlans locale={validLocale} />
           </div>
         </section>
 
         {/* Block 6: cross-cutting terms */}
-        <section className="mt-16">
-          <h2 className="text-2xl font-bold">{pricing.termsHeading}</h2>
+        <section className="mt-20">
+          <h2 className="reveal text-2xl font-medium md:text-3xl">
+            {pricing.termsHeading}
+          </h2>
           <div className="mt-6">
             <TermsTable locale={validLocale} />
           </div>
         </section>
 
         {/* Block 7: FAQ */}
-        <section className="mt-16">
+        <section className="reveal mt-20">
           <Faq locale={validLocale} />
         </section>
 
         {/* Block 8: CTA into the brief form — see doc comment above */}
-        <section className="mt-16 rounded-xl border border-border bg-card p-8 text-center">
-          <h2 className="text-2xl font-bold">{pricing.ctaHeading}</h2>
+        <section className="reveal mt-20 rounded-2xl border border-border bg-card p-8 text-center">
+          <h2 className="text-2xl font-medium md:text-3xl">{pricing.ctaHeading}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{pricing.ctaBody}</p>
           {WHATSAPP.status === "set" ? (
             <a
               href={WHATSAPP.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center rounded-full border border-border px-6 py-3 text-sm font-medium"
+              className="mt-6 inline-flex items-center rounded-full bg-accent-signal px-6 py-3 text-sm font-medium text-accent-signal-foreground"
             >
               {pricing.ctaButtonLabel}
             </a>

@@ -17,10 +17,10 @@ import { DEFAULT_LOCALE } from "@/lib/content/locales";
 export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         ElectroCode Studio
       </p>
-      <h1 className="text-3xl font-bold">Página no encontrada</h1>
+      <h1 className="text-3xl font-medium tracking-tight">Página no encontrada</h1>
       <p className="max-w-md text-muted-foreground">
         La página que buscas no existe o fue movida.
       </p>

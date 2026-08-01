@@ -24,9 +24,9 @@ export function TierCard({ tier, locale }: { tier: PricingTier; locale: Locale }
   const { pricing } = getDictionary(locale);
 
   return (
-    <article className="flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-6">
+    <article className="reveal flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-foreground/30">
       <div>
-        <h3 className="text-lg font-semibold text-card-foreground">
+        <h3 className="font-display text-lg font-medium text-card-foreground">
           {tier.name[locale]}
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -34,7 +34,9 @@ export function TierCard({ tier, locale }: { tier: PricingTier; locale: Locale }
         </p>
       </div>
 
-      <Price token={tier.token} />
+      <p className="text-2xl">
+        <Price token={tier.token} />
+      </p>
 
       <div>
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

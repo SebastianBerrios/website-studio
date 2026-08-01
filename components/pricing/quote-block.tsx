@@ -17,7 +17,7 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
   const { pricing } = getDictionary(locale);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="reveal rounded-2xl border border-border bg-card p-6">
       <div>
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.quoteShapesHeading}
@@ -55,8 +55,11 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
         </p>
       </div>
 
-      <p className="mt-6 text-lg">
-        {pricing.quoteFloorPrefix} <Price token={QUOTE_BLOCK.floorToken} />
+      <p className="mt-6 text-2xl">
+        <span className="text-sm text-muted-foreground">
+          {pricing.quoteFloorPrefix}{" "}
+        </span>
+        <Price token={QUOTE_BLOCK.floorToken} />
       </p>
     </div>
   );

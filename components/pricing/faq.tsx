@@ -28,16 +28,22 @@ export function Faq({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      <h3 className="text-xl font-semibold text-card-foreground">
+      <h3 className="text-2xl font-medium text-card-foreground md:text-3xl">
         {faq.heading}
       </h3>
-      <div className="mt-4 divide-y divide-border rounded-xl border border-border bg-card">
+      <div className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
         {entries.map(([question, answer]) => (
-          <details key={question} className="group p-4">
-            <summary className="cursor-pointer list-none text-sm font-medium text-card-foreground">
+          <details key={question} className="group p-5">
+            <summary className="cursor-pointer list-none text-sm font-medium text-card-foreground marker:content-none">
               {question}
+              <span
+                aria-hidden="true"
+                className="float-right text-muted-foreground transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
             </summary>
-            <p className="mt-2 text-sm text-muted-foreground">{answer}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{answer}</p>
           </details>
         ))}
       </div>

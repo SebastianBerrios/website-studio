@@ -17,7 +17,7 @@ export function TermsTable({ locale }: { locale: Locale }) {
   const { alwaysIncluded, alwaysExtra, paymentSchedule } = PRICING_TERMS;
 
   return (
-    <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-3">
+    <div className="reveal grid gap-6 rounded-2xl border border-border bg-card p-6 sm:grid-cols-3">
       <div>
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.alwaysIncludedHeading}

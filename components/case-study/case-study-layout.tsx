@@ -59,16 +59,18 @@ export function CaseStudyLayout({
   const { evidence } = project;
 
   return (
-    <main className="py-16 md:py-24">
+    <main className="py-20 md:py-32">
       <div className="mx-auto max-w-3xl px-4">
         <ServiceBadge serviceLine={project.serviceLine} locale={locale} />
-        <h1 className="mt-4 text-3xl font-bold md:text-5xl">{title}</h1>
+        <h1 className="reveal mt-4 text-4xl font-medium tracking-tight md:text-6xl">
+          {title}
+        </h1>
         <p className="mt-4 text-lg text-muted-foreground">
           {project.summary[locale]}
         </p>
 
         {evidence.state !== "no-visual" && (
-          <div className="relative mt-10 aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="relative mt-10 aspect-video w-full overflow-hidden rounded-2xl border border-border bg-muted">
             <Image
               src={evidence.media[0].asset}
               alt={evidence.media[0].alt[locale]}
@@ -84,7 +86,7 @@ export function CaseStudyLayout({
         </div>
 
         <section className="mt-12">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-medium">
             {caseStudy.problemHeading}
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -93,12 +95,12 @@ export function CaseStudyLayout({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold">{caseStudy.roleHeading}</h2>
+          <h2 className="text-xl font-medium">{caseStudy.roleHeading}</h2>
           <p className="mt-3 text-muted-foreground">{project.role[locale]}</p>
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-medium">
             {caseStudy.approachHeading}
           </h2>
           <p className="mt-3 whitespace-pre-line text-muted-foreground">
@@ -107,7 +109,7 @@ export function CaseStudyLayout({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold">{caseStudy.stackHeading}</h2>
+          <h2 className="text-xl font-medium">{caseStudy.stackHeading}</h2>
           {project.stack.length > 0 ? (
             <ul className="mt-3 flex flex-wrap gap-2">
               {project.stack.map((tech) => (
@@ -127,7 +129,7 @@ export function CaseStudyLayout({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold">{caseStudy.outcomeHeading}</h2>
+          <h2 className="text-xl font-medium">{caseStudy.outcomeHeading}</h2>
           <p className="mt-3 text-muted-foreground">
             {project.outcome.kind === "metric"
               ? `${project.outcome.value} (${project.outcome.source})`
@@ -135,8 +137,8 @@ export function CaseStudyLayout({
           </p>
         </section>
 
-        <section className="mt-16 rounded-xl border border-border bg-card p-8 text-center">
-          <h2 className="text-2xl font-bold">{caseStudy.nextStepHeading}</h2>
+        <section className="reveal mt-16 rounded-2xl border border-border bg-card p-8 text-center">
+          <h2 className="text-2xl font-medium">{caseStudy.nextStepHeading}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {caseStudy.nextStepBody}
           </p>

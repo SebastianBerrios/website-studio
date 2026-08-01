@@ -59,7 +59,9 @@ export default async function GraciasPage({
   return (
     <main className="py-24 md:py-32">
       <div className="max-w-2xl mx-auto px-4 text-center">
-        <h1 className="text-3xl md:text-5xl font-bold">{gracias.heading}</h1>
+        <h1 className="text-3xl font-medium tracking-tight md:text-5xl">
+          {gracias.heading}
+        </h1>
         <p className="mt-4 text-base text-muted-foreground">{gracias.body}</p>
         <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           {WHATSAPP.status === "set" ? (

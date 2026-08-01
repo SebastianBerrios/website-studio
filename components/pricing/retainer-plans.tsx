@@ -26,18 +26,19 @@ export function RetainerPlans({ locale }: { locale: Locale }) {
     RETAINER_COMMITMENTS;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="reveal rounded-2xl border border-border bg-card p-6">
       <div className="grid gap-4 sm:grid-cols-2">
         {RETAINER_PLANS.map((plan) => (
           <div
             key={plan.token}
-            className="rounded-lg border border-border p-4"
+            className="rounded-xl border border-border p-4"
           >
-            <h4 className="text-base font-semibold text-card-foreground">
+            <h4 className="font-display text-base font-medium text-card-foreground">
               {plan.name[locale]}
             </h4>
-            <p className="mt-1 text-lg">
-              <Price token={plan.token} /> / mes
+            <p className="mt-1 text-xl">
+              <Price token={plan.token} />{" "}
+              <span className="text-sm text-muted-foreground">/ mes</span>
             </p>
           </div>
         ))}
