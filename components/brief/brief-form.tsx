@@ -48,11 +48,27 @@
  * (off-screen positioning) and assistive technology (`aria-hidden`,
  * removed from the tab order, `autoComplete="off"` so a browser/password
  * manager never pre-fills it and fails a real visitor closed).
+ *
+ * **Token issuance, corrected 2026-07-31 (remediation of
+ * `verify-report-final.md` finding C2)**: this component used to receive an
+ * already-issued `token` prop from `components/sections/brief.tsx`, a Server
+ * Component on a statically prerendered route. That route renders once, at
+ * build time, so every visitor received the SAME `issuedAt`, baked in at the
+ * build clock — `lib/brief/abuse.ts`'s dwell check then rejected every
+ * submission more than two hours after the deploy, and could never reject
+ * one that arrived too fast, because the "issued" instant never actually
+ * moved. This component now fetches its own token from
+ * `lib/brief/issue-token.ts`'s `requestFormToken()` — a Server Action — once
+ * it mounts in the visitor's own browser, so `issuedAt` reflects when this
+ * specific visitor actually reached the form. Fetching happens client-side
+ * and requires JavaScript; see that file's doc comment for why a purely
+ * static route cannot do better, and `design.md`'s dated amendment to §9.
  */
 
-import { useActionState, useMemo, useSyncExternalStore } from "react";
+import { useActionState, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Field } from "./field";
 import { submitBrief } from "@/lib/brief/submit";
+import { requestFormToken } from "@/lib/brief/issue-token";
 import { initialBriefSubmissionState } from "@/lib/brief/submission-state";
 import type { ServiceLine } from "@/lib/content/service-lines";
 import type { BudgetBand, BriefFieldName } from "@/lib/brief/schema";
@@ -79,6 +95,15 @@ export type BriefFormCopy = {
   readonly errorSummaryHeading: string;
   readonly sendFailedHeading: string;
   readonly sendFailedBody: string;
+  /**
+   * Copy for `state.status === "rejected"` (remediation of
+   * `verify-report-final.md` finding C2 — this status used to render
+   * nothing at all). Deliberately generic: it must not reveal which control
+   * (honeypot, missing token, dwell time) actually tripped, or a bot could
+   * use the message to learn which check to evade next time.
+   */
+  readonly rejectedHeading: string;
+  readonly rejectedBody: string;
   readonly whatsappFallbackLabel: string;
 };
 
@@ -114,14 +139,12 @@ function getServerQuerySnapshot(): string {
 
 export function BriefForm({
   locale,
-  token,
   serviceLines,
   budgetBands,
   copy,
   whatsappUrl,
 }: {
   readonly locale: Locale;
-  readonly token: FormToken | null;
   readonly serviceLines: readonly BriefFormOption<ServiceLine>[];
   readonly budgetBands: readonly BriefFormOption<BudgetBand>[];
   readonly copy: BriefFormCopy;
@@ -131,6 +154,24 @@ export function BriefForm({
     submitBrief,
     initialBriefSubmissionState,
   );
+
+  // `null` until the Server Action below resolves — see this file's doc
+  // comment. A no-JS visitor never runs this effect, so the hidden fields
+  // never populate and the honeypot remains the only layer-1 signal for that
+  // submission; the abuse layer's own fail-closed design (`lib/brief/
+  // abuse.ts`) then rejects it for a missing token, and the "rejected" state
+  // below now renders visible feedback instead of nothing.
+  const [token, setToken] = useState<FormToken | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    requestFormToken().then((issued) => {
+      if (!cancelled) setToken(issued);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const querySearch = useSyncExternalStore(
     subscribeToNothing,
@@ -199,6 +240,32 @@ export function BriefForm({
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm">
           <p className="font-medium text-destructive">{copy.sendFailedHeading}</p>
           <p className="mt-1 text-muted-foreground">{copy.sendFailedBody}</p>
+          {whatsappUrl ? (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center underline underline-offset-2"
+            >
+              {copy.whatsappFallbackLabel}
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Remediation of `verify-report-final.md` finding C2: this status
+          used to render nothing at all — a visitor believed they submitted
+          while the studio received nothing, with no trace beyond a server
+          log. Wording is deliberately generic, matching `sendFailedHeading`/
+          `sendFailedBody`'s pattern, and never names which control (honeypot,
+          missing token, dwell time) actually tripped. */}
+      {state.status === "rejected" ? (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm"
+        >
+          <p className="font-medium text-destructive">{copy.rejectedHeading}</p>
+          <p className="mt-1 text-muted-foreground">{copy.rejectedBody}</p>
           {whatsappUrl ? (
             <a
               href={whatsappUrl}

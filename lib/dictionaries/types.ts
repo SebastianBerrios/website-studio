@@ -252,6 +252,13 @@ export type BriefDictionary = {
   readonly errorSummaryHeading: string;
   readonly sendFailedHeading: string;
   readonly sendFailedBody: string;
+  /**
+   * Copy for `status: "rejected"` (remediation of `verify-report-final.md`
+   * finding C2 — previously rendered nothing at all). Deliberately generic:
+   * must not reveal which abuse-layer control tripped.
+   */
+  readonly rejectedHeading: string;
+  readonly rejectedBody: string;
   readonly whatsappFallbackLabel: string;
   readonly whatsappAsideHeading: string;
   readonly whatsappAsideBody: string;

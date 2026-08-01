@@ -1,6 +1,5 @@
 import { WHATSAPP } from "@/lib/content/contact";
 import { getDictionary } from "@/lib/dictionaries";
-import { issueFormToken } from "@/lib/brief/abuse";
 import { isBriefFormConfigured } from "@/lib/brief/config";
 import { SERVICE_LINES } from "@/lib/content/service-lines";
 import { BUDGET_BANDS } from "@/lib/brief/schema";
@@ -25,6 +24,14 @@ import type { Locale } from "@/lib/content/locales";
  * spec.md`'s "WhatsApp Escape Hatch" requires it to function independently
  * of the brief form's backend, not only as a fallback for when the form is
  * absent.
+ *
+ * **No longer calls `issueFormToken()` (2026-07-31, remediation of
+ * `verify-report-final.md` finding C2)**: this Server Component renders once,
+ * at build time, on this statically prerendered route — so a token issued
+ * here would be baked identically into every visitor's HTML, exactly the bug
+ * C2 found. `components/brief/brief-form.tsx` now fetches its own token via
+ * a Server Action (`lib/brief/issue-token.ts`) once mounted in the visitor's
+ * browser. See that file's doc comment.
  */
 export function Brief({ locale }: { locale: Locale }) {
   const { brief } = getDictionary(locale);
@@ -56,7 +63,6 @@ export function Brief({ locale }: { locale: Locale }) {
           <div className="mt-12 grid gap-10 lg:grid-cols-[2fr_1fr]">
             <BriefForm
               locale={locale}
-              token={issueFormToken()}
               serviceLines={serviceLines}
               budgetBands={budgetBands}
               whatsappUrl={whatsappUrl}
@@ -75,6 +81,8 @@ export function Brief({ locale }: { locale: Locale }) {
                 errorSummaryHeading: brief.errorSummaryHeading,
                 sendFailedHeading: brief.sendFailedHeading,
                 sendFailedBody: brief.sendFailedBody,
+                rejectedHeading: brief.rejectedHeading,
+                rejectedBody: brief.rejectedBody,
                 whatsappFallbackLabel: brief.whatsappFallbackLabel,
               }}
             />

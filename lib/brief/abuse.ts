@@ -56,14 +56,25 @@ function computeSignature(issuedAt: string, secret: string): string {
 }
 
 /**
- * Issues a fresh `{ issuedAt, signature }` pair for a Server Component to
- * embed as hidden fields when it renders the brief form (PR 6b).
+ * Issues a fresh `{ issuedAt, signature }` pair.
+ *
+ * **Caller, corrected 2026-07-31 (remediation of `verify-report-final.md`
+ * finding C2)**: this used to be called directly from `components/sections/
+ * brief.tsx`, a Server Component on the statically prerendered `/[locale]`
+ * route. That route renders exactly once, at build time (D11), so
+ * `Date.now()` below was the BUILD clock, identical for every visitor —
+ * `MAX_DWELL_MS` rejected every submission more than two hours after the
+ * deploy, and `MIN_DWELL_MS` could never fire at all. The only caller now is
+ * `lib/brief/issue-token.ts`'s `requestFormToken()`, a Server Action that
+ * `components/brief/brief-form.tsx` invokes once on mount, from the
+ * visitor's own browser — a genuine per-visit, request-time call, unlike the
+ * page's own render. See that file's doc comment for the full reasoning.
  *
  * Returns `null` — rather than throwing — when `BRIEF_FORM_SECRET` is
- * absent. Throwing here would fail the entire static build the moment a
- * page renders the form (this site is `force-static` everywhere), which is
- * a worse failure mode than the caller choosing not to render a live form.
- * Verification (`checkAbuseSignals` below) is where this design's honest
+ * absent. Throwing here would fail the Server Action outright, which is a
+ * worse failure mode than the caller choosing not to render token fields (the
+ * form still submits; `checkAbuseSignals` below then fails it closed with
+ * `"config-missing"`). Verification is where this design's honest
  * fail-closed behavior actually lives: with no secret configured, EVERY
  * submission is rejected, unconditionally, because a signature can never be
  * verified against a secret that does not exist.

@@ -155,6 +155,9 @@ export const es: Dictionary = {
     sendFailedHeading: "No pudimos enviar tu mensaje",
     sendFailedBody:
       "Ocurrió un problema al enviar tu información. Tus datos se mantienen en el formulario: puedes intentarlo de nuevo o escribirnos directo por WhatsApp.",
+    rejectedHeading: "No pudimos procesar tu envío",
+    rejectedBody:
+      "Tu mensaje no pudo completarse. Puedes intentarlo de nuevo o escribirnos directo por WhatsApp contándonos tu línea de servicio y una breve descripción de tu proyecto.",
     whatsappFallbackLabel: "Escribir por WhatsApp",
     whatsappAsideHeading: "¿Prefieres WhatsApp?",
     whatsappAsideBody:
