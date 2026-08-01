@@ -1230,3 +1230,92 @@ exactly that page. Confined to `lib/content/projects/index.ts` and
   process constraint on whoever performs the merges, not a guarantee the code
   provides on its own — stating the cost honestly rather than presenting it
   as resolved.
+
+## Remediation slice — `fix/final-verify-criticals` (post-`sdd-verify` final, closing C1-C7)
+
+Closes the seven CRITICAL findings in `verify-report-final.md`. C1 (Luang
+industry fabrication), C3 (landing pricing-summary qualifiers stripped), C5
+(hero H1 invisible without JS), and C6 (Luang case study unreachable) were
+fixed in earlier commits on this same branch. This section covers the three
+findings that were blocked on user-supplied facts and are now closed: C4
+(exclusions/turnaround), C7 (curated-set floor), and C2 (brief-form token
+issued at build time).
+
+- [x] F.C4 `lib/content/pricing.ts`: filled in the honest `Commitment<T>`
+      `pending` states task 4.1 had to leave open. The user supplied the four
+      exclusions the studio applies uniformly to every fixed tier
+      (`FIXED_TIER_EXCLUSIONS`) — `PricingTier.notIncluded` is restored to
+      `design.md` §5's original non-empty-tuple guarantee (compile error if
+      omitted), same discipline task 4.1's own note said would be restored
+      once real values existed. Turnaround supplied for 3 of 5 fixed tiers
+      (`landing-basic`: 5, `landing-standard`: 10, `landing-premium`: 15 días
+      hábiles); the two microsite tiers were NOT supplied and no figure is
+      honestly derivable from anything stated, so both stay `pending` rather
+      than invented — `turnaround` therefore stays `Commitment<Turnaround>`,
+      a new type whose `formatTurnaround()` always appends "de trabajo del
+      estudio, sin contar los plazos de aprobación del cliente" so the figure
+      can never render without the qualifier that makes it honest (the
+      studio's own `PROCESS.clientApprovalDeadlineBusinessDays` gates 3 of 5
+      phases on the CLIENT's approval — a bare day count would be
+      uncheckable). `components/pricing/tier-card.tsx` and `components/
+      pricing/quote-block.tsx` updated to render through `formatTurnaround()`
+      and the now-required `notIncluded` list; `notIncludedPendingNote`
+      removed from the dictionary as dead copy. `design.md` §5 amended with a
+      dated note. — *pricing: Fixed Tier Anatomy*
+- [x] F.C7 Amended `specs/project-portfolio/spec.md`'s "Curated Set Size" from
+      a 6-8 floor to 4-8, with a dated note explaining the count dropped from
+      6 to 5 only because `fix/merge-duplicate-project` correctly removed a
+      double-counted entry (`blu-biolink`/`blucafe`), not because work was
+      dropped — and that it rises again as the remaining case studies land
+      (3.H1/5.5/5.H2). Added `checkCuratedSetSize` to `lib/content/
+      invariants.ts` (floor/ceiling 4-8, reading the same `featuredProjects()`
+      the hero and grid already project from — now exported from
+      `lib/content/projections.ts`) so a future drop below the floor fails the
+      build instead of waiting for a reviewer to notice. Fault-injection
+      proof: temporarily set two projects' `featured` to `false` (dropping the
+      curated set to 3), production build → real exit 1 citing both
+      `checkHeroFloor` and the new `checkCuratedSetSize` message; reverted,
+      rebuilt clean. — *project-portfolio: Curated Set Size*
+- [x] F.C2 Fixed the brief form's build-time dwell token. `issueFormToken()`
+      was called from `components/sections/brief.tsx`, a Server Component on
+      the statically prerendered `/[locale]` route (D11) — that route renders
+      once, at build time, so every visitor received the same `issuedAt`
+      (the build clock): `MAX_DWELL_MS` rejected every submission more than
+      ~2h after each deploy, and `MIN_DWELL_MS` could never fire. New file
+      `lib/brief/issue-token.ts` wraps `issueFormToken()` as a Server Action
+      (`requestFormToken`); `components/brief/brief-form.tsx` now calls it
+      once on mount, from the visitor's own browser, so `issuedAt` reflects a
+      genuine per-visit timestamp. The route stays statically prerendered
+      (only the token fetch is request-time, same category as the pre-
+      existing `submitBrief` action). HMAC verification and the ~2h window
+      are unchanged. `state.status === "rejected"` now renders visible,
+      deliberately generic feedback (new `rejectedHeading`/`rejectedBody`
+      dictionary keys) instead of nothing. `design.md` §2 and §9 amended with
+      dated notes, including the honest cost: the dwell/signature layer now
+      requires JavaScript (the form's POST mechanism itself still works
+      without it). — *lead-capture: Submission Validation*
+
+### Verification
+
+- [x] F.V1 `npm run build`, `npm run lint`, and `VERCEL_ENV=production
+      NEXT_PUBLIC_SITE_URL=https://x.test npm run build` all pass clean (2
+      pre-existing `hover-border-gradient.tsx` lint warnings, unchanged).
+- [x] F.V2 Compiled `/es/precios` shows all four exclusions on every fixed
+      tier and the turnaround qualifier ("días hábiles de trabajo del
+      estudio, sin contar los plazos de aprobación del cliente") on the three
+      supplied tiers; zero "Exclusiones pendientes de definir" anywhere.
+- [x] F.V3 Fault-injection re-proof of two pre-existing gates after this
+      batch's edits: (1) blanked `luang.summary.es` → real exit 1 citing
+      `checkNoEmptyLocalizedValues`; (2) dropped the curated set to 3 →  real
+      exit 1 citing both `checkHeroFloor` and the new `checkCuratedSetSize`.
+      Both reverted, `git status --porcelain` clean afterward.
+- [x] F.V4 Confirmed no `issuedAt`/`signature` hidden input is baked into the
+      static HTML shell for `/es` even with all four brief env vars set at
+      build time; `requestFormToken` confirmed present in
+      `.next/server/server-reference-manifest.json` and the client bundle.
+- [x] F.V5 Client-component count re-confirmed: 5 (`brief-form.tsx`,
+      `direction-aware-hover.tsx`, `hero-parallax.tsx`,
+      `hover-border-gradient.tsx`, `sticky-scroll-reveal.tsx`) — down from the
+      6 recorded in Batch 15, because the C5 fix (already on this branch)
+      demoted `text-generate-effect.tsx` back to a Server Component.
+      `design.md`'s D10 amendment corrected to match (it still said "six").

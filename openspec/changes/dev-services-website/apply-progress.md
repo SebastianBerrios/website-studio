@@ -2870,3 +2870,269 @@ Ready for `sdd-verify` to validate this batch against the design brief and
 hard constraints stated in the orchestrator's launch prompt (no dedicated
 `specs/*.md` covers a visual-design pass), or for a human to review the
 result visually before any decision to merge/deploy.
+
+## Batch 16 — closing the last three CRITICALs (C4, C7, C2), branch `fix/final-verify-criticals`
+
+`verify-report-final.md` (§2, §7) found seven CRITICALs against the whole
+delivered site. C1 (Luang industry fabrication), C3 (landing pricing-summary
+qualifiers stripped), C5 (hero H1 invisible without JS), and C6 (Luang case
+study unreachable) were fixed in earlier commits on this branch (`0660eda`,
+`2c185d9`, `8d9cd9c`, `1d9042c`) before this batch started. This batch closes
+the remaining three, each of which was blocked on a fact only the user could
+supply and has now been supplied. See `tasks.md`'s new "Remediation slice —
+`fix/final-verify-criticals`" section (tasks F.C4, F.C7, F.C2, F.V1-F.V5) for
+the task-level record; this section carries the full implementation and
+verification detail.
+
+### C4 — fixed-tier exclusions and turnaround
+
+`lib/content/pricing.ts`'s `Commitment<T>` `pending` states (task 4.1's
+documented deviation) are now filled with real values.
+
+- **Exclusions**: the user supplied four exclusions that apply to every fixed
+  tier (Lines A and C) uniformly — content/photography, domain+hosting,
+  logo/identity, and third-party integrations, all written as clear Spanish
+  sentences, not copy-pasted labels. Modeled as one exported constant
+  (`FIXED_TIER_EXCLUSIONS`) all five tiers read through, so they cannot drift
+  into five independently-worded lists. `PricingTier.notIncluded`'s type is
+  restored from `Commitment<[...]>` back to `design.md` §5's original
+  guarantee — `readonly [Localized<string>, ...Localized<string>[]]`, a
+  required, non-empty tuple, compile error if omitted — because every tier
+  now genuinely has real values. `notIncludedPendingNote` removed from the
+  dictionary (`lib/dictionaries/{types,es}.ts`) as dead copy; the
+  "pendiente" branch removed from `components/pricing/tier-card.tsx`.
+- **Turnaround**: the user supplied `landing-basic: 5`, `landing-standard:
+  10`, `landing-premium: 15` (días hábiles). For the two microsite tiers
+  (`microsite-basic`/biolink, `microsite-event`) the user did not supply a
+  figure. **Decision: left `pending`, not invented.** Considered deriving one
+  from the tiers' relative prices (biolink S/100 vs landing-basic S/500 —
+  roughly a fifth) but rejected it: price and turnaround are not stated to
+  correlate, and a number derived that way would be exactly the fabrication
+  this content model exists to prevent (hard constraint 5). `turnaround`
+  therefore stays `Commitment<Turnaround>` — NOT restored to required,
+  unlike `notIncluded` — because two of five tiers (plus Line B's quote
+  turnaround, unchanged, already pending) genuinely remain undecided.
+  `design.md` §5 amended with a dated note explaining both the restoration
+  and the non-restoration side by side.
+- **The qualifier travels with the value**: added `Turnaround = {
+  businessDays: number }` (not a bare number, not `Localized<string>`) and
+  `formatTurnaround()`, which unconditionally appends "de trabajo del
+  estudio, sin contar los plazos de aprobación del cliente" — mirroring how
+  `Money`'s `qualifier` field/`formatMoney()` already prevent a price from
+  rendering without its meaning (the exact mechanism C3 required). This
+  matters concretely: `lib/content/process.ts`'s `PROCESS.
+  clientApprovalDeadlineBusinessDays = 5` gates 3 of the studio's 5 process
+  phases on the CLIENT's own approval, so a bare "5 días hábiles" on a
+  `landing-basic` tier would be uncheckable and could make the studio look
+  like it breached its own published promise through no fault of its own.
+  `components/pricing/tier-card.tsx` and `components/pricing/
+  quote-block.tsx` both updated to call `formatTurnaround()` instead of
+  reading `.value[locale]` directly.
+
+### C7 — curated set floor amended and enforced
+
+`specs/project-portfolio/spec.md`'s "Curated Set Size" required 6-8; the
+actual curated (`featured`) set is 5 (`luang`, `atemporal`, `blucafe`, `blu`,
+`fast-route`). Per the user's decision, amended the requirement to 4-8, with
+a dated note (same style as the file's own prior "Portfolio Grid Consistency
+With Hero" amendment and `content-model/spec.md`'s "Pricing Module"
+amendment): the count dropped from 6 to 5 only because
+`fix/merge-duplicate-project` correctly merged the duplicated
+`blu-biolink`/`blucafe` entry — the number went down because the data got
+more truthful, not because work was dropped — and it rises again as
+3.H1/5.5/5.H2 land more case studies. The floor was set to 4 (not left at 6,
+not raised) to match the hero's own existing floor (`HERO_FLOOR` in
+`invariants.ts`): below 4 the hero itself already fails to build, so a
+curated-set floor below that would be unenforceable, and a floor above 5 with
+no sixth honest project ready would only pressure padding the set with a
+duplicate or unconsented entry.
+
+Added `checkCuratedSetSize` to `lib/content/invariants.ts` (`CURATED_SET_MIN
+= 4`, `CURATED_SET_MAX = 8`), reading the same `featuredProjects()` the hero
+and grid projections already use — exported from `lib/content/
+projections.ts` (was module-private) so the invariant cannot drift from the
+real data source with a second hand-rolled filter.
+
+**Proof it fires**: temporarily set `blucafe` and `fast-route`'s `featured`
+to `false` (curated set → 3), ran `VERCEL_ENV=production
+NEXT_PUBLIC_SITE_URL=https://x.test npm run build` → real exit 1:
+
+```
+Error: Content integrity check failed:
+  - Hero projection for locale "es" has only 3 entries; the floor is 4.
+  - The curated (featured) project set has 3 entries; specs/project-portfolio/spec.md's "Curated Set Size" requires between 4 and 8.
+```
+
+Reverted via `Edit` (restoring the exact original two lines), `git status
+--porcelain lib/content/projects/index.ts` empty afterward, rebuilt clean.
+
+### C2 — brief form's build-time dwell token
+
+Root cause confirmed exactly as the verify report stated: `issueFormToken()`
+was called from `components/sections/brief.tsx`, a Server Component on
+`/[locale]` — `force-static` (D11) with `dynamicParams = false`, so that
+component renders once, at build time. `Date.now()` there is the build
+clock, baked into every visitor's HTML. Consequence: `lib/brief/abuse.ts`'s
+`MAX_DWELL_MS` (~2h) rejected every submission more than two hours after
+each deploy; `MIN_DWELL_MS` (~3s) could never fire because the "issued"
+instant never moved between visitors. `submit.ts` returned `{ status:
+"rejected" }` for the timed-out case, and `components/brief/brief-form.tsx`
+had no branch for that status at all — rendered nothing.
+
+**Fix**: a genuinely per-visit, request-time source for the timestamp,
+without breaking D11.
+
+- New file `lib/brief/issue-token.ts`, `"use server"`, one export
+  (`requestFormToken`) wrapping the unchanged `issueFormToken()` from
+  `lib/brief/abuse.ts`. A Server Action is a distinct request-time
+  invocation independent of the static/dynamic nature of the page that
+  references it — the same fact `submitBrief` already relies on
+  (`design.md` §11).
+- `components/brief/brief-form.tsx` (the one Client Component this change
+  set permits) now calls `requestFormToken()` once in a `useEffect` on
+  mount, storing the result in local state (`useState<FormToken | null>`)
+  and rendering the hidden `issuedAt`/`signature` inputs once it resolves.
+  `components/sections/brief.tsx` no longer calls `issueFormToken()` at
+  render time and no longer passes a `token` prop.
+- `lib/brief/abuse.ts`'s logic is completely unchanged — same HMAC
+  signature, same `MIN_DWELL_MS`/`MAX_DWELL_MS` window (not widened). Only
+  the doc comment was updated to name the new caller.
+- **New**: `state.status === "rejected"` now renders visible feedback —
+  new `rejectedHeading`/`rejectedBody` dictionary keys, deliberately generic
+  wording (matches the existing `sendFailedHeading`/`sendFailedBody`
+  pattern) so it does not reveal to a bot which layer-1 control tripped,
+  plus the same WhatsApp fallback link the `send-failed` state already
+  offers.
+- `design.md` amended in two places with dated notes (§2's abuse-layer table,
+  and §9's submission-flow diagram/data-flow diagram), including the honest
+  cost: fetching the token requires JavaScript, so a true no-JS submission
+  now gets the same fail-closed "token-missing" rejection the abuse layer
+  already applies when `BRIEF_FORM_SECRET` itself is absent — coherent with
+  that layer's own stated threat model (it exists to catch scripted
+  bots/form-fillers, which already run JS to render+submit). The FORM
+  SUBMISSION mechanism itself (`<form action={formAction}>` POST) is
+  unchanged and still works without JavaScript.
+
+**What this concretely fixes** (verified by reasoning through the code, no
+live email provider available in this environment): a submission arriving 6
+hours after a deploy now succeeds, because `issuedAt` is the moment THIS
+visitor's browser fetched the token (shortly after mount), not the build
+timestamp — as long as the visitor takes between ~3 seconds and ~2 hours from
+mount to submit, deploy age is irrelevant. A submission 1 second after page
+load is still rejected: `dwellMs = Date.now() - issuedAtMs` at submission
+time is ~1000ms (or less, since the token itself takes a network round-trip
+to arrive) under `MIN_DWELL_MS = 3000`, so `checkAbuseSignals` returns
+`{ ok: false, reason: "dwell-too-fast" }` exactly as designed.
+
+### Verification performed
+
+- `npm run build` (default, warn-mode): exit 0, all 10 routes, same
+  pre-existing `NEXT_PUBLIC_SITE_URL` warn-mode log line.
+- `npm run lint`: exit 0, same 2 pre-existing `hover-border-gradient.tsx`
+  warnings (missing-deps + unused `event`), zero new.
+- `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://x.test npm run
+  build`: exit 0, all 10 routes, every integrity check active.
+- Compiled `/es/precios` markup: all four exclusions present on every fixed
+  tier (`grep -c "Redacción de textos"` → present on all 5 tiers); turnaround
+  reads `5`/`10`/`15 días hábiles de trabajo del estudio, sin contar los
+  plazos de aprobación del cliente` on the three supplied tiers, `Tiempo de
+  entrega pendiente de definir.` on the two microsite tiers and Line B's
+  quote block; zero `Exclusiones pendientes de definir` occurrences anywhere.
+- Fault injection 1 (curated-set floor, C7's new gate): see the C7 section
+  above — real exit 1, both `checkHeroFloor` and the new
+  `checkCuratedSetSize` messages, reverted, `git status --porcelain` clean.
+- Fault injection 2 (pre-existing gate, proving no regression to the older
+  gates): blanked `luang.summary.es` to `""` → production build, real exit 1:
+  `Error: Content integrity check failed: - Project "luang" has an empty
+  "summary" for locale "es".` Reverted via `Edit`, `git status --porcelain
+  lib/content/projects/index.ts` empty afterward, rebuilt clean (exit 0).
+- **Incident, self-corrected**: a third fault-injection attempt (flipping
+  `care-standard`'s price back to `pending`, to demonstrate the `S1`-documented
+  TS-level price gate) was reverted with `git checkout --
+  lib/content/pricing.ts` — which, since the C4 edits to that file were never
+  staged/committed, discarded ALL of this batch's C4 changes, not just the
+  injected fault. Caught immediately by re-reading the file; every C4 edit
+  (the doc comment, `Turnaround` type, `formatTurnaround()`,
+  `FIXED_TIER_EXCLUSIONS`, the five tiers' `notIncluded`/`turnaround` values,
+  `QuoteBlock.turnaround`'s type) was manually reconstructed from the same
+  session's edit history and re-verified via `git diff --stat` (153 changed
+  lines, identical to before the incident) and a clean production build.
+  **Lesson recorded**: never use `git checkout --` to revert a fault
+  injection in a file that also carries real, uncommitted changes from the
+  same batch — use `Edit` (targeted string replacement) instead, exactly as
+  done for the other two fault injections in this batch.
+- No `[PRICE:*]`/`[CURRENCY]` string token introduced anywhere (unchanged
+  discipline). No new `as Route` cast. No dead link introduced — `#brief` and
+  every existing anchor/route inventory unchanged by this batch's edits.
+  `prefers-reduced-motion` untouched (this batch touched no motion code).
+  `fast-route` (`no-visual`) and `blu` (`gated`, with its disclosure) both
+  re-confirmed rendering unchanged in the compiled markup.
+- Client-component count: 5 (`brief-form.tsx`, `direction-aware-hover.tsx`,
+  `hero-parallax.tsx`, `hover-border-gradient.tsx`,
+  `sticky-scroll-reveal.tsx`), confirmed via `grep -rl '"use client"'
+  --include="*.tsx" components app`. Down from the 6 recorded in Batch 15,
+  NOT because of anything in this batch — the already-committed C5 fix
+  (`2c185d9`, earlier on this same branch) converted `text-generate-
+  effect.tsx` from a client component to a pure CSS/server-renderable one, a
+  change its own commit message states explicitly ("client components drop
+  from 6 to 5") but never propagated into `design.md`'s D10 amendment table,
+  which still said "six" until this batch corrected it (both the summary ADR
+  row and the full §7 amendment block/table).
+- `requestFormToken` confirmed present in
+  `.next/server/server-reference-manifest.json` and in a client-side chunk
+  (`.next/static/chunks/*.js`) after building with all four brief env vars
+  set; zero `name="issuedAt"` hidden inputs found anywhere in the static
+  `/es` HTML shell, confirming the token is no longer baked at build time.
+
+### Commits (on `fix/final-verify-criticals`, after the pre-existing
+C1/C3/C5/C6 fixes)
+
+1. `fix(pricing): fill in fixed-tier exclusions and turnaround` — C4:
+   `lib/content/pricing.ts`, `components/pricing/tier-card.tsx`,
+   `components/pricing/quote-block.tsx`, `lib/dictionaries/{types,es}.ts`.
+2. `fix(portfolio): amend curated set floor and enforce it` — C7:
+   `openspec/changes/dev-services-website/specs/project-portfolio/spec.md`,
+   `lib/content/invariants.ts`, `lib/content/projections.ts`.
+3. `fix(brief): issue the dwell token per visit, not per build` — C2:
+   `components/sections/brief.tsx`, `components/brief/brief-form.tsx`,
+   `lib/brief/abuse.ts`, `lib/brief/issue-token.ts` (new),
+   `lib/dictionaries/{types,es}.ts`.
+4. `docs(design): amend design.md for the C4/C7/C2 remediation and correct
+   the stale client-component count` — `design.md` only (three dated
+   amendments plus the D10 table correction), kept as its own commit because
+   the amendments correspond 1:1 to the three code commits above and mixing
+   them would make each functional commit's diff harder to review in
+   isolation.
+5. `docs(sdd): record the C4/C7/C2 remediation in tasks.md and
+   apply-progress.md` — this bookkeeping commit.
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
+### Open items, not closed by this batch (none invented)
+
+- `microsite-basic` and `microsite-event`'s turnaround figures remain
+  `pending` — not supplied, and not honestly derivable from anything the
+  studio stated (see C4 section above). Same for Line B's quote turnaround
+  (already pending before this batch, untouched).
+- `PRICING_TERMS.paymentSchedule` remains `pending` (out of scope — not one
+  of the three findings this batch closes).
+- Every other open item carried from Batch 15 (code-ownership policy,
+  `care-basic`/`care-standard` scope difference, the `?line=` write-side CTA
+  wiring — W1, `RETAINER_COMMITMENTS.channels` — W17, the `lib/brief/
+  schema.ts`/`PRICES` type-coupling discovery — S1, and the 25 WARNINGs/8
+  SUGGESTIONs from `verify-report-final.md` generally) remains untouched, per
+  this batch's explicit hard constraint 6.
+
+## Status (cumulative, through Batch 16)
+
+All PR 1-6b code tasks and the Batch 15 visual-design layer remain as
+recorded, unchanged by this batch. This batch closes CRITICAL findings C4,
+C7, and C2 from `verify-report-final.md` (C1, C3, C5, C6 were already closed
+in earlier commits on this same branch before this batch started). 7/7
+CRITICAL findings from that report are now closed. The 25 WARNINGs and 8
+SUGGESTIONs it also raised are explicitly out of scope for this batch (hard
+constraint 6) and remain open, reported but not fixed.
+
+Ready for `sdd-verify` to re-validate the full site against
+`verify-report-final.md`'s findings, or for a human/orchestrator decision on
+merge/deploy.
