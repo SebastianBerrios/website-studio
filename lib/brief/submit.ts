@@ -16,33 +16,22 @@
  * can re-render the form without the visitor retyping anything) and logs
  * the payload to `stderr` — the only durability this design has, per
  * design.md §2's "honest cost of choosing email".
+ *
+ * **`BriefSubmissionState`/`initialBriefSubmissionState` moved to
+ * `./submission-state`** (this batch, task 6.5): a `"use server"` module may
+ * only export async functions as runtime values, and `submitBrief` below
+ * must remain the only one here — see that file's doc comment for the
+ * incident this fixes.
  */
 
 "use server";
 
 import { redirect } from "next/navigation";
-import type { Route } from "next";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/content/locales";
 import { checkAbuseSignals } from "./abuse";
 import { sendBriefNotification } from "./notify";
-import { validateBrief, type BriefErrors, type BriefFieldName } from "./schema";
-
-export type BriefSubmissionStatus = "idle" | "invalid" | "send-failed" | "rejected";
-
-export type BriefSubmissionState = {
-  readonly status: BriefSubmissionStatus;
-  readonly errors: BriefErrors;
-  /** Submitted field values, preserved so a failed submission can
-   * re-render without the visitor retyping anything. Never includes the
-   * honeypot, `issuedAt`, or `signature` fields. */
-  readonly values: Partial<Record<BriefFieldName, string>>;
-};
-
-export const initialBriefSubmissionState: BriefSubmissionState = {
-  status: "idle",
-  errors: {},
-  values: {},
-};
+import { validateBrief, type BriefFieldName } from "./schema";
+import type { BriefSubmissionState } from "./submission-state";
 
 const USER_FACING_FIELDS: readonly BriefFieldName[] = [
   "serviceLine",
@@ -120,13 +109,13 @@ export async function submitBrief(
     };
   }
 
-  // `typedRoutes: true` (design D7) narrows `redirect()`'s argument to the
-  // generated route union. `/{locale}/gracias` does not exist as a page
-  // until PR 6b ships `app/[locale]/gracias/page.tsx` — this PR is
-  // deliberately server-logic-only and creates no route (see this batch's
-  // explicit boundary). The cast is contained to this one call site, mirrors
-  // the existing `product.link as Route` precedent in
-  // `components/ui/hero-parallax.tsx` (PR 2c), and stops being necessary the
-  // moment PR 6b's route lands.
-  redirect(`/${locale}/gracias` as Route);
+  // Task 6.9b: the `as Route` cast this call site carried through PR 6a is
+  // gone. `typedRoutes: true` (design D7) narrows `redirect()`'s argument to
+  // the generated route union, and PR 6a needed the cast only because
+  // `/{locale}/gracias` did not exist as a page yet. Task 6.8 (this batch)
+  // created `app/[locale]/gracias/page.tsx`, so `typedRoutes` now checks
+  // this exact call site again — the whole point of the cast being temporary
+  // rather than a second permanent waiver alongside `product.link as Route`
+  // in `components/ui/hero-parallax.tsx`.
+  redirect(`/${locale}/gracias`);
 }
