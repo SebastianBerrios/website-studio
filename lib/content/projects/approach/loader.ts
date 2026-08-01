@@ -45,8 +45,6 @@ export async function getProjectApproach(
       return import("./blu");
     case "fast-route":
       return import("./fast-route");
-    case "blu-biolink":
-      return import("./blu-biolink");
     case "wedding-invitation-piero":
       return import("./wedding-invitation-piero");
     default: {

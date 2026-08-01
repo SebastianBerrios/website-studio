@@ -9,10 +9,28 @@
  * production site already publishes, no metric, no URL, no stack entry not
  * read directly from a repo's own manifest.
  *
+ * **Merge: `blucafe` and `blu-biolink` were the same project.**
+ * `https://blucafe.vercel.app/` (this entry's `evidence.externalUrl`, live
+ * since before this batch) IS the biolink page documented by the
+ * `blu-biolinks` repository — verified this session by fetching the live URL
+ * (logo, "Café de especialidad", links to Carta/Ubicación/WhatsApp/
+ * TikTok/Instagram) and comparing against that repo's own README, which
+ * describes exactly that page. The two entries were never two projects; they
+ * were one project filed twice, once under the wrong service line (`A`,
+ * corporate sites) instead of the right one (`C`, biolinks). Merged into this
+ * single entry: service line corrected to `C`, the live evidence and named
+ * client are kept (see the entry below for the open item this merge
+ * surfaces), and `blu-biolink`'s verified stack facts (`Astro 5.13`,
+ * `Tailwind CSS v4`, read directly from that repo's own `package.json`) move
+ * here since they describe the actual deployed page. `blu-biolink` is
+ * removed from `PROJECT_SLUGS` and from this list; see
+ * `lib/content/projects/approach/loader.ts` and the deleted
+ * `approach/blu-biolink.ts`.
+ *
  * `problem`, `role`, and every `outcome` are honestly `[PENDIENTE]` —
  * no real-case-study narrative has been supplied by the user for ANY
- * project yet (not even Luang or Blu Café, PR 5's first two case studies).
- * These are visibly-unresolved stubs, not plausible-sounding filler.
+ * project yet. These are visibly-unresolved stubs, not plausible-sounding
+ * filler.
  *
  * `caseStudyPublished` is `false` on every entry below because
  * `/[locale]/proyectos/[slug]` does not exist as a route yet (PR 5). PR 5 (or
@@ -30,7 +48,6 @@ export const PROJECT_SLUGS = [
   "blucafe",
   "blu",
   "fast-route",
-  "blu-biolink",
   "wedding-invitation-piero",
 ] as const;
 
@@ -112,15 +129,41 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     slug: "blucafe",
-    title: "Blu Café",
+    // Describes the WORK, not just the client — `checkUniqueHeroTitles`
+    // requires a distinct label per project, and `blu` (this same client's
+    // internal system, below) already carries "Sistema de gestión interno de
+    // Blu Café". This project is a biolink page, not a corporate site — see
+    // this file's header comment for the merge that corrected its service
+    // line from `A` to `C`.
+    title: "Página de enlaces (bio-link) de Blu Café",
+    // Named, granted consent — carried over from the pre-merge `blucafe`
+    // entry: the user holds authorization from Blu Cafe TCQ, the page is
+    // publicly branded by the client itself (own logo, own name, own social
+    // handles), and it was already published named on the live production
+    // site before this change set touched it.
+    //
+    // OPEN ITEM, not blocking, not silently resolved either way: the
+    // `blu-biolinks` repository's own README states "This project is private
+    // and proprietary to Blu Cafe TCQ." That statement is about the
+    // REPOSITORY/codebase, not necessarily about naming the client on a
+    // portfolio case study for a page the client already runs publicly under
+    // its own branding — but it is a real tension worth the client's
+    // explicit confirmation before this entry is used as the basis for a
+    // future write-up. Flagged here rather than either ignored or used as a
+    // reason to silently anonymise a project the user already publishes
+    // named.
     client: "Blu Café",
-    serviceLine: "A",
+    serviceLine: "C",
     summary: {
-      es: "Sitio público en producción para Blu Café — verificado accesible en blucafe.vercel.app.",
+      es: "Página de enlaces (bio-link) para Blu Café — verificado accesible en blucafe.vercel.app, con enlaces a carta, ubicación, WhatsApp, TikTok e Instagram.",
     },
     problem: PENDING_PROBLEM,
     role: PENDING_ROLE,
-    stack: [],
+    // Verified directly from the `blu-biolinks` repository's own
+    // `package.json` this session (astro `^5.13.5`, tailwindcss `^4.1.13`) —
+    // moved here from the now-removed `blu-biolink` entry because this IS
+    // that same deployed page (see this file's header comment).
+    stack: ["Astro 5.13", "Tailwind CSS v4"],
     outcome: PENDING_OUTCOME,
     evidence: {
       state: "live",
@@ -228,34 +271,6 @@ export const PROJECTS: readonly Project[] = [
     thumbnail: "",
   },
   {
-    slug: "blu-biolink",
-    title: "Página de enlaces para redes sociales",
-    // Not granted: this repo's own README declares the work "private and
-    // proprietary to Blu Cafe TCQ" (exploration.md §4.4) even though the
-    // repository itself is public. Anonymised per instructions — no client
-    // name anywhere in this entry.
-    client: "Cliente no identificado (uso restringido según el README del repositorio)",
-    serviceLine: "C",
-    summary: {
-      es: "Página de enlaces (bio-link) para redes sociales: enlaces a TikTok, Instagram, menú y ubicación.",
-    },
-    problem: PENDING_PROBLEM,
-    role: PENDING_ROLE,
-    stack: ["Astro 5.13", "Tailwind CSS v4"],
-    outcome: PENDING_OUTCOME,
-    evidence: { state: "no-visual", media: [] },
-    consent: {
-      status: "anonymised",
-      industry: "Alimentos y bebidas (bio-link de redes sociales)",
-      size: "Tamaño no determinado",
-    },
-    featured: true,
-    order: 6,
-    caseStudyPublished: false,
-    link: "/es/proyectos/blu-biolink",
-    thumbnail: "",
-  },
-  {
     slug: "wedding-invitation-piero",
     title: "Microsite de invitación de evento privado",
     // Withheld, not merely anonymised: this is a specific couple's private
@@ -282,7 +297,9 @@ export const PROJECTS: readonly Project[] = [
     evidence: { state: "no-visual", media: [] },
     consent: { status: "withheld" },
     featured: false,
-    order: 7,
+    // Compacted from 7 to 6 after the `blu-biolink` entry (former order 6)
+    // was merged into `blucafe` — see this file's header comment.
+    order: 6,
     caseStudyPublished: false,
     link: "/es/proyectos/wedding-invitation-piero",
     thumbnail: "",
