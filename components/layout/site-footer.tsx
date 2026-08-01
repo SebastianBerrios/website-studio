@@ -14,18 +14,33 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   return (
     <footer className="w-full border-t border-border/60 mt-20">
-      <div className="max-w-7xl mx-auto flex flex-col gap-6 px-4 py-10 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6 px-4 py-12 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="font-semibold text-foreground">{footer.brand}</p>
-          <p>{footer.tagline}</p>
+          <p className="font-display text-lg font-medium text-foreground">
+            {footer.brand}
+          </p>
+          <p className="mt-1">{footer.tagline}</p>
         </div>
         <nav className="flex items-center gap-6">
-          <Link href={landingAnchor(locale, "proyectos") as Route}>
+          <Link
+            href={landingAnchor(locale, "proyectos") as Route}
+            className="transition-colors hover:text-foreground"
+          >
             {footer.projectsLink}
           </Link>
-          <Link href={pricingPath(locale)}>{footer.pricingLink}</Link>
+          <Link
+            href={pricingPath(locale)}
+            className="transition-colors hover:text-foreground"
+          >
+            {footer.pricingLink}
+          </Link>
           {WHATSAPP.status === "set" && (
-            <a href={WHATSAPP.url} target="_blank" rel="noopener noreferrer">
+            <a
+              href={WHATSAPP.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-foreground"
+            >
               {footer.whatsappLink}
             </a>
           )}

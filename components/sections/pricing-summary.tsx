@@ -36,24 +36,27 @@ export function PricingSummary({ locale }: { locale: Locale }) {
   const { pricingSummary } = getDictionary(locale);
 
   return (
-    <section id="precios" className="py-16 md:py-24">
+    <section id="precios" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">
-          {pricingSummary.heading}
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-          {pricingSummary.intro}
-        </p>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {Object.values(SERVICE_LINES).map((line) => (
+        <div className="reveal md:grid md:grid-cols-[1fr_1.4fr] md:gap-12">
+          <h2 className="text-3xl font-medium tracking-tight md:text-5xl">
+            {pricingSummary.heading}
+          </h2>
+          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:mt-2">
+            {pricingSummary.intro}
+          </p>
+        </div>
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {Object.values(SERVICE_LINES).map((line, index) => (
             <div
               key={line.id}
-              className="flex h-full flex-col gap-2 rounded-xl border border-border bg-card p-6"
+              style={{ animationDelay: `${index * 80}ms` }}
+              className="reveal flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-6"
             >
-              <h3 className="text-base font-semibold text-card-foreground">
+              <h3 className="font-display text-base font-medium text-card-foreground">
                 {line.name[locale]}
               </h3>
-              <p className="text-lg">
+              <p className="font-display text-2xl tabular-nums">
                 <Price token={SUMMARY_TOKENS[line.id]} />
               </p>
             </div>
@@ -61,7 +64,7 @@ export function PricingSummary({ locale }: { locale: Locale }) {
         </div>
         <Link
           href={pricingPath(locale)}
-          className="mt-8 inline-block text-sm font-medium underline underline-offset-4"
+          className="mt-8 inline-block text-sm font-medium text-accent-signal underline underline-offset-4"
         >
           {pricingSummary.viewFullPricingLink}
         </Link>

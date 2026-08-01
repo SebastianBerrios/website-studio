@@ -41,13 +41,19 @@ export function Brief({ locale }: { locale: Locale }) {
   }));
 
   return (
-    <section id="brief" className="py-16 md:py-24">
+    <section id="brief" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">{brief.heading}</h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{brief.intro}</p>
+        <div className="reveal md:grid md:grid-cols-[1fr_1.4fr] md:gap-12">
+          <h2 className="text-3xl font-medium tracking-tight md:text-5xl">
+            {brief.heading}
+          </h2>
+          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:mt-2">
+            {brief.intro}
+          </p>
+        </div>
 
         {configured ? (
-          <div className="mt-10 grid gap-10 lg:grid-cols-[2fr_1fr]">
+          <div className="mt-12 grid gap-10 lg:grid-cols-[2fr_1fr]">
             <BriefForm
               locale={locale}
               token={issueFormToken()}
@@ -72,7 +78,7 @@ export function Brief({ locale }: { locale: Locale }) {
                 whatsappFallbackLabel: brief.whatsappFallbackLabel,
               }}
             />
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-2xl border border-border bg-card p-6">
               <p className="text-sm font-medium text-card-foreground">
                 {brief.whatsappAsideHeading}
               </p>
@@ -90,7 +96,7 @@ export function Brief({ locale }: { locale: Locale }) {
             </div>
           </div>
         ) : (
-          <div className="mt-10 max-w-xl rounded-xl border border-border bg-card p-8">
+          <div className="reveal mt-10 max-w-xl rounded-2xl border border-border bg-card p-8">
             <p className="text-sm text-muted-foreground">{brief.whatsappOnlyBody}</p>
             {whatsappUrl ? (
               <a

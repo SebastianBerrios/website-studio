@@ -19,7 +19,7 @@ export function ServiceBadge({
   const { name } = SERVICE_LINES[serviceLine];
 
   return (
-    <span className="inline-flex w-fit items-center rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
+    <span className="inline-flex w-fit items-center rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
       {name[locale]}
     </span>
   );

@@ -39,15 +39,17 @@ export function Authority({ locale }: { locale: Locale }) {
   const { authority } = getDictionary(locale);
 
   return (
-    <section id="autoridad" className="py-16 md:py-24">
+    <section id="autoridad" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">
-          {authority.heading}
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-          {authority.intro}
-        </p>
-        <div className="mt-10 flex flex-col gap-6 rounded-xl border border-border bg-card p-6 sm:flex-row sm:items-center">
+        <div className="reveal md:grid md:grid-cols-[1fr_1.4fr] md:gap-12">
+          <h2 className="text-3xl font-medium tracking-tight md:text-5xl">
+            {authority.heading}
+          </h2>
+          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:mt-2">
+            {authority.intro}
+          </p>
+        </div>
+        <div className="reveal mt-10 flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center">
           {ACADEMY.media.length > 0 ? (
             <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg border border-border bg-muted sm:w-64">
               <Image
@@ -60,7 +62,7 @@ export function Authority({ locale }: { locale: Locale }) {
             </div>
           ) : null}
           <div className="flex-1 space-y-2">
-            <h3 className="text-lg font-semibold text-card-foreground">
+            <h3 className="font-display text-lg font-medium text-card-foreground">
               {ACADEMY.name}
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -91,7 +93,7 @@ function renderLink(academy: AuthorityContent, visitCta: string) {
           href={academy.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-medium underline underline-offset-4"
+          className="text-sm font-medium text-accent-signal underline underline-offset-4"
         >
           {visitCta}
         </a>

@@ -20,25 +20,33 @@ export function SiteHeader({ locale }: { locale: Locale }) {
   const { header } = getDictionary(locale);
 
   return (
-    <header className="w-full border-b border-border/60">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 py-4">
+    <header className="w-full border-b border-border/60 bg-background/80 backdrop-blur-sm">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 px-4 py-5">
         <Link
           href={`/${locale}`}
-          className="text-lg font-bold tracking-tight"
+          className="font-display text-xl font-medium tracking-tight text-foreground"
         >
           {header.brand}
         </Link>
-        <nav className="flex items-center gap-6 text-sm">
-          <Link href={landingAnchor(locale, "proyectos") as Route}>
+        <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+          <Link
+            href={landingAnchor(locale, "proyectos") as Route}
+            className="transition-colors hover:text-foreground"
+          >
             {header.projectsLink}
           </Link>
-          <Link href={pricingPath(locale)}>{header.pricingLink}</Link>
+          <Link
+            href={pricingPath(locale)}
+            className="transition-colors hover:text-foreground"
+          >
+            {header.pricingLink}
+          </Link>
           {WHATSAPP.status === "set" && (
             <a
               href={WHATSAPP.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium"
+              className="font-medium text-accent-signal transition-colors hover:text-foreground"
             >
               {header.whatsappLink}
             </a>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 type Direction = "TOP" | "LEFT" | "BOTTOM" | "RIGHT";
@@ -28,6 +28,11 @@ export function HoverBorderGradient({
 >) {
   const [hovered, setHovered] = useState<boolean>(false);
   const [direction, setDirection] = useState<Direction>("TOP");
+  // Hard constraint (feat/editorial-design): every animation must be
+  // disabled or reduced under `prefers-reduced-motion`. The `setInterval`
+  // below is a continuous, autoplaying animation running even without any
+  // user interaction — exactly the class of motion the constraint targets.
+  const shouldReduceMotion = useReducedMotion();
 
   // When `href` is set, the returned element is wrapped in `<Link>`, which
   // renders as an `<a>`. HTML forbids nested interactive elements, so the
@@ -59,13 +64,13 @@ export function HoverBorderGradient({
     "radial-gradient(75% 181.15942028985506% at 50% 50%, #3275F8 0%, rgba(255, 255, 255, 0) 100%)";
 
   useEffect(() => {
-    if (!hovered) {
+    if (!hovered && !shouldReduceMotion) {
       const interval = setInterval(() => {
         setDirection((prevState) => rotateDirection(prevState));
       }, duration * 1000);
       return () => clearInterval(interval);
     }
-  }, [hovered]);
+  }, [hovered, shouldReduceMotion]);
 
   const content = (
     <Tag

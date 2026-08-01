@@ -28,16 +28,19 @@ export function Services({ locale }: { locale: Locale }) {
   const proyectosHref = landingAnchor(locale, "proyectos") as Route;
 
   return (
-    <section id="servicios" className="py-16 md:py-24">
+    <section id="servicios" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">{services.heading}</h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {Object.values(SERVICE_LINES).map((line) => (
+        <h2 className="reveal max-w-xl text-3xl font-medium tracking-tight md:text-5xl">
+          {services.heading}
+        </h2>
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {Object.values(SERVICE_LINES).map((line, index) => (
             <article
               key={line.id}
-              className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-6"
+              style={{ animationDelay: `${index * 80}ms` }}
+              className="reveal flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-foreground/30"
             >
-              <h3 className="text-lg font-semibold text-card-foreground">
+              <h3 className="font-display text-lg font-medium text-card-foreground">
                 {line.name[locale]}
               </h3>
               <p className="flex-1 text-sm text-muted-foreground">
@@ -46,7 +49,7 @@ export function Services({ locale }: { locale: Locale }) {
               <div className="flex flex-col gap-1">
                 <Link
                   href={pricingLineAnchor(locale, line.id)}
-                  className="text-sm font-medium underline underline-offset-4"
+                  className="text-sm font-medium text-accent-signal underline underline-offset-4"
                 >
                   {services.pricingCta}
                 </Link>

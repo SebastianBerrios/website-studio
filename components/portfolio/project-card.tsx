@@ -41,7 +41,7 @@ export function ProjectCard({
   locale: Locale;
 }) {
   const cardClassName = cn(
-    "flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-5 transition-colors",
+    "flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5 transition-colors",
     card.link !== undefined
       ? "hover:border-foreground/40 cursor-pointer"
       : "cursor-default",
@@ -50,7 +50,7 @@ export function ProjectCard({
   const content = (
     <>
       <ServiceBadge serviceLine={card.serviceLine} locale={locale} />
-      <h3 className="text-base font-semibold text-card-foreground">
+      <h3 className="font-display text-lg font-medium text-card-foreground">
         {card.title}
       </h3>
       <Evidence evidence={card.evidence} locale={locale} />

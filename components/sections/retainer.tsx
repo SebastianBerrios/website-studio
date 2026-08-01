@@ -46,20 +46,22 @@ export function Retainer({ locale }: { locale: Locale }) {
     bugVsFeatureBoundary.status === "set" || contentChangeScope.status === "set";
 
   return (
-    <section id="retainer" className="py-16 md:py-24">
+    <section id="retainer" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">{retainer.heading}</h2>
+        <h2 className="reveal max-w-xl text-3xl font-medium tracking-tight md:text-5xl">
+          {retainer.heading}
+        </h2>
 
         {responseWindow.status === "set" ? (
           <div className="mt-10">
-            <h3 className="text-lg font-semibold text-card-foreground">
+            <h3 className="font-display text-lg font-medium text-card-foreground">
               {retainer.responseHeading}
             </h3>
             <dl className="mt-4 grid gap-4 sm:grid-cols-2">
               {responseWindow.value.map((tier) => (
                 <div
                   key={tier.severity[locale]}
-                  className="rounded-xl border border-border bg-card p-5"
+                  className="rounded-2xl border border-border bg-card p-5"
                 >
                   <dt className="text-sm font-medium text-muted-foreground">
                     {tier.severity[locale]}
@@ -82,7 +84,7 @@ export function Retainer({ locale }: { locale: Locale }) {
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {includedScope.status === "set" ? (
             <div>
-              <h3 className="text-lg font-semibold text-card-foreground">
+              <h3 className="font-display text-lg font-medium text-card-foreground">
                 {retainer.includedHeading}
               </h3>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -95,7 +97,7 @@ export function Retainer({ locale }: { locale: Locale }) {
 
           {excludedScope.status === "set" ? (
             <div>
-              <h3 className="text-lg font-semibold text-card-foreground">
+              <h3 className="font-display text-lg font-medium text-card-foreground">
                 {retainer.excludedHeading}
               </h3>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">

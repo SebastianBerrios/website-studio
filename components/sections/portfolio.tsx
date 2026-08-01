@@ -34,14 +34,20 @@ export function Portfolio({ locale }: { locale: Locale }) {
   const cards = toPortfolioCards(locale);
 
   return (
-    <section id="proyectos" className="py-16 md:py-24">
+    <section id="proyectos" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">
+        <h2 className="reveal max-w-xl text-3xl font-medium tracking-tight md:text-5xl">
           {portfolio.heading}
         </h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
-            <ProjectCard key={card.slug} card={card} locale={locale} />
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map((card, index) => (
+            <div
+              key={card.slug}
+              style={{ animationDelay: `${index * 90}ms` }}
+              className="reveal h-full"
+            >
+              <ProjectCard card={card} locale={locale} />
+            </div>
           ))}
         </div>
       </div>
