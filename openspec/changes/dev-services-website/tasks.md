@@ -775,62 +775,110 @@ working.
 ## PR 5 — Case studies (first 2, then follow-ups)
 
 Satisfies: `case-study` (all requirements). Internally divisible per
-proposal §9/§16 Q5: ship Luang + Blu Café first (both `evidence: live`, both
-VERIFIED reachable), add the rest as captures/consent land.
+proposal §9/§16 Q5.
+
+> **Batch note (sdd-apply, `feat/case-studies`, based on `feat/pricing-page`)**:
+> the original plan named Luang + Blu Café (the public biolink site) as the
+> first two case studies. This batch's actual instructions named `luang` and
+> `blu` (the internal management system) instead — richer, user-supplied
+> narratives exist for those two ("no tenía una web... la hicimos desde cero"
+> for Luang; "antes registraban todo en un Excel... le hicimos una app" for
+> `blu`), while `blucafe` (now the merged biolink entry, see the remediation
+> slice below) has no supplied narrative yet. `caseStudyPublished` is `true`
+> for `luang`/`blu` only; `blucafe` stays `false`. Task 5.3 below is
+> implemented against `blu.ts`, not `blucafe.ts`, for this reason.
 
 ### Code tasks
 
-- [ ] 5.1 Create `components/case-study/case-study-layout.tsx`,
+- [x] 5.1 Create `components/case-study/case-study-layout.tsx`,
       `components/case-study/disclosure-note.tsx` (Server). — *design D10;
       case-study: Mandatory Template Elements*
-- [ ] 5.2 Create `app/[locale]/proyectos/[slug]/page.tsx`:
-      `generateStaticParams({params})` from `publishableProjects()` (plain
-      object — parent's already-resolved params, per design's `params`
-      asymmetry note); `generateMetadata` builds canonical/alternates. —
-      *design §3 asymmetry; case-study: Case Study Route*
-- [ ] 5.3 Write `lib/content/projects/approach/luang.ts` and `.../blucafe.ts`
+- [x] 5.2 Create `app/[locale]/proyectos/[slug]/page.tsx`:
+      `generateStaticParams` returns `publishedCaseStudyProjects()`'s slugs
+      (see 5.V1's documented deviation from the literal `publishableProjects()`
+      wording); `export const dynamicParams = false`; `generateMetadata`
+      builds the page's own canonical via `canonicalFor()`. — *design §3
+      asymmetry; case-study: Case Study Route*
+- [x] 5.3 Write `lib/content/projects/approach/luang.ts` and `.../blu.ts`
       full prose (problem, role, approach/process, stack, outcome) replacing
-      PR 2b's stubs. — *case-study: Mandatory Template Elements, Persuasive
-      Without Images, No Invented Metric*
-- [ ] 5.4 `lib/content/projects/index.ts`: finalize `featured: true`
-      metadata for Luang + Blu Café; keep the remaining curated slots
-      (`blu`, `fast-route`, academy-adjacent, `blu-biolink`, `wedding-
-      invitation-piero`, `atemporal`) in whatever evidence/consent state is
-      currently true — do not fabricate readiness.
+      PR 2b's stubs — **`blu.ts`, not `blucafe.ts`, per this batch's actual
+      published pair; see the batch note above.** `lib/content/projects/
+      index.ts`'s `problem`/`role`/`outcome` fields for both projects were
+      also filled in with real content, replacing `PENDING_PROBLEM`/
+      `PENDING_ROLE`/`PENDING_OUTCOME`. — *case-study: Mandatory Template
+      Elements, Persuasive Without Images, No Invented Metric*
+- [x] 5.4 `lib/content/projects/index.ts`: `caseStudyPublished` flipped to
+      `true` for `luang` and `blu` (both already `featured: true` from a
+      prior batch). Every other curated slot (`blucafe`, `fast-route`,
+      `atemporal`, `wedding-invitation-piero`) keeps its current
+      evidence/consent state — no fabricated readiness.
 - [ ] 5.5 **Follow-up PRs, one per project, as captures/consent land**: add
       the `approach/<slug>.ts` write-up + flip that entry's evidence/consent
       state, up to the 6-8 target. Each is its own small commit/PR, not a
-      blocking batch.
-- [ ] 5.6 `app/sitemap.ts`: confirm it now emits real
-      `/[locale]/proyectos/<slug>` entries via `publishableProjects()`
-      (mechanism built in PR 2c, now has real data).
-- [ ] ~~5.7~~ **Moved to PR 3a as task 3.10.** Under the corrected order PR 3a
-      ships after this PR, so the check belongs where the links are created.
+      blocking batch. **Still open** — `blucafe`, `fast-route`, `atemporal`,
+      `wedding-invitation-piero` have no write-up yet.
+- [x] 5.6 `app/sitemap.ts`: emits real `/[locale]/proyectos/<slug>` entries —
+      **documented deviation**: via `publishedCaseStudyProjects()`
+      (`caseStudyPublished: true` only), not the broader
+      `publishableProjects()` the task's literal text named. The broader set
+      would list `/proyectos/atemporal`, `/blucafe`, `/fast-route` in
+      `sitemap.xml` today even though `generateStaticParams`
+      (`dynamicParams = false`) does not build pages for them — a crawler
+      treats every sitemap URL as real, so that would be a genuine dead URL
+      in the built output. Verified: `sitemap.xml` lists exactly `/es`,
+      `/es/precios`, `/es/proyectos/luang`, `/es/proyectos/blu`.
+- [x] ~~5.7~~ **Moved to PR 3a as task 3.10** (done in a prior batch).
 
 ### Human tasks
 
-- [ ] 5.H1 **[HUMAN]** Approve the Luang and Blu Café write-up copy for
-      factual accuracy (stack list, outcome claims) before publishing — no
-      fabricated metrics.
+- [ ] 5.H1 **[HUMAN]** Approve the Luang and `blu` write-up copy for factual
+      accuracy (stack list, outcome claims) before publishing — no
+      fabricated metrics. **Not yet performed** — the write-ups exist and
+      pass every automated gate, but human sign-off on the copy itself is
+      still open.
 - [ ] 5.H2 **[HUMAN, ongoing]** Supply consent + captures for the remaining
-      4-5 entries (carried from 3.H1/3.H2) to unlock their write-ups.
+      curated slots (carried from 3.H1/3.H2) to unlock their write-ups.
 
 ### Verification
 
-- [ ] 5.V1 `npm run build` passes; confirms `generateStaticParams` for
-      `[slug]` only enumerates `publishableProjects()` — unknown slugs are
-      absent from the static set.
-- [ ] 5.V2 `npm run lint` passes.
+- [x] 5.V1 `npm run build` passes; confirms `generateStaticParams` for
+      `[slug]` only enumerates `publishedCaseStudyProjects()` — **documented
+      deviation from the literal `publishableProjects()` wording**, same
+      reasoning as 5.6: enumerating every publishable project would
+      statically generate a page full of `[PENDIENTE]` stub prose for
+      `atemporal`/`blucafe`/`fast-route`. Confirmed in the build's route
+      table: only `/es/proyectos/luang` and `/es/proyectos/blu` are
+      generated.
+- [x] 5.V2 `npm run lint` passes — same 2 pre-existing
+      `hover-border-gradient.tsx` warnings, no new ones.
 - [ ] 5.V3 **Human**: request an unknown slug — confirm the branded 404
-      renders, not a blank page.
-- [ ] 5.V4 **Human**: read each published case study with images/CSS
-      disabled — confirm problem, role, approach, outcome are each
-      independently legible (the "Persuasive Without Images" acceptance
-      test). No automated check exists for this.
-- [ ] 5.V5 **Human**: confirm each case study's disclosure line (if
-      gated/sanitized) is present and specific.
-- [ ] 5.V6 **Human**: confirm the next-step block links to the correct
-      service-line pricing anchor, not a generic pricing landing.
+      renders, not a blank page. **Not performed by the apply agent** —
+      `dynamicParams = false` guarantees this at the routing layer (any
+      slug outside the static set 404s with zero runtime code, same
+      mechanism as the locale layout's D3), but the live browser check was
+      not performed.
+- [x] 5.V4 Performed by the apply agent via compiled HTML (no browser
+      available, same discipline as PR 3/PR 4's verification entries): read
+      each published case study's extracted text (headings + paragraphs)
+      with images out of the picture entirely — problem, role, approach,
+      and outcome are each a distinct, specific, independently legible
+      section for both `luang` and `blu`. No percentage, no invented number,
+      no number that is not a verified stack version, and no invented
+      client quote in either page's compiled markup.
+- [x] 5.V5 Confirmed in compiled markup: `blu`'s disclosure line renders
+      both the generic "Acceso restringido: este producto requiere inicio de
+      sesión" note and its own specific text ("Este panel se encuentra
+      protegido por inicio de sesión (blucafefinance.vercel.app requiere
+      credenciales). Captura mostrada con autorización del cliente.").
+      `luang` (evidence `live`) correctly renders no disclosure line.
+- [x] 5.V6 Confirmed in compiled markup: both case studies' next-step block
+      links to `pricingLineAnchor(locale, project.serviceLine)` — `luang`
+      (line A) to `/es/precios#linea-a`, `blu` (line B) to
+      `/es/precios#linea-b` — not a generic pricing landing.
+      **Documented deviation, same pattern as `app/[locale]/precios/page.tsx`
+      task 4.7**: the spec's brief-form link is substituted with the
+      already-live WhatsApp channel, because `#brief`/`BriefForm` do not
+      exist yet (PR 6b). Tracked as a follow-up, not closed here.
 
 **Rollback**: additive routes; revert removes `/proyectos/*`. Individual
 write-ups (5.5) can also be reverted one at a time without affecting others.
@@ -1052,6 +1100,49 @@ three items.
       `Content integrity check failed: Project "luang" has an empty
       "summary" for locale "es".` Restored via `Edit` (reverted to the exact
       prior string) and rebuilt clean (exit 0).
+
+## Remediation slice — `fix/merge-duplicate-project` (this batch, before PR 5)
+
+`blucafe` and `blu-biolink` were one project filed twice in `lib/content/
+projects/index.ts`, once under the wrong service line. Verified this session
+by fetching `https://blucafe.vercel.app/` directly (logo, "Café de
+especialidad", links to Carta/Ubicación/WhatsApp/TikTok/Instagram) and
+comparing against the `blu-biolinks` repository's own README, which describes
+exactly that page. Confined to `lib/content/projects/index.ts` and
+`lib/content/projects/approach/{loader.ts, blu-biolink.ts}`.
+
+- [x] M1 Merge `blu-biolink` into `blucafe`: service line corrected `A` → `C`,
+      title changed to describe the work ("Página de enlaces (bio-link) de
+      Blu Café", not just the client — required by `checkUniqueHeroTitles`),
+      `blu-biolink`'s verified stack (`Astro 5.13`, `Tailwind CSS v4`) moved
+      onto the surviving entry. Live evidence and named/granted consent kept.
+      `blu-biolink` removed from `PROJECT_SLUGS`, `PROJECTS`, and the approach
+      loader; `approach/blu-biolink.ts` deleted.
+- [x] M2 **Open item recorded, not resolved either way**: the `blu-biolinks`
+      README states the work is "private and proprietary to Blu Cafe TCQ".
+      Flagged in `index.ts`'s doc comment for client confirmation before this
+      entry becomes the basis of a future write-up — not blocking, and not a
+      reason to anonymise a project the user already publishes named.
+
+### Consequences checked
+
+- Line A drops from 3 proofs to 2 (`luang`, `atemporal`) —
+  `checkServiceLineProof` still passes (2 ≥ 1).
+- Line C gains its first live, clickable, featured proof (previously its
+  proofs were `no-visual`/`withheld`).
+- Hero floor (`HERO_FLOOR = 4`) still met: `luang`, `atemporal`, `blucafe`
+  (merged), `blu` — verified by fault injection (see below), not assumed.
+- `checkHeroIsSubsetOfGrid` and `checkUniqueHeroTitles` both re-verified
+  passing after the merge.
+
+### Verification
+
+- [x] M.V1 `npm run build` and `VERCEL_ENV=production
+      NEXT_PUBLIC_SITE_URL=https://example.test npm run build` both pass
+      clean with the merge applied.
+- [x] M.V2 Fault-injection re-proof: temporarily duplicated `blu`'s title onto
+      the merged `blucafe` entry, ran the production build → real exit code 1
+      citing `checkUniqueHeroTitles`'s message; reverted, rebuilt clean.
 
 ## Cross-cutting notes
 
