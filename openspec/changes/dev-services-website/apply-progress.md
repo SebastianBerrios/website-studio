@@ -2646,3 +2646,227 @@ Ready for `sdd-verify` to validate this batch against `specs/pricing/
 spec.md` and `specs/landing-narrative/spec.md`, or for `sdd-apply` to
 continue with PR 5/PR 6b once their respective blocking human tasks are
 resolved.
+
+---
+
+## Batch 15 — visual design layer ("Editorial claro — señal de oficio"),
+branch `feat/editorial-design` (based on `feat/brief-form`)
+
+**Not a numbered PR from `tasks.md`.** This batch is a deliberate,
+user-directed visual/aesthetic pass over the functionally-complete,
+previously-verified site (through Batch 14 above — all PR 1-6b code tasks).
+No functional/copy/business-content task from `tasks.md` was touched;
+Spanish copy is unchanged except where noted. This section is appended,
+not a replacement, per the merge protocol — Batches 1-14 above are
+unmodified and still the historical record for PR 1 through PR 6b.
+
+### What was built
+
+**Typography and tokens** (`app/layout.tsx`, `app/globals.css`): the site
+previously imported NO font at all (system default). Added Fraunces
+(variable display serif, `opsz`+`WONK` axes) and Karla (body grotesque) via
+`next/font/google`, `display: "swap"`, wired as CSS variables consumed
+through Tailwind v4 `font-display`/`font-sans` theme tokens; a base-layer
+rule applies `font-display` to every `h1`-`h4` site-wide for free. Retinted
+the existing OKLCH token set (same variable NAMES, new values) to a warm
+paper background, warm near-black ink, and one new scarce accent token
+(`--accent-signal`, deliberately kept separate from shadcn's own `--accent`
+so future pulled-in components don't inherit a loud brand colour on hover
+surfaces). Added a static, non-animated, low-opacity dot texture
+(`.bg-paper-texture`) and a CSS-only staggered-reveal utility (`.reveal` +
+`animation-delay` per item).
+
+**Three new client components**, each adapted (not copied verbatim) from an
+Aceternity UI reference, each small/leaf-level/single-purpose, each taking
+only plain props (no dictionary or content-module import crosses into any
+of them):
+- `components/ui/text-generate-effect.tsx` — the hero's one orchestrated
+  entrance, a staggered blur-in word reveal via `useAnimate`/`stagger`.
+  Wired into `hero-header.tsx` in place of the plain heading.
+- `components/ui/sticky-scroll-reveal.tsx` — "Proceso"'s five phases,
+  read by scroll: `useScroll({container})` + `useMotionValueEvent` drives
+  a sticky panel's active phase. Restyled onto this site's own paper/ink
+  tokens (the Aceternity original is a dark-theme component). Wired into
+  `process.tsx`, replacing its static 5-card grid.
+- `components/ui/direction-aware-hover.tsx` — a pointer-direction-aware
+  image pan on hover for the Proyectos grid. Retargeted from the
+  original's `imageUrl: string` to this project's `StaticImageData` media
+  contract so the "missing file is a build error" guarantee (design.md
+  §8) survives. Wired into `evidence.tsx`'s `live`/`gated`/`not-deployed`
+  branches only — `no-visual` has no image and structurally never reaches
+  it.
+
+Total client components: 6 (3 new above + the 3 pre-existing:
+`brief-form.tsx`, `hero-parallax.tsx`, `hover-border-gradient.tsx` —
+confirmed by `grep -rl '"use client"' --include="*.tsx" components app`).
+`design.md` D10 amended in the same batch with a dated note recording this
+(§7 of that file) — see the design artifact, not restated here.
+
+**`hero-parallax.tsx`**: restyled card visuals (rounded corners, border,
+gradient scrim + serif caption on hover) and added an additive-only
+`prefers-reduced-motion` guard. Per hard constraint 10, the row-derivation
+logic and every `useScroll`/`useTransform`/`useSpring` call are UNCHANGED —
+only whether their computed values are applied to `style` changes (a
+`shouldReduceMotion` ternary swaps live `MotionValue`s for the resting
+values the entrance animates toward). Documented inline in the file's own
+comment.
+
+**`hover-border-gradient.tsx`**: gated its auto-rotating background
+interval (`setInterval`, runs even without hover) behind
+`useReducedMotion()` — a continuous autoplaying animation the hard
+`prefers-reduced-motion` constraint covers regardless of which commit
+touches the file.
+
+**Every remaining section/page restyled CSS-only**: site header/footer,
+Servicios, Autoridad, Retainer, Precios summary, Brief, the pricing page
+and its blocks (tier cards, quote block, retainer plans, terms table,
+FAQ), the case-study template, both not-found pages, and `/gracias`. Same
+recipe throughout: `font-display` headings at a more dramatic scale,
+`rounded-2xl` surfaces, `.reveal` + staggered `animation-delay`, and an
+asymmetric two-column heading/intro composition where a section has both
+(narrow heading column, wider intro column) instead of stacking both
+centered. `accent-signal` used sparingly — the hero CTA, WhatsApp links,
+a couple of pricing CTAs — not on every interactive element.
+
+**Prices**: `tabular-nums` moved onto `Price`'s own rendered `<span>`
+(`components/pricing/price.tsx`) so every consumer (tier cards, the quote
+floor, retainer plans, the landing pricing summary) gets fixed-width
+digit alignment for free, without each caller having to remember the
+utility class.
+
+**Contrast fix, verification-driven**: the initially-picked
+`--accent-signal` (L=0.58 OKLCH) was checked via an OKLCH→sRGB→relative-
+luminance conversion (not eyeballed) and found to clear 4.5:1 as
+text-on-paper but only 4.34:1 as its own foreground-on-itself (the CTA
+button label) — just under the AA floor for normal-size text. Lowered to
+L=0.55 and lightened `--accent-signal-foreground` slightly; both real
+uses now clear AA with margin (4.77:1 and 5.07:1 respectively).
+
+### Commits (6, on `feat/editorial-design`, based on `feat/brief-form`)
+
+| # | Commit | Files | Changed lines |
+|---|---|---|---|
+| 1 | `e82370e` feat(design): load editorial typography and warm OKLCH palette | 2 | 202+/53- = 255 |
+| 2 | `f2d3246` feat(design): add hero, process, and portfolio motion moments | 7 | 441+/77- = 518 |
+| 3 | `2dcea39` feat(design): restyle landing sections and chrome for editorial pass | 11 | 116+/66- = 182 |
+| 4 | `274eab6` feat(design): restyle pricing tables and case studies for editorial pass | 11 | 88+/50- = 138 |
+| 5 | `1bc38e3` docs(design): amend D10 for the editorial visual-design pass | 1 | 66+/3- = 69 |
+| 6 | `980b14d` fix(design): tune accent-signal lightness for WCAG AA contrast | 1 | 12+/4- = 16 |
+
+Total across all 6 commits: ~1,178 changed lines (925 insertions, 253
+deletions) — well above the 400-line single-PR reviewer budget, consistent
+with (and explicitly anticipated by) the orchestrator's own framing of this
+slice: "This slice will be large; clean commit boundaries are how it stays
+reviewable." No chained-PR split was requested for this batch; delivered as
+6 work-unit commits with clean, file-scoped boundaries (tokens / motion
+components / landing sections / pricing+case-studies / design-doc /
+contrast fix) so a retroactive split remains straightforward, matching the
+precedent already set by PR 4 (~3x over budget) and PR 6b (~3.7x over
+budget) earlier in this same change.
+
+### Verification performed
+
+- `npm run build` (default, no env flags): exit 0, all 10 routes generated,
+  same "Content integrity check failed: NEXT_PUBLIC_SITE_URL is not set…"
+  WARNING log as before this batch (expected — warn-mode only, no
+  `VERCEL_ENV=production`).
+- `npm run lint`: exit 0, same 2 pre-existing `hover-border-gradient.tsx`
+  warnings (`react-hooks/exhaustive-deps`, `no-unused-vars`) as before this
+  batch, zero new warnings or errors introduced by any of the 6 commits.
+- `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://x.test npm run
+  build`: exit 0, all 10 routes generated, every integrity check active and
+  passing (confirmed via the fault-injection test below, which proves the
+  gate is live, not merely silent).
+- **`prefers-reduced-motion` proof**: global CSS media query in
+  `app/globals.css` neutralizes every CSS animation/transition site-wide
+  (covers `.reveal` and `tw-animate-css` for free); `useReducedMotion()`
+  from `motion/react` gates all three new client components plus the two
+  pre-existing ones that autoplay motion (`hero-parallax.tsx`'s scroll
+  transforms, `hover-border-gradient.tsx`'s auto-rotating interval) —
+  quoted verbatim in the final report to the orchestrator.
+- **Honest content states re-verified in compiled markup** (production
+  build, `.next/server/app/es.html`): the `no-visual` project ("Optimización
+  de rutas de entrega en tiempo real") renders service badge + title +
+  summary, zero `<img>`/DirectionAwareHover wrapper, `cursor-default`, no
+  broken frame. The `gated` project (Blu Café's internal panel) renders its
+  image through `DirectionAwareHover` PLUS both the generic
+  "Acceso restringido…" note and its own specific disclosure sentence.
+  Zero `data-price-token` occurrences anywhere in the production build (no
+  `PricePending` element renders today, correct — all 8 tokens are `"set"`).
+- **Fault injection, this batch**: blanked
+  `RETAINER_COMMITMENTS.cancellationTerms.value.es` to `""`
+  (`lib/content/retainer.ts`), ran `VERCEL_ENV=production
+  NEXT_PUBLIC_SITE_URL=https://x.test npm run build` → real, captured exit
+  code 1, `Error: Content integrity check failed: -
+  RETAINER_COMMITMENTS.cancellationTerms is "set" but blank.` during
+  prerender of `/es/gracias` and `/es/proyectos/luang`. Restored the exact
+  original string via `Edit`, confirmed `git diff --stat` showed zero
+  residual change, rebuilt in production mode again → exit 0, all 10 routes.
+- **Discovery, not fixed this batch (documented, not silently worked
+  around)**: attempting the same fault-injection technique on any
+  `PRICES` token (tried `landing-basic`, then `care-basic`) fails
+  `npm run build` at the TypeScript step BEFORE reaching the runtime
+  `assertContentInvariants()` gate at all —
+  `lib/brief/schema.ts`'s `FIXED_TIER_AMOUNTS`/`CUSTOM_APP_FLOOR` (added in
+  PR 6a/6b, to derive budget-band labels from real prices) index `PRICES`
+  by a non-literal `PriceToken` key and read `.value.amount` directly,
+  bypassing the `<Price>` component's exhaustive `switch` on
+  `PriceEntry.status` that design.md's layer-1 analysis assumed was the
+  only consumer. This means a `pending` regression on ANY price token is
+  actually caught EARLIER (TypeScript compile error) than design.md's
+  four-layer table documents for that specific field — a stronger
+  outcome, but a different mechanism than documented, and worth a
+  `sdd-verify`/design-doc follow-up note since it means `schema.ts` has an
+  undocumented, load-bearing dependency on the full `PRICES` shape.
+  Not fixed here: out of scope for a visual-design pass, and arguably
+  should stay a type error rather than being papered over.
+- **Client-component count confirmed**: `grep -rl '"use client"'
+  --include="*.tsx" components app` → exactly 6 files (listed above).
+- **Font verification**: `.next/static/chunks/*.css` contains real
+  `@font-face` declarations for `Fraunces` (weight `100 900`, `font-
+  display: swap`) and `Karla` (weight `200 800`, `font-display: swap`),
+  each with `.woff2` sources under `.next/static/media/`. `<html
+  class="…fraunces…variable karla…variable">` confirmed in compiled
+  markup. Repo-wide search for `Inter|Roboto|Arial|system-ui|Space
+  Grotesk` in generated CSS found no such family used as a real typeface —
+  the one `local(Arial)` reference is next/font's own automatic fallback-
+  metrics technique (`Karla Fallback`, ascent/descent/size-adjust
+  overrides), never a rendered typeface choice, and is standard,
+  unavoidable `next/font` behaviour unless explicitly disabled.
+- **Contrast verified numerically** (OKLCH→sRGB→WCAG relative-luminance
+  formula, not eyeballed): foreground/background 15.68:1, muted-
+  foreground/background 7.15:1, muted-foreground/card 6.92:1 — all comfortably
+  above the 4.5:1 AA floor. `accent-signal` tuned per the contrast-fix
+  commit above.
+- **Diff line counts**: see the commit table above.
+
+### Open items, explicitly not closed by this batch (none invented)
+
+- The `lib/brief/schema.ts` / `PRICES` coupling discovered during fault
+  injection (above) — worth a follow-up note in `design.md`'s enforcement-
+  layer table, not fixed here.
+- Every open item carried from Batch 14 (turnaround time, per-tier
+  exclusions, payment schedule, code-ownership policy, `care-basic`/
+  `care-standard` scope difference, the `?line=` write-side CTA wiring,
+  `RETAINER_COMMITMENTS.channels`, retainer boundary notes,
+  `/[locale]/precios`'s missing page-level canonical) remains untouched —
+  this batch is visual-only.
+
+## Status (cumulative, through Batch 15)
+
+All PR 1-6b code tasks remain as recorded through Batch 14 (unchanged by
+this batch). This batch adds a visual/aesthetic layer over that
+functionally-complete site: typography + tokens, 3 new small client
+components (6 total, up from 3, per the dated D10 amendment), and a
+CSS-only restyle of every remaining section/page. No `tasks.md` task
+number is closed or reopened by this batch — it sits outside that
+numbered list by design (a user-directed aesthetic pass, not a spec
+slice).
+
+No push performed. No PR opened. No history rewrite. Local commits only,
+on `feat/editorial-design` (based on `feat/brief-form`).
+
+Ready for `sdd-verify` to validate this batch against the design brief and
+hard constraints stated in the orchestrator's launch prompt (no dedicated
+`specs/*.md` covers a visual-design pass), or for a human to review the
+result visually before any decision to merge/deploy.
