@@ -22,16 +22,32 @@
 
 import { SERVICE_LINES, type ServiceLine } from "@/lib/content/service-lines";
 import type { Localized } from "@/lib/content/types";
+import {
+  DISPLAY_CURRENCY,
+  PRICES,
+  PRICING_TIERS,
+  formatMoney,
+} from "@/lib/content/pricing";
 
 /**
- * Semantic budget bands — NOT figures. No price range, currency, or amount
- * has been supplied by the business for any band (that is a real product
- * decision, still open — see the human task recorded in apply-progress.md).
- * Inventing a range like "S/2,000-5,000" here would be exactly the kind of
- * fabricated number `lib/content/pricing.ts`'s `pending` discipline exists
- * to prevent. If/when real boundaries are decided, they can be added as an
- * additional `Localized` field per band without changing this union's
- * shape.
+ * Semantic budget bands. The identifiers (`undecided`/`small`/`medium`/
+ * `large`) predate real pricing (PR 6a) and stay stable so the form's shape
+ * never needs to change again; only the LABELS below were updated once task
+ * 4.H1 closed and `lib/content/pricing.ts` gained real figures.
+ *
+ * Every figure in the labels is DERIVED from `PRICES`/`PRICING_TIERS` below,
+ * never re-typed — the exact "single exported constant, every consumer
+ * reads through it" discipline `lib/content/process.ts`/`pricing.ts`
+ * already established. Duplicating "S/800" or "S/1,500" as a literal string
+ * here would drift the moment the studio's pricing changes; computing it
+ * means it cannot.
+ *
+ * The two boundary values:
+ * - `FIXED_TIER_CEILING` — the highest of the site's published FIXED tiers
+ *   (Lines A and C only; Line B is quote-on-request and Line D is a
+ *   recurring retainer, not a one-off project budget).
+ * - `CUSTOM_APP_FLOOR` — `PRICES["app-from"]`, the starting point for
+ *   custom web apps/dashboards (Line B).
  */
 export type BudgetBand = "undecided" | "small" | "medium" | "large";
 
@@ -40,6 +56,16 @@ export type BudgetBandDefinition = {
   readonly label: Localized<string>;
 };
 
+const FIXED_TIER_AMOUNTS = PRICING_TIERS.map(
+  (tier) => PRICES[tier.token].value.amount,
+);
+const FIXED_TIER_CEILING = Math.max(...FIXED_TIER_AMOUNTS);
+const CUSTOM_APP_FLOOR = PRICES["app-from"].value.amount;
+
+function money(amount: number): string {
+  return formatMoney({ amount, currency: DISPLAY_CURRENCY });
+}
+
 export const BUDGET_BANDS = {
   undecided: {
     id: "undecided",
@@ -47,15 +73,17 @@ export const BUDGET_BANDS = {
   },
   small: {
     id: "small",
-    label: { es: "Presupuesto ajustado" },
+    label: { es: `Hasta ${money(FIXED_TIER_CEILING)}` },
   },
   medium: {
     id: "medium",
-    label: { es: "Presupuesto medio" },
+    label: {
+      es: `Entre ${money(FIXED_TIER_CEILING)} y ${money(CUSTOM_APP_FLOOR)}`,
+    },
   },
   large: {
     id: "large",
-    label: { es: "Presupuesto amplio" },
+    label: { es: `Desde ${money(CUSTOM_APP_FLOOR)}` },
   },
 } as const satisfies Record<BudgetBand, BudgetBandDefinition>;
 
