@@ -197,6 +197,30 @@ export type PricingSummaryDictionary = {
   readonly viewFullPricingLink: string;
 };
 
+/**
+ * The case-study route (`/[locale]/proyectos/[slug]`, `specs/case-study/
+ * spec.md`, task 5.1/5.2). The project's own facts (title, problem, role,
+ * stack, outcome, evidence, approach) live in `lib/content/projects/**`;
+ * these keys are the structural headings/labels around that data, following
+ * the same dividing line every other section already uses.
+ *
+ * `stackUnavailableNote` is the honest fallback for a project (like `luang`)
+ * with no verified stack on record — never a fabricated technology list.
+ */
+export type CaseStudyDictionary = {
+  readonly problemHeading: string;
+  readonly roleHeading: string;
+  readonly approachHeading: string;
+  readonly stackHeading: string;
+  readonly stackUnavailableNote: string;
+  readonly outcomeHeading: string;
+  readonly nextStepHeading: string;
+  readonly nextStepBody: string;
+  readonly viewPricingCtaLabel: string;
+  readonly contactCtaLabel: string;
+  readonly backToProjectsLabel: string;
+};
+
 export type Dictionary = {
   readonly header: SiteHeaderDictionary;
   readonly footer: SiteFooterDictionary;
@@ -208,5 +232,6 @@ export type Dictionary = {
   readonly retainer: RetainerDictionary;
   readonly pricing: PricingDictionary;
   readonly pricingSummary: PricingSummaryDictionary;
+  readonly caseStudy: CaseStudyDictionary;
   readonly notFound: NotFoundDictionary;
 };

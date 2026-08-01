@@ -121,6 +121,21 @@ export const es: Dictionary = {
       "Un vistazo rápido a nuestras líneas de servicio. El detalle completo, con alcance y condiciones, está en la página de precios.",
     viewFullPricingLink: "Ver precios completos",
   },
+  caseStudy: {
+    problemHeading: "El problema",
+    roleHeading: "Qué hizo el estudio",
+    approachHeading: "Cómo lo abordamos",
+    stackHeading: "Stack tecnológico",
+    stackUnavailableNote:
+      "Información de stack no disponible públicamente para este proyecto.",
+    outcomeHeading: "Resultado",
+    nextStepHeading: "¿Un proyecto parecido?",
+    nextStepBody:
+      "Conversemos sobre tu proyecto por WhatsApp o revisa el precio de referencia de esta línea de servicio.",
+    viewPricingCtaLabel: "Ver precio de esta línea",
+    contactCtaLabel: "Escribir por WhatsApp",
+    backToProjectsLabel: "Ver más proyectos",
+  },
   notFound: {
     heading: "Página no encontrada",
     message: "La página que buscas no existe o fue movida.",

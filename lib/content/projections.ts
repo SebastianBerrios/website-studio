@@ -59,8 +59,14 @@ export type PortfolioCard = {
  *
  * `checkUniqueHeroTitles` in `lib/content/invariants.ts` makes a future
  * collision a build failure rather than something a reviewer has to notice.
+ *
+ * Exported (PR 5): `components/case-study/case-study-layout.tsx` needs the
+ * exact same consent-gated label a case study's title renders — reusing this
+ * function keeps "Title and Context Honesty" (`specs/case-study/spec.md`)
+ * governed by the single place that already implements it, instead of a
+ * second copy of the same `switch` drifting out of sync.
  */
-function publicTitle(project: Project): string {
+export function publicTitle(project: Project): string {
   const { consent } = project;
   switch (consent.status) {
     case "granted":
@@ -92,31 +98,22 @@ function publicTitle(project: Project): string {
 /**
  * The link a visitor should follow for this project, from any surface.
  *
- * **Deviation from design.md §5's literal table** (`link: externalUrl when
- * evidence.state === 'live', else caseStudyPath(locale, slug)`), flagged
- * rather than silently applied. `/[locale]/proyectos/[slug]` does not exist
- * until PR 5, which under `stacked-to-main` ships strictly AFTER this PR
- * (tasks.md "Delivery order correction" reorders PR 4/PR 5 ahead of PR 3, but
- * PR 3 is not where the hero is wired — PR 2c is, and the hero is wired
- * before PR 5 in every ordering). The curated set already includes
- * non-"live" evidence projects today (e.g. "blu", `evidence.state:
- * "gated"`), so applying the design's literal rule here would render a real
- * dead link on `main` the moment PR 2c merges — the exact class of defect
- * this change set exists to remove (see specs/site-shell/spec.md, "Zero Dead
- * Internal Links": the built output must have zero dead internal links at
- * every point in the chain, not only after the last merge).
- *
- * Falls back to the landing's portfolio anchor instead, following the same
- * pattern PR 1 already established for this exact situation (`app/page.tsx`'s
- * former "Blu Finances" entry, `link: "/#proyectos"`). PR 5 (or PR 3a's
- * published-state derivation, task 3.4) must replace this fallback with
- * `caseStudyPath(locale, project.slug)` once that project's case study is
- * actually published — tracked as a follow-up in apply-progress.md, not left
- * silently broken.
+ * Matches design.md §5's literal table now (`externalUrl` when
+ * `evidence.state === 'live'`, else `caseStudyPath(locale, slug)` once
+ * published): PR 5 ships `/[locale]/proyectos/[slug]`, so the temporary
+ * anchor fallback this function used to apply unconditionally (see git
+ * history — it deviated here because that route did not exist until this
+ * PR) is now resolved. A project without a published case study still falls
+ * back to the landing's portfolio anchor, the same pattern PR 1 established
+ * for this exact situation (`app/page.tsx`'s former "Blu Finances" entry,
+ * `link: "/#proyectos"`) — rendering a link at an address that does not
+ * exist yet is the exact class of defect this change set exists to remove
+ * (specs/site-shell/spec.md, "Zero Dead Internal Links").
  */
 function publicLink(locale: Locale, project: Project): string {
-  return project.evidence.state === "live"
-    ? project.evidence.externalUrl
+  if (project.evidence.state === "live") return project.evidence.externalUrl;
+  return project.caseStudyPublished
+    ? caseStudyPath(locale, project.slug)
     : landingAnchor(locale, "proyectos");
 }
 
@@ -175,6 +172,26 @@ export function publishableProjects(): readonly Project[] {
  */
 function featuredProjects(): readonly Project[] {
   return publishableProjects().filter((project) => project.featured);
+}
+
+/**
+ * Every project whose case study is actually published (`caseStudyPublished:
+ * true`) — PR 5's `luang` and `blu`, today.
+ *
+ * The single source of truth for "which case-study routes really exist" —
+ * `app/[locale]/proyectos/[slug]/page.tsx`'s `generateStaticParams`,
+ * `app/sitemap.ts`, and `lib/content/invariants.ts`'s
+ * `checkInternalLinksResolve` all read from this function instead of each
+ * re-deriving the same filter, so the three cannot drift out of sync with
+ * each other. Deliberately narrower than `publishableProjects()`: that
+ * function answers "is this project allowed to be named at all", a different
+ * question from "does a real, populated case-study page exist for it right
+ * now" — using the broader set here would statically generate a page full of
+ * `[PENDIENTE]` stub prose for every curated project that has not received a
+ * write-up yet, and list it in the sitemap as if it were real content.
+ */
+export function publishedCaseStudyProjects(): readonly Project[] {
+  return PROJECTS.filter((project) => project.caseStudyPublished);
 }
 
 /**

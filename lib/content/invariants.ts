@@ -78,7 +78,11 @@ import "server-only";
 
 import { LOCALES } from "./locales";
 import { PROJECTS } from "./projects";
-import { toHeroProducts, toPortfolioCards } from "./projections";
+import {
+  publishedCaseStudyProjects,
+  toHeroProducts,
+  toPortfolioCards,
+} from "./projections";
 import { PRICES, type PriceEntry, type PriceToken } from "./pricing";
 import { SERVICE_LINES, type ServiceLine } from "./service-lines";
 import { getProjectApproach } from "./projects/approach/loader";
@@ -176,14 +180,17 @@ function checkNoSelfReferentialLinks(violations: string[]): void {
  * equal to `/` or `/{locale}`. Route existence is a different property.
  *
  * LIVE_TARGETS must be extended as each slice lands: `/{locale}/precios`
- * added in this same commit (task 4.10/hard constraint 2), now that
- * `app/[locale]/precios/page.tsx` exists; `/{locale}/proyectos/{slug}` in
- * PR 5. This function only walks `toHeroProducts()`, which does not itself
- * link to `/precios` today — the entry is added anyway so a future hero
- * change that does link there is covered immediately, not left for someone
- * to notice this list is stale. A link added before its target fails the
- * build — which is the point, since that exact mistake has already been
- * caught four times in this change set.
+ * added in a prior commit (task 4.10/hard constraint 2), now that
+ * `app/[locale]/precios/page.tsx` exists; `/{locale}/proyectos/{slug}` added
+ * in THIS commit (PR 5, hard constraint 2), for published slugs only —
+ * derived from `publishedCaseStudyProjects()` rather than hardcoded, so this
+ * list cannot go stale the way a hand-maintained one could (the exact
+ * failure mode this comment used to warn about). This function only walks
+ * `toHeroProducts()`, which now DOES link internally to `/proyectos/blu`
+ * (`blu`'s evidence is `gated`, not `live`, and its case study is published)
+ * — the first real exercise of this branch, not merely defensive coverage. A
+ * link added before its target fails the build — which is the point, since
+ * that exact mistake has already been caught four times in this change set.
  */
 function checkInternalLinksResolve(violations: string[]): void {
   for (const locale of LOCALES) {
@@ -191,6 +198,9 @@ function checkInternalLinksResolve(violations: string[]): void {
       `/${locale}`,
       `/${locale}#proyectos`,
       `/${locale}/precios`,
+      ...publishedCaseStudyProjects().map((project) =>
+        caseStudyPath(locale, project.slug),
+      ),
     ]);
     for (const product of toHeroProducts(locale)) {
       // External hrefs are deliberately NOT reachability-checked here. This

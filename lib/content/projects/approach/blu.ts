@@ -1,11 +1,19 @@
 /**
- * PLACEHOLDER — no case-study narrative has been supplied for this
- * (anonymised) project yet. This is a visibly-unresolved stub, not
- * publishable copy. Any future write-up for this slug must keep the same
- * anonymisation as `lib/content/projects/index.ts`'s `consent` field.
+ * Real case-study prose for `blu` (Blu Café's internal management system),
+ * PR 5's second published write-up. Built strictly from the user's own
+ * words — "Igual lo hicimos desde cero, antes registraban todo en un Excel y
+ * le hicimos una app que reemplace el Excel y haga más cosas." — plus VERIFIED
+ * facts read directly from the `blu` repository's own manifest and module
+ * tree this session.
+ *
+ * No headcount, error count, or time-saved figure is stated because none was
+ * supplied or measured. The reasoning below is about the SHAPE of the
+ * problem a spreadsheet-to-application migration creates (data integrity,
+ * concurrent access, auditability) — not about a specific, unmeasured
+ * outcome. See `specs/case-study/spec.md`, "No Invented Metric".
  */
 import type { ApproachContent } from "./loader";
 
 export const approach: ApproachContent["approach"] = {
-  es: "[PENDIENTE] El proceso de trabajo detallado para este proyecto todavía no ha sido redactado. Este texto es un marcador temporal, no contenido de producción.",
+  es: "Reemplazar una hoja de cálculo por una aplicación de gestión no es solo \"lo mismo pero con botones\": cambia el tipo de problema que hay que resolver. Un Excel compartido no impone ninguna estructura — cualquiera puede escribir cualquier cosa en cualquier celda, no queda registro de quién cambió qué ni cuándo, y dos personas editando el mismo archivo a la vez terminan sobrescribiéndose sin darse cuenta. El enfoque partió de tratar esos tres problemas como el núcleo del encargo, no como detalles técnicos secundarios. Integridad de los datos: cada módulo (categorías, productos, ingredientes, recetas, ventas, inventario, compras, finanzas) se modeló como una entidad propia con sus propias reglas, en vez de columnas sueltas de una hoja de cálculo — un pedido no puede referenciar un producto inexistente, una venta no puede descontar más inventario del disponible. Acceso concurrente: al ser una aplicación con backend en vez de un archivo local, varias personas pueden operar el sistema a la vez sin pisarse el trabajo, algo que un archivo Excel compartido no puede garantizar por diseño. Auditoría: se incluyó un módulo de auditoría y registro de actividades explícitamente porque un Excel no deja rastro de quién cambió un precio o borró una fila; un sistema que reemplaza esa hoja tiene que poder responder esa pregunta, o no resuelve el problema real que tenía el cliente. El resto de módulos — usuarios y permisos, horarios, estadísticas — sigue la misma lógica: cada uno existe porque una hoja de cálculo obliga a resolverlo a mano, y una aplicación puede resolverlo como parte de la estructura del sistema en lugar de como un proceso manual paralelo.",
 };

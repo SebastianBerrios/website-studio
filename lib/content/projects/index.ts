@@ -27,16 +27,16 @@
  * `lib/content/projects/approach/loader.ts` and the deleted
  * `approach/blu-biolink.ts`.
  *
- * `problem`, `role`, and every `outcome` are honestly `[PENDIENTE]` —
- * no real-case-study narrative has been supplied by the user for ANY
- * project yet. These are visibly-unresolved stubs, not plausible-sounding
- * filler.
+ * `problem`, `role`, and `outcome` are real content for `luang` and `blu` —
+ * PR 5's two published case studies (`caseStudyPublished: true`) — built
+ * strictly from the user's own supplied facts, nothing else. Every other
+ * project keeps the honestly-`[PENDIENTE]` stub; no real narrative has been
+ * supplied for them yet.
  *
- * `caseStudyPublished` is `false` on every entry below because
- * `/[locale]/proyectos/[slug]` does not exist as a route yet (PR 5). PR 5 (or
- * a task 5.5 follow-up) flips this to `true` per project once its write-up
- * and the route both ship — see `lib/content/types.ts`'s doc comment on the
- * field and task 3.4's critical constraint in tasks.md.
+ * `caseStudyPublished` is `true` only for `luang` and `blu` — PR 5 publishes
+ * exactly these two. Every other entry stays `false` because no write-up has
+ * been supplied for it. See `lib/content/types.ts`'s doc comment on the field
+ * and task 3.4's critical constraint in tasks.md.
  */
 
 import type { Project } from "@/lib/content/types";
@@ -79,10 +79,27 @@ export const PROJECTS: readonly Project[] = [
     summary: {
       es: "Sitio público en producción para Luang Asociados SAC — verificado accesible en luang.com.pe.",
     },
-    problem: PENDING_PROBLEM,
-    role: PENDING_ROLE,
+    // Real content, PR 5's first published case study. Built strictly from
+    // the user's own words: "No tenía una web, se la hicimos desde cero, lo
+    // querían para mostrar sus proyectos y darse a conocer." No prior client
+    // history, no cost/frustration detail, and no metric are stated because
+    // none was supplied — the outcome below is a qualitative, independently
+    // verifiable fact (the site exists and is reachable), not an invented
+    // number. See `lib/content/projects/approach/luang.ts` for the long-form
+    // reasoning.
+    problem: {
+      es: "Luang Asociados SAC no tenía ningún sitio web: no existía una presencia digital previa. Necesitaban un canal propio para mostrar sus proyectos de arquitectura y darse a conocer ante nuevos clientes.",
+    },
+    role: {
+      es: "El estudio diseñó y desarrolló el sitio completo desde cero — arquitectura de información, diseño visual y desarrollo — sin partir de ninguna base ni plataforma previa del cliente.",
+    },
     stack: [],
-    outcome: PENDING_OUTCOME,
+    outcome: {
+      kind: "qualitative",
+      statement: {
+        es: "El sitio construido está en producción y es públicamente accesible en luang.com.pe, mostrando los proyectos de Luang Asociados SAC — el canal de presencia digital que antes no existía.",
+      },
+    },
     evidence: {
       state: "live",
       externalUrl: "https://luang.com.pe/",
@@ -91,7 +108,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 1,
-    caseStudyPublished: false,
+    caseStudyPublished: true,
     link: "https://luang.com.pe/",
     thumbnail: "/projects/luang.png",
   },
@@ -148,10 +165,10 @@ export const PROJECTS: readonly Project[] = [
     // REPOSITORY/codebase, not necessarily about naming the client on a
     // portfolio case study for a page the client already runs publicly under
     // its own branding — but it is a real tension worth the client's
-    // explicit confirmation before this entry is used as the basis for a
-    // future write-up. Flagged here rather than either ignored or used as a
-    // reason to silently anonymise a project the user already publishes
-    // named.
+    // explicit confirmation before this entry is used as PR 5's basis for a
+    // future write-up (it is not one of PR 5's two published case studies
+    // today). Flagged here rather than either ignored or used as a reason to
+    // silently anonymise a project the user already publishes named.
     client: "Blu Café",
     serviceLine: "C",
     summary: {
@@ -173,6 +190,8 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 3,
+    // Not one of PR 5's two published case studies (`luang`, `blu`) — stays
+    // `false` until a write-up is supplied for it.
     caseStudyPublished: false,
     link: "https://blucafe.vercel.app/",
     thumbnail: "/projects/blucafe.png",
@@ -198,18 +217,42 @@ export const PROJECTS: readonly Project[] = [
     summary: {
       es: "Panel administrativo interno de Blu Café: gestión de categorías, productos, ingredientes, recetas y ventas — protegido por inicio de sesión, mostrado con autorización del cliente.",
     },
-    problem: PENDING_PROBLEM,
-    role: PENDING_ROLE,
+    // Real content, PR 5's second published case study. Built strictly from
+    // the user's own words: "Igual lo hicimos desde cero, antes registraban
+    // todo en un Excel y le hicimos una app que reemplace el Excel y haga más
+    // cosas." No headcount, no error count, no time-saved figure is stated —
+    // none was supplied. The outcome is a qualitative, independently
+    // verifiable fact (the application exists, is deployed, and its modules
+    // are visible in its own source), not an invented number. See
+    // `lib/content/projects/approach/blu.ts` for the long-form reasoning
+    // about what replacing a spreadsheet with an application actually
+    // changes.
+    problem: {
+      es: "Antes de este proyecto, Blu Café llevaba toda su operación en una hoja de cálculo de Excel: categorías, productos, ingredientes, recetas y ventas se registraban manualmente, sin un sistema centralizado.",
+    },
+    role: {
+      es: "El estudio diseñó y desarrolló desde cero un sistema de gestión interno que reemplaza por completo ese Excel: un panel administrativo con autenticación, con módulos para usuarios, auditoría, estadísticas, actividades, compras, horarios, ingredientes, inventario, pedidos, ventas, categorías, recetas y finanzas.",
+    },
+    // Verified directly from the `blu` repository's own `package.json` and
+    // `src/` module tree this session — `typescript` and `react-hook-form`
+    // added to the previously-recorded list, both confirmed present.
     stack: [
       "Next.js 15.5.9",
       "React 19.1.0",
+      "TypeScript",
       "Tailwind CSS v4",
       "@supabase/ssr",
-      "Sentry",
+      "@sentry/nextjs",
       "chart.js",
+      "react-hook-form",
       "Vitest 4.1.5",
     ],
-    outcome: PENDING_OUTCOME,
+    outcome: {
+      kind: "qualitative",
+      statement: {
+        es: "El Excel fue reemplazado por una aplicación de gestión interna desplegada en producción, con módulos dedicados para cada área operativa (ventas, inventario, compras, recetas, finanzas, entre otros) reunidos en un único sistema centralizado.",
+      },
+    },
     // `evidence.state` is `gated`, not `no-visual`: the client authorized
     // this capture (3.H2, granted), so it ships again — but the product
     // itself genuinely sits behind a login (`blucafefinance.vercel.app`
@@ -230,7 +273,7 @@ export const PROJECTS: readonly Project[] = [
     consent: { status: "granted", namedClient: true },
     featured: true,
     order: 4,
-    caseStudyPublished: false,
+    caseStudyPublished: true,
     link: "/es/proyectos/blu",
     thumbnail: "/projects/blucafefinance.png",
   },
