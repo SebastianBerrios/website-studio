@@ -27,7 +27,7 @@ tasks, and it modifies no source file.
 | **D7** | **`typedRoutes: true`.** | Now a stable top-level config option (VERIFIED). It makes a dead literal internal link a **build failure** — exactly the `/portfolio` bug that shipped — and it is the cheapest net available with no test runner. |
 | **D8** | **No `[PRICE:*]` token ever exists as a string. Prices are a discriminated union in an exhaustive `Record<PriceToken, PriceEntry>`; unresolved = a designed `pending` state; production is gated by a throwing build-time assertion.** | Turns "unresolved placeholder in production" from a cosmetic accident into a compile error, a lint error, or a failed build, depending on the failure mode. |
 | **D9** | **Content model: locale-keyed prose (`Localized<T>`), locale-invariant facts, long prose behind an `async` loader, media as `StaticImageData` static imports.** | Adding `en` becomes a set of compile errors enumerating the translation debt. A missing image file becomes a build error instead of a silent 404. |
-| **D10** | ~~Exactly one new client component (`BriefForm`). Header, footer, and FAQ stay Server Components. `motion` stays confined to the hero; section reveals are CSS-only.~~ **Amended 2026-07-31 (`feat/editorial-design`): six client components total (three new, all small and leaf-level), `motion` used in the hero, "Proceso", and "Proyectos", everything else still CSS-only. See the dated amendment in §7.** | Original reason unchanged for the components it still describes. The amendment's reason: the user asked for a site that impresses, which was the original goal (proposal's own north star) — a plain page with a serif bolted on does not read as "señal de oficio" for an audience that buys with their eyes. |
+| **D10** | ~~Exactly one new client component (`BriefForm`). Header, footer, and FAQ stay Server Components. `motion` stays confined to the hero; section reveals are CSS-only.~~ **Amended 2026-07-31 (`feat/editorial-design`): two new client components (small, leaf-level) after the C5 fix demoted a third back to a Server Component — five client components total — `motion` used in the hero, "Proceso", and "Proyectos", everything else still CSS-only. See the dated amendment in §7.** | Original reason unchanged for the components it still describes. The amendment's reason: the user asked for a site that impresses, which was the original goal (proposal's own north star) — a plain page with a serif bolted on does not read as "señal de oficio" for an audience that buys with their eyes. |
 | **D11** | **`cacheComponents` stays off (default). Every route is `force-static`.** | There is no request-time data anywhere. PPR solves a problem this site does not have, and enabling it could move the integrity assertion out of build time. |
 | **D12** | **No `images.remotePatterns`. `next.config.ts` needs no `images` block.** | All media is local under `public/`. Nothing is externally hosted in this change's scope. |
 
@@ -129,6 +129,49 @@ Four layers, cheapest first. Layers 1, 3, and 4 need no platform features.
 | 2 | **Platform rate limiting.** Vercel Firewall rate-limit rule on the action path, per IP. Optionally **Vercel BotID** (invisible, no user-facing challenge) if abuse actually appears. | Volume floods, scripted bursts. | A single motivated human. |
 | 3 | **Hard input caps + strict allowlists.** Max length on every field; `serviceLine` and `budgetBand` validated against the same TypeScript unions the site renders from; reject a message containing more than N URLs. | Payload-stuffing, SEO spam, oversized bodies. | Plausible-looking junk. |
 | 4 | **Output hardening.** Strip CR/LF from every field that reaches an email header (**header-injection defense** — the `Reply-To` carries user input). Send the body as plain text or an escaped template. `/es/gracias` **never echoes submitted input**. | Header injection, content injection, stored reflection. | — |
+
+> **Amended 2026-07-31, remediation of `verify-report-final.md` finding C2.**
+> Layer 1's "server-signed timestamp" was originally issued by
+> `components/sections/brief.tsx`, a Server Component, on the assumption that
+> its render happens per visit. It does not: `/[locale]` is `force-static`
+> (D11) with `dynamicParams = false`, so that Server Component renders
+> **once, at build time**. Every visitor received the identical
+> `issuedAt` — the build clock — baked into the static HTML. Consequence:
+> `MAX_DWELL_MS` (~2h) rejected every submission more than two hours after
+> each deploy, and `MIN_DWELL_MS` (~3s) could never fire at all, because the
+> "issued" instant never moved between visitors. Both halves of layer 1 were
+> inoperative, in opposite directions — latent only because the four brief
+> env vars were unset; it would have activated the moment they were
+> configured (task 6.H2).
+>
+> Fix: token issuance moved behind its own Server Action,
+> `lib/brief/issue-token.ts`'s `requestFormToken()`, wrapping the unchanged
+> `issueFormToken()`/`checkAbuseSignals()` pair in `lib/brief/abuse.ts`.
+> `components/brief/brief-form.tsx` (the Client Component) calls it once on
+> mount, so `issuedAt` reflects when THIS VISITOR's browser actually reached
+> the form — a genuine per-visit, request-time timestamp, sourced from the
+> one thing on a purely static page that legitimately varies per visitor: the
+> Server Action invocation the client chooses to make. This does not weaken
+> D11: the page itself is still prerendered once at build; only the token
+> fetch is request-time, exactly like `submitBrief` already was (§11: "the
+> only request-time path is the Server Action POST" — now two Server Action
+> paths, not a change to that property's shape). The HMAC signature and the
+> ~2h window are both unchanged; only WHEN the timestamp is captured changed.
+>
+> **Honest cost, not a masked regression**: fetching the token requires
+> JavaScript. A visitor with JavaScript fully disabled never populates
+> `issuedAt`/`signature`, so `checkAbuseSignals()` rejects that submission
+> with `"token-missing"` — the same fail-closed rule the abuse layer already
+> applies when `BRIEF_FORM_SECRET` itself is absent. The FORM SUBMISSION
+> mechanism (the `<form action={formAction}>` POST) still works without
+> JavaScript exactly as before; only the anti-abuse dwell/signature layer
+> now requires it, which is coherent with that layer's own stated threat
+> model (`lib/brief/abuse.ts`: "Naive bots and form-fillers... does NOT catch
+> a scripted client that renders the page [and] waits out the dwell time" —
+> both classes of threat this layer defends against already run JavaScript).
+> A no-JS submission is no longer silently lost: it now renders the same
+> visible, generic "rejected" feedback as any other rejection (see
+> `components/brief/brief-form.tsx`).
 
 Do **not** rely on an in-memory rate-limit counter: serverless instances are not
 shared, so it silently does nothing. Rate limiting belongs at the platform edge.
@@ -494,6 +537,35 @@ This is where the copy rules from proposal §4.4, §7, §8 stop being checklist 
 | Every fixed tier communicates the same anatomy | All seven anatomy fields (`audience`, `deliverables`, `included`, `turnaround`, `revisionRounds`, `price`, `notIncluded`) are **required**. A half-specified tier is a compile error. |
 | Academy block claims no scale and shows no link while undeployed | `Authority = { state: 'no-link'; ... } \| { state: 'linked'; url: string; ... }`. The `url` field **only exists** in the `linked` variant, so the anchor can only be rendered in that branch. There is **no field** for student or course counts, so a scale claim is inexpressible. |
 | Retainer commitments are published, not promised | Every field of `RetainerCommitments` is required: `responseWindow`, `channels`, `monthlyHours`, `includedScope`, `excludedScope`, `cancellationTerms`. A missing commitment is a compile error, not an empty section. |
+
+> **Amended 2026-07-31, remediation of `verify-report-final.md` finding C4.**
+> Task 4.1 (PR 4) temporarily demoted `PricingTier.notIncluded` from the
+> non-empty tuple this table originally required to `Commitment<[string,
+> ...string[]]>`, because no exclusions had been supplied yet — a documented,
+> honest deviation at the time, but its shipped result (five priced tiers with
+> "exclusions pendientes de definir") is exactly what this row exists to make
+> impossible.
+>
+> The user has now supplied the four exclusions the studio applies uniformly
+> to every fixed tier. `notIncluded` is restored to this table's original
+> guarantee: `readonly [Localized<string>, ...Localized<string>[]]`, required,
+> non-empty, a compile error if omitted. See `lib/content/pricing.ts`'s
+> `FIXED_TIER_EXCLUSIONS`.
+>
+> `turnaround` is **not** restored the same way. The user supplied real
+> business-day figures for 3 of the 5 fixed tiers (the three Line A tiers);
+> the two Line C microsite tiers were not supplied, and no figure for them is
+> honestly derivable from anything the studio stated. `turnaround` therefore
+> stays `Commitment<Turnaround>` — a new `Turnaround` type (`{ businessDays:
+> number }`), not the bare `Localized<string>` this table previously implied.
+> Rendered exclusively through `formatTurnaround()`, which always appends "de
+> trabajo del estudio, sin contar los plazos de aprobación del cliente" — the
+> figure can never be rendered as a bare day count on any surface, because
+> `PROCESS.clientApprovalDeadlineBusinessDays` (`lib/content/process.ts`)
+> gates 3 of the studio's 5 process phases on the client's own approval, and
+> an unqualified turnaround figure would be a promise the studio could breach
+> through no fault of its own.
+
 | Consent gates client identification | `Consent = { status: 'granted'; namedClient: boolean } \| { status: 'anonymised'; industry: string; size: string } \| { status: 'withheld' }`. The anonymised variant **requires** industry and size, so an anonymised card cannot render blank. `withheld` projects are excluded from `publishableProjects()`. |
 | Evidence state matches reality | `Evidence` is a discriminated union: `live` requires `externalUrl`; `gated` requires media **and** a `disclosure`; `not-deployed` requires media; `no-visual` requires `media: readonly []`. A half-filled state cannot be expressed. |
 
@@ -671,13 +743,16 @@ new component's own doc comment.
 | `hero-parallax.tsx` | yes (existing) | Unchanged — scroll-linked transforms. |
 | `hover-border-gradient.tsx` | yes (existing) | Unchanged — hover state + an auto-rotating interval, now gated behind `useReducedMotion()`. |
 | `brief-form.tsx` | yes (existing) | Unchanged — `useActionState`. |
-| `components/ui/text-generate-effect.tsx` | **yes (new)** | The hero's one orchestrated entrance: a staggered, blur-in word reveal timed to mount via `useAnimate`/`stagger`. Adapted from Aceternity UI's Text Generate Effect. No dictionary/content import — receives plain strings as props. |
+| `components/ui/text-generate-effect.tsx` | **no, as of the `verify-report-final.md` C5 fix** | Originally a client component (staggered word reveal via `useAnimate`/`stagger`, per this row's earlier text). `sdd-verify` finding C5 found the reveal shipped every word `opacity-0` in the static HTML and only became visible from a `useEffect` — invisible without JS, delaying the LCP element, and unreachable by the global `prefers-reduced-motion` override. Reimplemented as a CSS keyframe reveal with a per-word `animation-delay`; the stagger is now static markup, so the component needs no `"use client"` directive at all. |
 | `components/ui/sticky-scroll-reveal.tsx` | **yes (new)** | "Proceso"'s five phases, read by scroll: `useScroll({ container })` + `useMotionValueEvent` drives which phase is "active" in a sticky panel. Adapted from Aceternity UI's Sticky Scroll Reveal, restyled onto this site's own paper/ink tokens. Receives a plain `StickyScrollItem[]` built server-side in `process.tsx` — no dictionary or content-module import. |
 | `components/ui/direction-aware-hover.tsx` | **yes (new)** | "Proyectos" grid cards: a pointer-direction-aware image pan on hover. Adapted from Aceternity UI's Direction Aware Hover, retargeted from a plain `imageUrl: string` to this project's `StaticImageData` media contract (§8) so the "missing file is a build error" guarantee survives. Used only from `evidence.tsx`'s image-bearing branches (`live`/`gated`/`not-deployed`) — the `no-visual` state has no image and structurally never reaches this component. |
 | `site-header.tsx`, `faq.tsx`, every `sections/*`/`pricing/*`/`portfolio/*`/`case-study/*` component | **no** | Unchanged — still Server Components. The visual pass restyles their markup and CSS-only `.reveal` animation, not their client/server boundary. |
 
-Six client components total (three pre-existing and unchanged in kind, three
-new). **Motion library usage** moves from "confined to the hero" to
+Six client components at the end of this slice, **now five** after the C5 fix
+above demoted `text-generate-effect.tsx` back to a Server Component (three
+pre-existing and unchanged in kind, two still new and client-side:
+`sticky-scroll-reveal.tsx` and `direction-aware-hover.tsx`). **Motion library
+usage** moves from "confined to the hero" to
 "confined to the hero, Proceso, and Proyectos" — still three named places
 out of nine landing sections, matching the change's own brief: "high impact
 in few places," chosen deliberately over blanket animation because the
@@ -840,6 +915,9 @@ export function validateBrief(input: unknown): { ok: true; brief: Brief } | { ok
 
 ```
 BriefForm (client)
+  ├─ requestFormToken  "use server"   (issue-token.ts, on mount — see §2's dated amendment)
+  │       └─ abuse.ts  issueFormToken()   → { issuedAt, signature } | null
+  │
   └─ submitBrief  "use server"
        ├─ abuse.ts        honeypot + signed-timestamp dwell check   → reject silently
        ├─ schema.ts       validateBrief                             → return { errors }
@@ -852,6 +930,13 @@ BriefForm (client)
 **Gotcha to state explicitly:** `redirect()` works by throwing. If it sits inside
 the `try` that wraps the provider call, the `catch` swallows it and the redirect
 silently does nothing. It must be the last statement, outside the block.
+
+**`state.status === "rejected"` now renders visible feedback** (amended
+2026-07-31, remediation of finding C2). It previously rendered nothing —
+`BriefForm` had no branch for that status at all, so a rejected visitor saw
+their submission vanish with no error and no redirect. The rendered copy is
+deliberately generic, matching the existing `send-failed` copy's pattern, so
+it does not reveal which layer-1 control tripped.
 
 **On failure the form does not redirect.** It re-renders with the submitted values
 preserved (returned in the action state as `defaultValue`s, which is what makes
@@ -907,13 +992,18 @@ lib/content/**            (pure TS data, zero React, zero I/O)
 
 lib/dictionaries/es.ts ──► getDictionary(locale) ──► every section (server-rendered copy)
 
-BriefForm (client) ──► submitBrief (server action) ──► notify.ts ──► provider HTTP API
+BriefForm (client) ──► requestFormToken (server action) ──► abuse.ts issueFormToken()
+                  │      (2026-07-31 amendment, finding C2 — issued per visit, on mount)
+                  └──► submitBrief (server action) ──► notify.ts ──► provider HTTP API
                                                   └──► redirect('/es/gracias')
 ```
 
-Every read path is build-time. The only request-time path is the Server Action
-POST. Nothing on any page reads cookies, headers, or `searchParams` at request
-time, which is what makes `force-static` everywhere achievable and D11 correct.
+Every read path is build-time. The only request-time paths are the two Server
+Action POSTs above (amended 2026-07-31 to add `requestFormToken` alongside the
+pre-existing `submitBrief`). Nothing on any page reads cookies, headers, or
+`searchParams` at request time, which is what makes `force-static` everywhere
+achievable and D11 correct — a Server Action invocation is not a page render,
+so this does not add a request-time render to any route.
 
 ---
 
