@@ -6,6 +6,7 @@ import { Portfolio } from "@/components/sections/portfolio";
 import { Authority } from "@/components/sections/authority";
 import { PricingSummary } from "@/components/sections/pricing-summary";
 import { Retainer } from "@/components/sections/retainer";
+import { Brief } from "@/components/sections/brief";
 import { assertLocale } from "@/lib/content/locales";
 import { toHeroProducts } from "@/lib/content/projections";
 import { canonicalFor } from "@/lib/seo";
@@ -26,14 +27,13 @@ export async function generateMetadata({
 }
 
 /**
- * The locale landing page. All nine sections `specs/landing-narrative/
- * spec.md`'s "Fixed Section Order" requires are now composed except 8-9
- * (Brief/WhatsApp + Footer wiring, PR 6b — the WhatsApp link itself is
- * already live via the header/footer, only the dedicated brief-form section
- * is still missing): 1 (Hero, PR 2), 2 (Servicios, PR 3a), 3 (Proceso,
- * PR 3a), 4 (Proyectos, PR 3a), 5 (Autoridad, PR 3b), 6 (Precios summary,
- * task 3.8, this batch — unblocked now that task 4.0's `Price`/`PricePending`
- * and `/[locale]/precios` both exist), 7 (Retainer, PR 3b).
+ * The locale landing page. All eight numbered sections `specs/
+ * landing-narrative/spec.md`'s "Fixed Section Order" requires are now
+ * composed: 1 (Hero, PR 2), 2 (Servicios, PR 3a), 3 (Proceso, PR 3a), 4
+ * (Proyectos, PR 3a), 5 (Autoridad, PR 3b), 6 (Precios summary, PR 3b/4), 7
+ * (Retainer, PR 3b), 8 (Brief/WhatsApp conversion, task 6.7, this batch).
+ * The footer (site chrome, not a numbered landing section) is rendered by
+ * `app/[locale]/layout.tsx`, unchanged.
  *
  * Replaces the former `app/page.tsx` (task 2.18). `toHeroProducts(locale)`
  * is now the single source of truth for the hero's product grid, replacing
@@ -65,6 +65,7 @@ export default async function LocalePage({
       <Authority locale={validLocale} />
       <PricingSummary locale={validLocale} />
       <Retainer locale={validLocale} />
+      <Brief locale={validLocale} />
     </>
   );
 }
