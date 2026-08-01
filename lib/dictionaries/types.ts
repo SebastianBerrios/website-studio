@@ -260,6 +260,9 @@ export type BriefDictionary = {
   readonly rejectedHeading: string;
   readonly rejectedBody: string;
   readonly whatsappFallbackLabel: string;
+  /** Shown only when JavaScript is unavailable — the form cannot be submitted then. */
+  readonly noscriptHeading: string;
+  readonly noscriptBody: string;
   readonly whatsappAsideHeading: string;
   readonly whatsappAsideBody: string;
   readonly whatsappCtaLabel: string;

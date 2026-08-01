@@ -159,6 +159,9 @@ export const es: Dictionary = {
     rejectedBody:
       "Tu mensaje no pudo completarse. Puedes intentarlo de nuevo o escribirnos directo por WhatsApp contándonos tu línea de servicio y una breve descripción de tu proyecto.",
     whatsappFallbackLabel: "Escribir por WhatsApp",
+    noscriptHeading: "Este formulario necesita JavaScript",
+    noscriptBody:
+      "Tu navegador tiene JavaScript desactivado, así que el formulario no puede enviarse. Escríbenos por WhatsApp contándonos qué línea de servicio te interesa y una breve descripción de tu proyecto.",
     whatsappAsideHeading: "¿Prefieres WhatsApp?",
     whatsappAsideBody:
       "Escríbenos directo contándonos tu línea de servicio y una breve descripción de tu proyecto.",

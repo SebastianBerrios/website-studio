@@ -61,6 +61,42 @@ export function Brief({ locale }: { locale: Locale }) {
 
         {configured ? (
           <div className="mt-12 grid gap-10 lg:grid-cols-[2fr_1fr]">
+            {/*
+              Without JavaScript the form renders but cannot be submitted.
+              The C2 remediation moved the dwell token from build time to a
+              per-visit Server Action fetched on mount, which is what makes a
+              submission six hours after a deploy work at all — but it also
+              means `issuedAt`/`signature` are absent from the static HTML, and
+              `checkAbuseSignals()` fails closed without them.
+
+              That tradeoff is unavoidable: a per-visit timestamp on a
+              statically prerendered page needs a client round-trip. What is
+              avoidable is letting a no-JS visitor fill in eight fields and
+              press a button that silently rejects them. So we say it, and
+              point at the path that does work — the same fail-closed honesty
+              the email-configuration gate above already applies.
+            */}
+            <noscript>
+              <div
+                role="alert"
+                className="rounded-md border border-border bg-card p-4 text-sm"
+              >
+                <p className="font-medium">{brief.noscriptHeading}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {brief.noscriptBody}
+                </p>
+                {whatsappUrl ? (
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-block font-medium text-accent-signal underline underline-offset-4"
+                  >
+                    {brief.whatsappFallbackLabel}
+                  </a>
+                ) : null}
+              </div>
+            </noscript>
             <BriefForm
               locale={locale}
               serviceLines={serviceLines}
