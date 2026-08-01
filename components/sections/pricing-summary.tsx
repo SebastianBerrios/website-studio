@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { SERVICE_LINES } from "@/lib/content/service-lines";
-import { QUOTE_BLOCK, RETAINER_PLANS, type PriceToken } from "@/lib/content/pricing";
+import {
+  PRICING_TIERS,
+  QUOTE_BLOCK,
+  RETAINER_PLANS,
+  type PriceToken,
+} from "@/lib/content/pricing";
 import type { ServiceLine } from "@/lib/content/service-lines";
 import { getDictionary } from "@/lib/dictionaries";
 import { pricingPath } from "@/lib/links";
@@ -21,6 +26,15 @@ const SUMMARY_TOKENS = {
   C: "microsite-basic",
   D: RETAINER_PLANS[0].token,
 } as const satisfies Record<ServiceLine, PriceToken>;
+
+/**
+ * True when a service line publishes more than one fixed tier, so its summary
+ * figure is its entry point rather than its price. Derived from the data so a
+ * tier added or removed later cannot leave the label lying.
+ */
+function isMultiTierLine(line: ServiceLine): boolean {
+  return PRICING_TIERS.filter((tier) => tier.serviceLine === line).length > 1;
+}
 
 /**
  * Server Component: landing section 6, "Precios summary". Task 3.8 — moved
@@ -56,7 +70,18 @@ export function PricingSummary({ locale }: { locale: Locale }) {
               <h3 className="font-display text-base font-medium text-card-foreground">
                 {line.name[locale]}
               </h3>
+              {/*
+                A line with more than one tier shows its CHEAPEST tier here,
+                so the bare figure would read as the price rather than the
+                entry point (verify-report-final.md, C3: "Landing pages —
+                S/500" is the lowest of 500/650/800). The "desde" is derived
+                from how many tiers the line actually has, not hardcoded per
+                line, so adding or removing a tier keeps the label truthful.
+                Tokens that already carry their own qualifier — the retainer's
+                "/ mes", the custom-app floor's "Desde" — are left alone.
+              */}
               <p className="font-display text-2xl tabular-nums">
+                {isMultiTierLine(line.id) ? `${pricingSummary.fromPrefix} ` : ""}
                 <Price token={SUMMARY_TOKENS[line.id]} />
               </p>
             </div>

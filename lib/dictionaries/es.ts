@@ -120,6 +120,7 @@ export const es: Dictionary = {
     intro:
       "Un vistazo rápido a nuestras líneas de servicio. El detalle completo, con alcance y condiciones, está en la página de precios.",
     viewFullPricingLink: "Ver precios completos",
+    fromPrefix: "Desde",
   },
   caseStudy: {
     problemHeading: "El problema",

@@ -195,6 +195,8 @@ export type PricingSummaryDictionary = {
   readonly heading: string;
   readonly intro: string;
   readonly viewFullPricingLink: string;
+  /** Prefix for a line whose summary figure is its cheapest tier, not its price. */
+  readonly fromPrefix: string;
 };
 
 /**

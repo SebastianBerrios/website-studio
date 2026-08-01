@@ -68,9 +68,27 @@ export type PriceToken =
   | "care-basic"
   | "care-standard";
 
+/**
+ * What the figure means. This lives on the DATA, not on a component's copy,
+ * because the landing summary once rendered "Mantenimiento — S/80" while the
+ * pricing page rendered "S/80 / mes" for the same token, and "Aplicaciones
+ * web — S/1,500" for a figure that is a floor (verify-report-final.md, C3).
+ * A visitor read a monthly retainer as a one-off and a starting point as a
+ * fixed price.
+ *
+ * Attaching it here means a surface cannot render the number without also
+ * rendering what it means — the qualifier travels with the amount.
+ */
+export type PriceQualifier =
+  /** A recurring monthly charge. */
+  | "per-month"
+  /** A floor: the real figure is quoted and is at least this. */
+  | "from";
+
 export type Money = {
   readonly amount: number;
   readonly currency: Currency;
+  readonly qualifier?: PriceQualifier;
 };
 
 export type PriceEntry =
@@ -96,15 +114,31 @@ export const PRICES = {
   "landing-premium": { status: "set", value: { amount: 800, currency: "PEN" } },
   "microsite-basic": { status: "set", value: { amount: 100, currency: "PEN" } },
   "microsite-event": { status: "set", value: { amount: 150, currency: "PEN" } },
-  "app-from": { status: "set", value: { amount: 1500, currency: "PEN" } },
-  "care-basic": { status: "set", value: { amount: 80, currency: "PEN" } },
-  "care-standard": { status: "set", value: { amount: 150, currency: "PEN" } },
+  "app-from": { status: "set", value: { amount: 1500, currency: "PEN", qualifier: "from" } },
+  "care-basic": { status: "set", value: { amount: 80, currency: "PEN", qualifier: "per-month" } },
+  "care-standard": { status: "set", value: { amount: 150, currency: "PEN", qualifier: "per-month" } },
 } as const satisfies Record<PriceToken, PriceEntry>;
 
-/** Renders a `Money` value as `"S/500"`, `"S/1,500"`, etc. */
+/**
+ * Spanish qualifier wording. It sits here rather than in
+ * `lib/dictionaries/es.ts` because it is inseparable from the formatted
+ * figure — splitting them is exactly how the landing lost the qualifiers in
+ * the first place. When a second locale ships, move BOTH the figure
+ * formatting and these strings behind the dictionary together, not one
+ * without the other.
+ */
+const QUALIFIER_ES: Record<PriceQualifier, { prefix?: string; suffix?: string }> =
+  {
+    "per-month": { suffix: " / mes" },
+    from: { prefix: "Desde " },
+  };
+
 export function formatMoney(money: Money): string {
   const symbol = money.currency === "PEN" ? "S/" : "US$";
-  return `${symbol}${new Intl.NumberFormat("es-PE").format(money.amount)}`;
+  const figure = `${symbol}${new Intl.NumberFormat("es-PE").format(money.amount)}`;
+  if (money.qualifier === undefined) return figure;
+  const { prefix = "", suffix = "" } = QUALIFIER_ES[money.qualifier];
+  return `${prefix}${figure}${suffix}`;
 }
 
 /**
