@@ -1,7 +1,7 @@
-import Image from "next/image";
 import type { Evidence as EvidenceField } from "@/lib/content/types";
 import type { Locale } from "@/lib/content/locales";
 import { getDictionary } from "@/lib/dictionaries";
+import { DirectionAwareHover } from "@/components/ui/direction-aware-hover";
 
 /**
  * Server Component: the portfolio grid card's visual-evidence slot, switched
@@ -24,6 +24,17 @@ import { getDictionary } from "@/lib/dictionaries";
  *   complete" (design.md §8's acceptance test): it composes the service
  *   badge, title, and summary regardless of whether this component renders
  *   anything.
+ *
+ * **Editorial restyle (feat/editorial-design)**: every image-bearing branch
+ * (`live`, `gated`, `not-deployed`) now renders its screenshot through
+ * `DirectionAwareHover` (`components/ui/direction-aware-hover.tsx`, new
+ * client component #1 of 3 this slice adds — "subtle, expensive to perceive,
+ * cheap to run" per the change's design brief) instead of a bare `<Image>`.
+ * `no-visual` is structurally excluded from ever reaching it: this switch
+ * still only calls `DirectionAwareHover` from branches where `Evidence`'s
+ * discriminated union guarantees `media` is non-empty, so an honest empty
+ * state never gains a hover surface that would make it look like a broken
+ * image slot.
  */
 export function Evidence({
   evidence,
@@ -34,32 +45,26 @@ export function Evidence({
 }) {
   const { portfolio } = getDictionary(locale);
 
+  const gridSizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+
   switch (evidence.state) {
     case "live":
       return (
-        <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted">
-          <Image
-            src={evidence.media[0].asset}
-            alt={evidence.media[0].alt[locale]}
-            fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover"
-          />
-        </div>
+        <DirectionAwareHover
+          image={evidence.media[0].asset}
+          imageAlt={evidence.media[0].alt[locale]}
+          sizes={gridSizes}
+        />
       );
 
     case "gated":
       return (
         <div className="space-y-2">
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted">
-            <Image
-              src={evidence.media[0].asset}
-              alt={evidence.media[0].alt[locale]}
-              fill
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
+          <DirectionAwareHover
+            image={evidence.media[0].asset}
+            imageAlt={evidence.media[0].alt[locale]}
+            sizes={gridSizes}
+          />
           <p className="text-xs font-medium text-muted-foreground">
             {portfolio.gatedNote}
           </p>
@@ -72,15 +77,11 @@ export function Evidence({
     case "not-deployed":
       return (
         <div className="space-y-2">
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted">
-            <Image
-              src={evidence.media[0].asset}
-              alt={evidence.media[0].alt[locale]}
-              fill
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
+          <DirectionAwareHover
+            image={evidence.media[0].asset}
+            imageAlt={evidence.media[0].alt[locale]}
+            sizes={gridSizes}
+          />
           <p className="text-xs text-muted-foreground">
             {portfolio.notDeployedNote}
           </p>

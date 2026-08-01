@@ -1,5 +1,6 @@
 import { getDictionary } from "@/lib/dictionaries";
 import { PROCESS } from "@/lib/content/process";
+import { StickyScrollReveal, type StickyScrollItem } from "@/components/ui/sticky-scroll-reveal";
 import type { Locale } from "@/lib/content/locales";
 
 /**
@@ -34,12 +35,24 @@ import type { Locale } from "@/lib/content/locales";
  * headcount (design.md §4.4 / landing-narrative spec's "Copy Voice
  * Constraint").
  *
- * **Approval-deadline addition (this batch)**: renders
+ * **Approval-deadline addition**: renders
  * `PROCESS.clientApprovalDeadlineBusinessDays` and its pause/recalculation
  * consequence — stated up front, not raised later as a complaint. This
  * closes the open item this section's previous batch recorded: a process
  * gating 3 of 5 phases on client approval stalls when the client goes quiet,
  * with no stated consequence. See `lib/content/process.ts`'s doc comment.
+ *
+ * **Editorial restyle (feat/editorial-design)**: the five-phase list now
+ * renders through `StickyScrollReveal` (`components/ui/
+ * sticky-scroll-reveal.tsx`, new client component #3 of 3 this slice adds,
+ * amending design.md D10 — see that file's doc comment and D10's dated
+ * amendment for the full reasoning). Five phases is precisely this
+ * component's intended use case, and reading-by-scroll is itself editorial
+ * language, per the change's design brief. This component itself stays a
+ * Server Component: `PROCESS.phases` and the dictionary's `approvalBadge`
+ * label are mapped into a plain `StickyScrollItem[]` here, on the server,
+ * and only that plain data crosses into the client boundary — no dictionary
+ * object, no content module, ever gets bundled to the client.
  */
 export function Process({ locale }: { locale: Locale }) {
   const { process } = getDictionary(locale);
@@ -49,33 +62,23 @@ export function Process({ locale }: { locale: Locale }) {
     clientApprovalDeadlineBusinessDays,
   } = PROCESS;
 
+  const items: readonly StickyScrollItem[] = phases.map((phase, index) => ({
+    id: phase.id,
+    index: index + 1,
+    title: phase.name[locale],
+    description: phase.description[locale],
+    badge: phase.requiresApproval ? process.approvalBadge : undefined,
+  }));
+
   return (
     <section id="proceso" className="py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold">{process.heading}</h2>
-        <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-          {phases.map((phase, index) => (
-            <li
-              key={phase.id}
-              className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-6"
-            >
-              <span className="text-sm font-medium text-muted-foreground">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className="text-lg font-semibold text-card-foreground">
-                {phase.name[locale]}
-              </h3>
-              <p className="flex-1 text-sm text-muted-foreground">
-                {phase.description[locale]}
-              </p>
-              {phase.requiresApproval ? (
-                <span className="inline-flex w-fit items-center rounded-full border border-border px-3 py-1 text-xs font-medium text-card-foreground">
-                  {process.approvalBadge}
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ol>
+        <h2 className="reveal font-display text-3xl font-medium md:text-5xl">
+          {process.heading}
+        </h2>
+        <div className="mt-10">
+          <StickyScrollReveal items={items} />
+        </div>
         <p className="mt-8 text-sm text-muted-foreground">
           {revisionRoundsIncluded} {process.revisionsLabel}{" "}
           {process.revisionsExtra}

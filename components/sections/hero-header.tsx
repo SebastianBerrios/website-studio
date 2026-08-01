@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { getDictionary } from "@/lib/dictionaries";
 import { landingAnchor } from "@/lib/links";
 import type { Locale } from "@/lib/content/locales";
@@ -10,24 +11,38 @@ import type { Locale } from "@/lib/content/locales";
  * (design.md D5, task 2.15). Keeps Spanish copy on the server and out of
  * the client bundle — `HeroParallax` itself stays ignorant of copy shape.
  *
- * Not yet wired into any page: `app/[locale]/page.tsx` (PR 2c, task 2.18)
- * is what will pass `<HeroHeader locale={locale} />` as `HeroParallax`'s
- * `header` prop.
+ * **Editorial restyle (feat/editorial-design)**: the heading now renders
+ * through `TextGenerateEffect` (`components/ui/text-generate-effect.tsx`,
+ * new client component #2 of 3 this slice adds) — the hero's one
+ * orchestrated entrance, a staggered word-by-word reveal, per this slice's
+ * "high impact in few places" motion budget. This component itself STAYS a
+ * Server Component: it renders `<TextGenerateEffect>` (a small, leaf client
+ * component) the same way it already renders `<HoverBorderGradient>` — the
+ * dictionary read and layout stay on the server, only the reveal mechanism
+ * is client-side. Two `<TextGenerateEffect>` instances (one per heading
+ * line, matching `HeroDictionary.heading`'s existing two-line tuple) rather
+ * than one joined string, so the `<br />` line break survives without
+ * teaching the component a line-break syntax it doesn't otherwise need.
+ *
+ * Typography scale is now deliberately dramatic (`text-6xl`…`text-8xl`
+ * Fraunces) with an asymmetric, left-weighted composition (`max-w-3xl` on
+ * the subtitle keeps prose narrow while the heading itself is unconstrained)
+ * — "editorial claro" reads through scale contrast and restraint, not
+ * through decoration.
  */
 export function HeroHeader({ locale }: { locale: Locale }) {
   const { hero } = getDictionary(locale);
 
   return (
-    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full left-0 top-0">
-      <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
-        {hero.heading[0]}
-        <br />
-        {hero.heading[1]}
+    <div className="max-w-7xl relative mx-auto py-20 md:py-36 px-4 w-full left-0 top-0">
+      <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-foreground md:text-7xl lg:text-8xl">
+        <TextGenerateEffect words={hero.heading[0]} duration={0.6} />
+        <TextGenerateEffect words={hero.heading[1]} duration={0.6} />
       </h1>
-      <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
+      <p className="mt-8 max-w-xl text-base text-muted-foreground md:text-xl">
         {hero.subtitle}
       </p>
-      <div className="mt-4">
+      <div className="mt-8">
         <HoverBorderGradient
           containerClassName="rounded-full"
           as="button"
@@ -54,7 +69,7 @@ export function HeroHeader({ locale }: { locale: Locale }) {
           // receives `productsId` from `app/[locale]/page.tsx`.) See
           // `sdd/dev-services-website/verify-report.md` finding W1.
           href={landingAnchor(locale, "proyectos") as Route}
-          className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+          className="flex items-center space-x-2 bg-accent-signal text-accent-signal-foreground"
         >
           <span>{hero.cta}</span>
         </HoverBorderGradient>

@@ -9,6 +9,7 @@ import {
   useScroll,
   useTransform,
   useSpring,
+  useReducedMotion,
   MotionValue,
 } from "motion/react";
 import { isExternalHref } from "@/lib/links";
@@ -75,6 +76,23 @@ export const HeroParallax = ({
     target: ref,
     offset: ["start start", "end start"],
   });
+  // Hard constraint (feat/editorial-design): every animation must be
+  // disabled or reduced under `prefers-reduced-motion`. This scroll-linked
+  // parallax is exactly that class of motion, and a `MotionValue` driven by
+  // `useScroll`/`useSpring` is not reachable by the global CSS media-query
+  // override in `app/globals.css` (it sets inline transforms via rAF, not a
+  // CSS animation/transition).
+  //
+  // This is the ONLY change made to this component's motion behaviour. Per
+  // design.md D4 and this slice's hard constraint 10, the row-derivation
+  // logic above and every `useScroll`/`useTransform`/`useSpring` call below
+  // are UNCHANGED — same hooks, same ranges, same spring config. What
+  // changes is only whether their computed output is ever applied to
+  // `style`: see the `shouldReduceMotion` ternaries below, which swap the
+  // live `MotionValue`s for the resting values the entrance animation
+  // settles on, so a reduced-motion visitor sees the finished layout
+  // immediately instead of the scroll-driven journey to it.
+  const shouldReduceMotion = useReducedMotion();
 
   const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
 
@@ -110,18 +128,24 @@ export const HeroParallax = ({
       {header}
       <motion.div
         id={productsId}
-        style={{
-          rotateX,
-          rotateZ,
-          translateY,
-          opacity,
-        }}
+        style={
+          // Resting values match this spring set's own settled endpoints
+          // (scrollYProgress = 1: rotateX 0, rotateZ 0, opacity 1,
+          // translateY 50) — the layout the entrance animates TOWARD, shown
+          // immediately instead of animated into. See the top-of-component
+          // comment: no range or spring config changes, only whether the
+          // computed values are applied.
+          shouldReduceMotion
+            ? { rotateX: 0, rotateZ: 0, translateY: 50, opacity: 1 }
+            : { rotateX, rotateZ, translateY, opacity }
+        }
       >
         <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-10">
           {firstRow.map((product) => (
             <ProductCard
               product={product}
               translate={translateX}
+              shouldReduceMotion={shouldReduceMotion}
               key={product.title}
             />
           ))}
@@ -132,6 +156,7 @@ export const HeroParallax = ({
               <ProductCard
                 product={product}
                 translate={translateXReverse}
+                shouldReduceMotion={shouldReduceMotion}
                 key={product.title}
               />
             ))}
@@ -145,6 +170,7 @@ export const HeroParallax = ({
 export const ProductCard = ({
   product,
   translate,
+  shouldReduceMotion,
 }: {
   product: {
     title: string;
@@ -152,9 +178,17 @@ export const ProductCard = ({
     thumbnail: string;
   };
   translate: MotionValue<number>;
+  /**
+   * See `HeroParallax`'s top comment: additive-only reduced-motion gate.
+   * `boolean | null` because `motion/react`'s `useReducedMotion()` returns
+   * `null` before the browser's media-query preference is known (e.g.
+   * during server rendering) — treated as "motion allowed" until resolved,
+   * same as the library's own default.
+   */
+  shouldReduceMotion?: boolean | null;
 }) => {
   const cardBody = (
-    <div className="relative">
+    <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <Image
         src={product.thumbnail}
         height={600}
@@ -162,8 +196,8 @@ export const ProductCard = ({
         className="object-contain max-h-96 max-w-120"
         alt={product.title}
       />
-      <div className="absolute inset-0 opacity-0 group-hover/product:opacity-80 bg-black pointer-events-none"></div>
-      <h3 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-white z-10">
+      <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/0 to-transparent opacity-0 transition-opacity duration-300 group-hover/product:opacity-100 pointer-events-none"></div>
+      <h3 className="absolute bottom-4 left-4 font-display text-lg font-medium text-background opacity-0 transition-opacity duration-300 group-hover/product:opacity-100 z-10">
         {product.title}
       </h3>
     </div>
@@ -172,11 +206,9 @@ export const ProductCard = ({
   return (
     <motion.div
       style={{
-        x: translate,
+        x: shouldReduceMotion ? 0 : translate,
       }}
-      whileHover={{
-        y: -20,
-      }}
+      whileHover={shouldReduceMotion ? undefined : { y: -20 }}
       key={product.title}
       className="group/product h-96 w-120 relative shrink-0 flex items-center justify-center"
     >
