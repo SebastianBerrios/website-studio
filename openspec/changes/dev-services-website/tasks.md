@@ -915,67 +915,120 @@ Satisfies: `lead-capture` (all requirements). Design decision: D1.
 
 ### PR 6b — Form UI, landing wiring, confirmation
 
-- [ ] 6.5 Create `components/brief/field.tsx` (Server) and `components/
+> **Batch note (sdd-apply, `feat/brief-form`, based on `feat/case-studies`)**:
+> `lib/brief/**` (PR 6a) was unreachable until this batch — nothing imported
+> it. This batch wires it up, and adds the overriding rule the orchestrator
+> stated for this slice: the section renders the real form ONLY when
+> `RESEND_API_KEY`/`BRIEF_TO_EMAIL`/`BRIEF_FROM_EMAIL`/`BRIEF_FORM_SECRET` are
+> all present (`lib/brief/config.ts`, new); otherwise it renders the
+> WhatsApp-only path, never a form that cannot deliver. Two real bugs were
+> found and fixed while wiring, both documented in apply-progress.md: (1)
+> `submit.ts` (a `"use server"` module) exported `initialBriefSubmissionState`
+> as a plain value, which Next.js resolves to `undefined` across the client
+> boundary — fixed by moving it to the new `lib/brief/submission-state.ts`;
+> (2) the initial `useSearchParams()`-based approach for `?line=` pre-tagging
+> would have forced `/es` off static generation without a `<Suspense>`
+> boundary — replaced with `useSyncExternalStore` reading
+> `window.location.search`, which needs no such boundary.
+
+- [x] 6.5 Created `components/brief/field.tsx` (Server) and `components/
       brief/brief-form.tsx` (`"use client"` — the one new client component):
       `useActionState(submitBrief, initialState)`; reads `?line=` query
-      param as `defaultValue`. — *design D10, §9; lead-capture: Service Line
+      param via `useSyncExternalStore` (documented deviation from the
+      literal `useSearchParams()` mechanism — see batch note above) as
+      `defaultValue`. — *design D10, §9; lead-capture: Service Line
       Pre-Tagging*
-- [ ] 6.6 Create `components/sections/brief.tsx` (Server): wraps
-      `BriefForm` + the WhatsApp link (already live since PR 1) into landing
-      section 8. — *landing-narrative: Conversion Section Contract*
-- [ ] 6.7 `app/[locale]/page.tsx`: replace the section-8 placeholder with
-      the real `brief.tsx` section.
-- [ ] 6.8 Create `app/[locale]/gracias/page.tsx`: static, no `searchParams`
+- [x] 6.6 Created `components/sections/brief.tsx` (Server): renders
+      `BriefForm` + the WhatsApp link (already live since PR 1) when
+      `isBriefFormConfigured()` is `true`; otherwise renders the WhatsApp
+      path only, into landing section 8. — *landing-narrative: Conversion
+      Section Contract*
+- [x] 6.7 `app/[locale]/page.tsx`: composed the real `brief.tsx` section as
+      the landing's 8th and final numbered section.
+- [x] 6.8 Created `app/[locale]/gracias/page.tsx`: static, no `searchParams`
       read, never echoes submitted input, `robots: {index:false,
-      follow:false}`. — *design §9 `/es/gracias`; lead-capture: Confirmation
-      Route*
-- [ ] 6.9 `app/sitemap.ts`: confirm `/gracias` is excluded now that the
-      route exists (mechanism from PR 2c).
-- [ ] 6.9b **Remove the `as Route` cast** at `lib/brief/submit.ts`'s
-      `redirect()` call. PR 6a needed it because `typedRoutes` correctly
-      flagged that `/[locale]/gracias` did not exist; once task 6.8 creates
-      the page, the cast must go so `typedRoutes` resumes checking that call
-      site. There are exactly two waivers of the `typedRoutes` guarantee in
-      this codebase — this one and the documented `product.link as Route` in
-      `hero-parallax.tsx`, which is structural and permanent. This one is
-      temporary, and a comment saying so is an intention, not a commitment;
-      that is why it is a task. Verify by deleting the cast and confirming
-      `npm run build` still passes. — *design D7*
-- [ ] 6.10 Configure a Vercel Firewall rate-limit rule on the brief action's
-      path (platform config, not source — apply via Vercel dashboard/CLI).
-      Scope depends on 6.H3.
+      follow:false}`. **Documented deviation from design.md §9's literal
+      text**: does NOT restate a response-time commitment — none has been
+      settled for lead intake (the retainer response window is a different,
+      post-launch commitment); inventing one is explicitly forbidden by this
+      batch's hard constraints. — *design §9 `/es/gracias`; lead-capture:
+      Confirmation Route*
+- [x] 6.9 `app/sitemap.ts`: confirmed `/gracias` is excluded — that file's
+      cross-product never emitted a `gracias` entry; no code change needed.
+- [x] 6.9b **Removed the `as Route` cast** at `lib/brief/submit.ts`'s
+      `redirect()` call, in the same commit that moved
+      `initialBriefSubmissionState` out of that file (both are `submit.ts`
+      correctness fixes). Verified: deleting the cast and running
+      `npm run build` passes clean — `typedRoutes` now checks this call
+      site again. — *design D7*
+- [ ] 6.10 **Not code — recorded as a deployment task, not implemented.**
+      Configure a Vercel Firewall rate-limit rule on the brief action's path
+      (platform config, not source — apply via Vercel dashboard/CLI). No
+      in-memory counter was added (would silently do nothing across
+      serverless instances). Scope depends on 6.H3.
 
 ### Human tasks (blocking)
 
 - [ ] 6.H1 **[HUMAN, blocks slice going live]** Complete the email
       provider's domain verification (DNS records) for `BRIEF_FROM_EMAIL`'s
       sending domain — every send fails until this is done (design risk 7).
+      **Still open** — until this is done, `isBriefFormConfigured()` should
+      stay `false` in production (leave the 4 env vars unset), so the
+      section renders the honest WhatsApp-only path.
 - [ ] 6.H2 **[HUMAN]** Provision `RESEND_API_KEY`, `BRIEF_TO_EMAIL`,
-      `BRIEF_FROM_EMAIL` as server-only environment variables (never
-      `NEXT_PUBLIC_`).
+      `BRIEF_FROM_EMAIL`, and `BRIEF_FORM_SECRET` as server-only environment
+      variables (never `NEXT_PUBLIC_`). **Still open** — extended this
+      batch to include `BRIEF_FORM_SECRET` (see `lib/brief/config.ts`'s doc
+      comment: without it, `checkAbuseSignals()` fails every submission
+      closed even if the email vars are set).
 - [ ] 6.H3 **[HUMAN]** Decide whether to enable Vercel BotID now or only if
       abuse appears (design §2 layer 2) — informs 6.10's scope.
 
 ### Verification
 
-- [ ] 6.V1 `npm run build` passes.
-- [ ] 6.V2 `npm run lint` passes.
-- [ ] 6.V3 **Human**: submit the form with JavaScript disabled — confirm it
-      still posts via `<form action={...}>` and redirects to `/es/gracias`
-      on success. No automated check exists for this.
+- [x] 6.V1 `npm run build` passes — verified in 4 configurations: default
+      (no env vars, matches today's real deployment state), with all 4
+      brief env vars set to dummy values, `VERCEL_ENV=production
+      NEXT_PUBLIC_SITE_URL=https://example.test` with no brief env vars, and
+      the same production flags with all 4 brief env vars set. All four
+      pass clean.
+- [x] 6.V2 `npm run lint` passes — same 2 pre-existing
+      `hover-border-gradient.tsx` warnings, zero new ones.
+- [x] 6.V3 Verified via compiled markup (no browser available to the apply
+      agent, same discipline as prior batches' verification entries): with
+      all 4 env vars set, `.next/server/app/es.html` contains a real
+      `<form action="" encType="multipart/form-data" method="POST">` with
+      hidden `$ACTION_REF_1`/`$ACTION_1:0`/`$ACTION_1:1`/`$ACTION_KEY` fields
+      (Next's Server Action progressive-enhancement encoding) and real named
+      inputs (`locale`, `issuedAt`, `signature`, `company`, `serviceLine`,
+      `budgetBand`, `name`, `email`, `phone`, `projectDescription`) — this
+      posts and redirects with JavaScript disabled by construction; the
+      live no-JS submit-and-redirect round trip was not driven by an actual
+      browser.
 - [ ] 6.V4 **Human**: submit with a missing required field — confirm inline
-      errors render (JS on) and no redirect happens.
+      errors render (JS on) and no redirect happens. Not performed by the
+      apply agent (requires a browser); the error-summary/`aria-invalid`/
+      inline-error markup path was verified by code inspection only.
 - [ ] 6.V5 **Human**: trigger the honeypot/dwell-time path (fill the hidden
       field, or submit faster than ~3s) — confirm silent rejection, no
-      confirmation page.
+      confirmation page. Not performed by the apply agent — requires a
+      browser; `checkAbuseSignals()`'s fail-closed logic is unchanged from
+      PR 6a and was not re-tested at the unit level this batch.
 - [ ] 6.V6 **Human**: temporarily break `notify.ts` (bad API key) — confirm
       the form re-renders with preserved values, an error state, the
       WhatsApp fallback is visible, and the payload appears in server logs.
-- [ ] 6.V7 **Human**: confirm `/es/gracias` is reachable directly without
-      submitting, reads sensibly standalone, and never echoes query/form
-      data.
-- [ ] 6.V8 **Human**: confirm `/es/gracias` is excluded from `sitemap.xml`
-      and carries `noindex`.
+      Not performed by the apply agent — requires a live request to Resend
+      (or a network double) and a browser; the `send-failed` UI branch was
+      verified by code inspection only.
+- [x] 6.V7 Confirmed in compiled markup: `.next/server/app/es/gracias.html`
+      is reachable as a standalone static page (`generateStaticParams`
+      builds it unconditionally), reads sensibly on its own, and contains no
+      submitted query/form value anywhere — the page component receives only
+      `params` (the locale), never form data.
+- [x] 6.V8 Confirmed: `.next/server/app/sitemap.xml.body` lists exactly
+      `/es`, `/es/precios`, `/es/proyectos/luang`, `/es/proyectos/blu` — no
+      `/es/gracias` entry. `.next/server/app/es/gracias.html` contains
+      `<meta name="robots" content="noindex, nofollow"/>`.
 
 **Rollback**: do NOT revert this slice if delivery fails — disable the
 brief-form section behind a flag; WhatsApp (live since PR 1) carries
