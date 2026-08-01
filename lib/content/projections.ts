@@ -177,9 +177,14 @@ export function publishableProjects(): readonly Project[] {
 /**
  * The curated, `featured` project set — the same set the hero and the
  * portfolio grid both project from. See specs/project-portfolio/spec.md,
- * "Portfolio Grid Consistency With Hero".
+ * "Portfolio Grid Consistency With Hero" and "Curated Set Size".
+ *
+ * Exported (remediation of `verify-report-final.md` finding C7) so
+ * `lib/content/invariants.ts`'s `checkCuratedSetSize` reads the exact same
+ * set this file's own consumers do, instead of a second hand-rolled filter
+ * that could drift out of sync with it.
  */
-function featuredProjects(): readonly Project[] {
+export function featuredProjects(): readonly Project[] {
   return publishableProjects().filter((project) => project.featured);
 }
 

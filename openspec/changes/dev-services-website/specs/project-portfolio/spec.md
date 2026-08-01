@@ -2,19 +2,47 @@
 
 ## Purpose
 
-The curated project set (6–8 entries), how it projects into `HeroParallax`, how it renders as the landing's portfolio grid, and the honest degradation rules for missing visual evidence.
+The curated project set (4–8 entries), how it projects into `HeroParallax`, how it renders as the landing's portfolio grid, and the honest degradation rules for missing visual evidence.
 
 ## Requirements
 
 ### Requirement: Curated Set Size
 
-The published, `featured` project set MUST contain between 6 and 8 distinct entries — no padding with duplicates.
+> Amended 2026-07-31, remediation of `verify-report-final.md` finding C7. This
+> requirement originally set the floor at 6. The `fix/merge-duplicate-project`
+> slice correctly merged the `blu-biolink` entry into `blucafe` once both were
+> found to be the same project filed twice under the wrong service line — real
+> content did not shrink, a double-count was corrected, and the honest count
+> dropped from 6 to 5 as a direct, deliberate consequence of that correction.
+> No invariant enforced the floor at the time, so the drop below 6 shipped
+> unnoticed until `sdd-verify` caught it as a spec violation with no code
+> defect behind it.
+>
+> The floor is lowered to 4, matching the hero's own floor
+> (`HERO_FLOOR`/`checkHeroFloor` in `lib/content/invariants.ts`) rather than
+> inventing a padded sixth entry to satisfy the old number. Below 4 the hero
+> itself already fails to build (`checkHeroFloor`), so a curated-set floor
+> below that number would be unenforceable in practice; a floor above it, with
+> no sixth honest project ready to publish, would only pressure a future
+> editor to pad the set with a duplicate or an unconsented entry — exactly
+> what this requirement's own "no padding" clause forbids. The ceiling of 8
+> and the ambition to grow past 5 as more case studies land are unchanged;
+> only the enforced floor moves.
+
+The published, `featured` project set MUST contain between 4 and 8 distinct entries — no padding with duplicates.
 
 #### Scenario: No duplicate entries
 
 - GIVEN the featured project set
 - WHEN entries are compared by `slug`
 - THEN no two entries are duplicates of the same project
+
+#### Scenario: The curated set does not drop below the floor
+
+- GIVEN the featured project set
+- WHEN its size is checked at build time
+- THEN a count below 4 or above 8 fails the build — the floor is a checked
+  invariant, not merely a reviewer's expectation
 
 ### Requirement: Hero Projection Preserves Prop Contract
 

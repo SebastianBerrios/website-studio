@@ -72,6 +72,13 @@
  *     `lib/content/retainer.ts`'s `RETAINER_COMMITMENTS`. A `"pending"`
  *     commitment is exempt (that is the designed unresolved state); a
  *     `"set"` one must actually carry non-blank content for every locale.
+ * 12. **Curated set size stays within its floor and ceiling** (remediation of
+ *     `verify-report-final.md` finding C7) — `specs/project-portfolio/
+ *     spec.md`'s "Curated Set Size" (amended 2026-07-31 to 4–8). The
+ *     `fix/merge-duplicate-project` slice correctly dropped the curated set
+ *     from 6 to 5 by removing a real duplicate, and nothing caught that this
+ *     requirement had no build-time gate at all — a reviewer had to notice
+ *     it by reading the spec by hand. This closes that gap.
  */
 
 import "server-only";
@@ -79,6 +86,7 @@ import "server-only";
 import { LOCALES } from "./locales";
 import { PROJECTS } from "./projects";
 import {
+  featuredProjects,
   publishedCaseStudyProjects,
   toHeroProducts,
   toPortfolioCards,
@@ -124,6 +132,17 @@ const HERO_FLOOR = 4;
 
 /** The one service line that legitimately has no project proof. */
 const LINE_EXEMPT_FROM_PROOF: ServiceLine = "D";
+
+/**
+ * The curated (`featured`) project set's floor and ceiling —
+ * `specs/project-portfolio/spec.md`'s "Curated Set Size", amended 2026-07-31
+ * (remediation of `verify-report-final.md` finding C7) from a 6–8 floor to
+ * 4–8, matching `HERO_FLOOR` below. See that requirement's dated amendment
+ * for why the floor moved rather than a sixth project being invented to meet
+ * the old number.
+ */
+const CURATED_SET_MIN = 4;
+const CURATED_SET_MAX = 8;
 
 /**
  * This batch's (sdd-apply, PR 3b, task 3.5) verified fact: ElectroCode
@@ -528,6 +547,25 @@ function checkAuthorityNoLinkWhileUndeployed(violations: string[]): void {
   }
 }
 
+/**
+ * Task (remediation, `verify-report-final.md` finding C7): the curated
+ * (`featured`) project set must stay within `specs/project-portfolio/
+ * spec.md`'s "Curated Set Size" floor/ceiling. This is locale-independent —
+ * `featuredProjects()` filters on `featured`/`consent`, neither of which
+ * varies per locale — so, unlike `checkHeroFloor`, this runs once, not once
+ * per locale.
+ */
+function checkCuratedSetSize(violations: string[]): void {
+  const count = featuredProjects().length;
+  if (count < CURATED_SET_MIN || count > CURATED_SET_MAX) {
+    violations.push(
+      `The curated (featured) project set has ${count} entries; ` +
+        `specs/project-portfolio/spec.md's "Curated Set Size" requires between ` +
+        `${CURATED_SET_MIN} and ${CURATED_SET_MAX}.`,
+    );
+  }
+}
+
 function isBlankLocalized(value: Localized<string>): boolean {
   return LOCALES.some((locale) => isBlank(value[locale]));
 }
@@ -607,6 +645,7 @@ export async function assertContentInvariants(): Promise<void> {
   checkPendingPricesInProduction(violations);
   checkAuthorityNoLinkWhileUndeployed(violations);
   checkRetainerCommitmentsNotBlank(violations);
+  checkCuratedSetSize(violations);
 
   if (violations.length === 0) return;
 
