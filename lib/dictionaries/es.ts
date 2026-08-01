@@ -136,6 +136,40 @@ export const es: Dictionary = {
     contactCtaLabel: "Escribir por WhatsApp",
     backToProjectsLabel: "Ver más proyectos",
   },
+  brief: {
+    heading: "Cuéntanos tu proyecto",
+    intro:
+      "Completa este breve formulario y te contactamos para conversar los detalles. Si prefieres, escríbenos directo por WhatsApp.",
+    serviceLineLabel: "Línea de servicio",
+    serviceLinePlaceholder: "Selecciona una línea de servicio",
+    budgetBandLabel: "Presupuesto estimado",
+    budgetBandPlaceholder: "Selecciona un rango",
+    nameLabel: "Nombre",
+    emailLabel: "Correo electrónico",
+    phoneLabel: "Teléfono",
+    phoneOptionalNote: "opcional",
+    projectDescriptionLabel: "Cuéntanos sobre tu proyecto",
+    submitLabel: "Enviar",
+    submittingLabel: "Enviando…",
+    errorSummaryHeading: "Revisa los siguientes campos:",
+    sendFailedHeading: "No pudimos enviar tu mensaje",
+    sendFailedBody:
+      "Ocurrió un problema al enviar tu información. Tus datos se mantienen en el formulario: puedes intentarlo de nuevo o escribirnos directo por WhatsApp.",
+    whatsappFallbackLabel: "Escribir por WhatsApp",
+    whatsappAsideHeading: "¿Prefieres WhatsApp?",
+    whatsappAsideBody:
+      "Escríbenos directo contándonos tu línea de servicio y una breve descripción de tu proyecto.",
+    whatsappCtaLabel: "Escribir por WhatsApp",
+    whatsappOnlyBody:
+      "Nuestro formulario de brief no está disponible por el momento. Escríbenos directamente por WhatsApp contándonos tu línea de servicio y una breve descripción de tu proyecto, y seguimos la conversación ahí.",
+  },
+  gracias: {
+    heading: "Gracias por tu interés",
+    body:
+      "Si acabas de enviar un brief, lo revisaremos y te contactaremos. Si prefieres avanzar ahora mismo, escríbenos directo por WhatsApp.",
+    whatsappCtaLabel: "Escribir por WhatsApp",
+    backToHomeLabel: "Volver al inicio",
+  },
   notFound: {
     heading: "Página no encontrada",
     message: "La página que buscas no existe o fue movida.",

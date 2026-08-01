@@ -221,6 +221,60 @@ export type CaseStudyDictionary = {
   readonly backToProjectsLabel: string;
 };
 
+/**
+ * Landing section 8, the brief form + WhatsApp conversion section
+ * (`components/sections/brief.tsx`, task 6.6; `specs/lead-capture/spec.md`).
+ * Field rules and validation messages live in `lib/brief/schema.ts`
+ * (`BriefErrors`, one dictionary namespace per concern); these keys are the
+ * structural labels/copy around that pure validator, following the same
+ * dividing line every other section already uses.
+ *
+ * `whatsappOnlyBody` is the copy rendered when `isBriefFormConfigured()`
+ * (`lib/brief/config.ts`) is `false` — the fail-closed WhatsApp-only path
+ * this batch's overriding rule requires. It must read as an honest
+ * invitation to use WhatsApp, never as a "form coming soon" placeholder.
+ */
+export type BriefDictionary = {
+  readonly heading: string;
+  readonly intro: string;
+  readonly serviceLineLabel: string;
+  readonly serviceLinePlaceholder: string;
+  readonly budgetBandLabel: string;
+  readonly budgetBandPlaceholder: string;
+  readonly nameLabel: string;
+  readonly emailLabel: string;
+  readonly phoneLabel: string;
+  readonly phoneOptionalNote: string;
+  readonly projectDescriptionLabel: string;
+  readonly submitLabel: string;
+  readonly submittingLabel: string;
+  readonly errorSummaryHeading: string;
+  readonly sendFailedHeading: string;
+  readonly sendFailedBody: string;
+  readonly whatsappFallbackLabel: string;
+  readonly whatsappAsideHeading: string;
+  readonly whatsappAsideBody: string;
+  readonly whatsappCtaLabel: string;
+  readonly whatsappOnlyBody: string;
+};
+
+/**
+ * `/[locale]/gracias`, the brief form's confirmation route (task 6.8,
+ * `specs/lead-capture/spec.md`, "Confirmation Route"). Reachable directly
+ * without having submitted anything, so `body` must read sensibly standalone
+ * and must NOT claim a submission was just received. It also does not
+ * restate a response-time commitment — no such commitment has been settled
+ * for lead intake (the retainer response window in `lib/content/
+ * retainer.ts` is a different, post-launch maintenance commitment) — see
+ * `app/[locale]/gracias/page.tsx`'s doc comment for the full reasoning.
+ */
+export type GraciasDictionary = {
+  readonly heading: string;
+  readonly body: string;
+  readonly whatsappCtaLabel: string;
+  readonly backToHomeLabel: string;
+};
+
 export type Dictionary = {
   readonly header: SiteHeaderDictionary;
   readonly footer: SiteFooterDictionary;
@@ -233,5 +287,7 @@ export type Dictionary = {
   readonly pricing: PricingDictionary;
   readonly pricingSummary: PricingSummaryDictionary;
   readonly caseStudy: CaseStudyDictionary;
+  readonly brief: BriefDictionary;
+  readonly gracias: GraciasDictionary;
   readonly notFound: NotFoundDictionary;
 };
