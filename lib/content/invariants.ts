@@ -182,15 +182,18 @@ function checkNoSelfReferentialLinks(violations: string[]): void {
  * LIVE_TARGETS must be extended as each slice lands: `/{locale}/precios`
  * added in a prior commit (task 4.10/hard constraint 2), now that
  * `app/[locale]/precios/page.tsx` exists; `/{locale}/proyectos/{slug}` added
- * in THIS commit (PR 5, hard constraint 2), for published slugs only —
- * derived from `publishedCaseStudyProjects()` rather than hardcoded, so this
- * list cannot go stale the way a hand-maintained one could (the exact
- * failure mode this comment used to warn about). This function only walks
- * `toHeroProducts()`, which now DOES link internally to `/proyectos/blu`
- * (`blu`'s evidence is `gated`, not `live`, and its case study is published)
- * — the first real exercise of this branch, not merely defensive coverage. A
- * link added before its target fails the build — which is the point, since
- * that exact mistake has already been caught four times in this change set.
+ * for PR 5 (hard constraint 2), for published slugs only — derived from
+ * `publishedCaseStudyProjects()` rather than hardcoded, so this list cannot
+ * go stale the way a hand-maintained one could (the exact failure mode this
+ * comment used to warn about); `/{locale}/gracias` added in THIS commit (PR
+ * 6b, hard constraint 2), now that `app/[locale]/gracias/page.tsx` exists.
+ * This function only walks `toHeroProducts()`, which today links internally
+ * only to `/proyectos/blu` (`blu`'s evidence is `gated`, not `live`, and its
+ * case study is published) — no hero product links to `/gracias`, so this
+ * addition is defensive coverage for a future entry, not the first real
+ * exercise of the branch. A link added before its target fails the build —
+ * which is the point, since that exact mistake has already been caught four
+ * times in this change set.
  */
 function checkInternalLinksResolve(violations: string[]): void {
   for (const locale of LOCALES) {
@@ -198,6 +201,7 @@ function checkInternalLinksResolve(violations: string[]): void {
       `/${locale}`,
       `/${locale}#proyectos`,
       `/${locale}/precios`,
+      `/${locale}/gracias`,
       ...publishedCaseStudyProjects().map((project) =>
         caseStudyPath(locale, project.slug),
       ),
