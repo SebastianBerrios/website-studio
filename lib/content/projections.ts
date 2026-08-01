@@ -111,10 +111,17 @@ export function publicTitle(project: Project): string {
  * (specs/site-shell/spec.md, "Zero Dead Internal Links").
  */
 function publicLink(locale: Locale, project: Project): string {
+  // A published case study wins over the client's live site.
+  //
+  // The previous order checked `live` first, so a project with BOTH sent every
+  // visitor to the client's website and the studio's own write-up appeared in
+  // zero hrefs across the whole site — reachable only from the sitemap
+  // (verify-report-final.md, finding C6). That is backwards: the case study is
+  // the studio's proof, and the client's live site is evidence cited INSIDE
+  // it, where the case study already links to it.
+  if (project.caseStudyPublished) return caseStudyPath(locale, project.slug);
   if (project.evidence.state === "live") return project.evidence.externalUrl;
-  return project.caseStudyPublished
-    ? caseStudyPath(locale, project.slug)
-    : landingAnchor(locale, "proyectos");
+  return landingAnchor(locale, "proyectos");
 }
 
 /**
@@ -142,10 +149,12 @@ function publicLink(locale: Locale, project: Project): string {
  * consumer that must not render an anchor when this returns `undefined`.
  */
 function portfolioLink(locale: Locale, project: Project): string | undefined {
+  // Same precedence as `publicLink()` above, and for the same reason: a
+  // published case study is the studio's own proof and must be reachable.
+  // See verify-report-final.md, finding C6.
+  if (project.caseStudyPublished) return caseStudyPath(locale, project.slug);
   if (project.evidence.state === "live") return project.evidence.externalUrl;
-  return project.caseStudyPublished
-    ? caseStudyPath(locale, project.slug)
-    : undefined;
+  return undefined;
 }
 
 /** The primary media asset's `.src`, or `undefined` for `no-visual`. */
