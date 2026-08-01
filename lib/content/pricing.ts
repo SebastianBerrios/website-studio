@@ -34,22 +34,48 @@
  * - `care-basic` / `care-standard`: the two maintenance-retainer plans (Line
  *   D) — see `RETAINER_PLANS`. Both months-recurring.
  *
- * **Not supplied, not invented**: turnaround time, per-tier exclusions
- * ("not included"), and payment schedule. `design.md` §5's table calls
- * `PricingTier.notIncluded` a required, non-empty tuple — a documented
- * deviation from that literal shape follows below, same discipline as
- * `lib/content/process.ts`'s and `lib/content/retainer.ts`'s own deviation
- * notes: rather than fabricate exclusions/turnaround/payment terms to satisfy
- * a required-tuple shape, those three facts are modeled as `Commitment<T>`
- * (promoted to `lib/content/types.ts` this task) and rendered as an honest
- * "pending" state — see `components/pricing/tier-card.tsx`,
- * `components/pricing/quote-block.tsx`, and `components/pricing/
- * terms-table.tsx`. `specs/pricing/spec.md`'s "A tier missing exclusions is
- * incomplete" requirement is honored in spirit, not by omission: the page
- * never silently drops the exclusions slot, it renders a visibly unresolved
- * one, exactly the same discipline `PricePending` already applies to prices.
- * This is tracked as an explicit open task (see apply-progress.md), not
- * closed by this batch.
+ * **Exclusions (task 4.1's deviation, now closed) — 2026-07-31**: the user
+ * supplied the four exclusions the studio applies uniformly to every fixed
+ * tier (Lines A and C): the studio publishes content the client supplies
+ * rather than writing copy or shooting photography, domain/hosting are
+ * registered and paid for by the client, the studio designs the site rather
+ * than the brand (logo/identity), and integrations with external systems are
+ * quoted separately. With every tier now carrying a real, non-empty
+ * exclusions list, `PricingTier.notIncluded` is restored to `design.md` §5's
+ * original guarantee — a required non-empty tuple, so an empty list is a
+ * compile error again, not merely an honestly-rendered "pending" state. See
+ * this file's `FIXED_TIER_EXCLUSIONS` constant and `design.md`'s dated
+ * amendment to §5.
+ *
+ * **Turnaround — supplied for 3 of 5 fixed tiers, still honestly pending for
+ * 2 (plus Line B's quote turnaround)**: the user supplied real business-day
+ * figures for the three Line A tiers (`landing-basic`: 5, `landing-standard`:
+ * 10, `landing-premium`: 15 — see `PRICING_TIERS`). The two Line C microsite
+ * tiers (`microsite-basic`, `microsite-event`) were NOT supplied, and no
+ * business-day figure for them is derivable from anything the studio actually
+ * stated — price is not turnaround, and inventing a number by, say,
+ * interpolating from the tiers' relative prices would be exactly the
+ * fabrication this content model exists to prevent (see
+ * `sdd/dev-services-website/apply-progress` for the full reasoning). Both
+ * stay `{ status: "pending" }`, same as Line B's quote turnaround
+ * (`QUOTE_BLOCK.turnaround`) and `PRICING_TERMS.paymentSchedule` below —
+ * `turnaround` therefore stays `Commitment<Turnaround>`, NOT a required
+ * field, even though `notIncluded` was restored to required. These are two
+ * independent facts with two different supply states; one being complete
+ * does not imply the other is.
+ *
+ * **The qualifier travels with the value.** A bare "N días hábiles" is
+ * uncheckable: `lib/content/process.ts`'s `PROCESS.clientApprovalDeadlineBusinessDays`
+ * gates 3 of the studio's 5 phases on the CLIENT's own approval, so a
+ * turnaround figure that does not say what it measures reads as a promise the
+ * studio could breach through no fault of its own the moment a client sits on
+ * a review. `Turnaround` (below) is therefore never rendered as a bare number
+ * — `formatTurnaround()` always appends "de trabajo del estudio, sin contar
+ * los plazos de aprobación del cliente", the same "qualifier lives on the
+ * data, not on a component's copy" discipline `PriceQualifier`/`formatMoney()`
+ * already established one section below, for exactly the reason C3/C4
+ * (verify-report-final.md) both happened: splitting a figure from what it
+ * means is how a studio ends up publishing a monthly retainer as a one-off.
  */
 
 import type { Commitment, Localized } from "./types";
@@ -142,6 +168,32 @@ export function formatMoney(money: Money): string {
 }
 
 /**
+ * How long a fixed tier or Line B quote takes, always expressed in business
+ * days of the STUDIO's own work — never a calendar-day promise, and never a
+ * bare number a future surface could render without its qualifier (see this
+ * module's top doc comment, "The qualifier travels with the value"). Modeled
+ * as its own type rather than `Localized<string>` for the same reason `Money`
+ * is a type rather than a formatted string: the qualifying clause is fixed
+ * Spanish policy text, not per-tier content, so it belongs in one function
+ * every consumer calls through, not duplicated into five tiers' worth of
+ * hand-written sentences that could drift out of sync with each other.
+ */
+export type Turnaround = {
+  readonly businessDays: number;
+};
+
+/**
+ * Spanish rendering. Lives here, not in `lib/dictionaries/es.ts`, for the
+ * same reason `QUALIFIER_ES` above does — splitting a figure from what it
+ * measures is exactly how C3/C4 (verify-report-final.md) happened. When a
+ * second locale ships, move this behind the dictionary together with
+ * `formatMoney()`.
+ */
+export function formatTurnaround(turnaround: Turnaround): string {
+  return `${turnaround.businessDays} días hábiles de trabajo del estudio, sin contar los plazos de aprobación del cliente`;
+}
+
+/**
  * A fixed-price tier (Lines A and C). See `specs/pricing/spec.md`'s "Fixed
  * Tier Anatomy". `revisionRounds` is deliberately NOT a per-tier field here:
  * the studio's settled policy (`PROCESS.revisionRoundsIncluded`, 2 rounds
@@ -157,11 +209,45 @@ export type PricingTier = {
   readonly name: Localized<string>;
   readonly audience: Localized<string>;
   readonly deliverables: readonly [Localized<string>, ...Localized<string>[]];
-  readonly notIncluded: Commitment<
-    readonly [Localized<string>, ...Localized<string>[]]
-  >;
-  readonly turnaround: Commitment<Localized<string>>;
+  /**
+   * Required, non-empty — restored to `design.md` §5's original guarantee
+   * now that the studio has supplied real exclusions for every fixed tier
+   * (see this module's top doc comment and `FIXED_TIER_EXCLUSIONS` below).
+   * An empty list is a compile error again, not an honestly-rendered
+   * "pending" state.
+   */
+  readonly notIncluded: readonly [Localized<string>, ...Localized<string>[]];
+  /**
+   * NOT restored alongside `notIncluded` — two of five tiers' turnaround
+   * figures were not supplied and are not derivable from anything the
+   * studio stated (see this module's top doc comment), so this stays an
+   * honest `Commitment<Turnaround>` rather than a required field.
+   */
+  readonly turnaround: Commitment<Turnaround>;
 };
+
+/**
+ * The four exclusions the studio applies uniformly to every fixed tier
+ * (Lines A and C) — supplied directly by the user (2026-07-31), not derived
+ * or invented. One exported constant every tier reads through, so the five
+ * tiers cannot drift into five independently-worded (and possibly
+ * inconsistent) exclusion lists — same discipline as
+ * `PROCESS.revisionRoundsIncluded` above.
+ */
+const FIXED_TIER_EXCLUSIONS: readonly [Localized<string>, ...Localized<string>[]] = [
+  {
+    es: "Redacción de textos y producción de fotografías: se publica el contenido que el cliente entrega.",
+  },
+  {
+    es: "Dominio y hosting: se configuran como parte del proyecto, pero se registran y se pagan a nombre del cliente.",
+  },
+  {
+    es: "Diseño de logo e identidad visual: el estudio diseña el sitio, no la marca.",
+  },
+  {
+    es: "Integraciones con sistemas externos (pasarela de pago, CRM, ERP, facturación electrónica): se cotizan por separado.",
+  },
+];
 
 export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
   {
@@ -172,8 +258,8 @@ export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
       es: "Negocios que necesitan presencia en una sola página.",
     },
     deliverables: [{ es: "Landing de una sola página" }],
-    notIncluded: { status: "pending" },
-    turnaround: { status: "pending" },
+    notIncluded: FIXED_TIER_EXCLUSIONS,
+    turnaround: { status: "set", value: { businessDays: 5 } },
   },
   {
     token: "landing-standard",
@@ -183,8 +269,8 @@ export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
       es: "Negocios que necesitan un sitio con varias secciones.",
     },
     deliverables: [{ es: "Sitio corporativo de varias secciones" }],
-    notIncluded: { status: "pending" },
-    turnaround: { status: "pending" },
+    notIncluded: FIXED_TIER_EXCLUSIONS,
+    turnaround: { status: "set", value: { businessDays: 10 } },
   },
   {
     token: "landing-premium",
@@ -199,8 +285,8 @@ export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
     deliverables: [
       { es: "Sitio corporativo de mayor alcance (el detalle se conversa al cotizar)" },
     ],
-    notIncluded: { status: "pending" },
-    turnaround: { status: "pending" },
+    notIncluded: FIXED_TIER_EXCLUSIONS,
+    turnaround: { status: "set", value: { businessDays: 15 } },
   },
   {
     token: "microsite-basic",
@@ -210,7 +296,12 @@ export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
       es: "Perfiles y negocios que necesitan un enlace único para redes sociales.",
     },
     deliverables: [{ es: "Página de biolink" }],
-    notIncluded: { status: "pending" },
+    notIncluded: FIXED_TIER_EXCLUSIONS,
+    // Not supplied by the user, and not derivable from the three Line A
+    // figures — a biolink's scope is not "a smaller landing page" in any
+    // stated ratio, and inferring one from price alone (S/100 vs S/500)
+    // would be exactly the fabrication this content model exists to
+    // prevent. See this module's top doc comment.
     turnaround: { status: "pending" },
   },
   {
@@ -221,7 +312,10 @@ export const PRICING_TIERS: readonly [PricingTier, ...PricingTier[]] = [
       es: "Personas organizando un evento puntual (por ejemplo, una boda).",
     },
     deliverables: [{ es: "Microsite de invitación para un evento" }],
-    notIncluded: { status: "pending" },
+    notIncluded: FIXED_TIER_EXCLUSIONS,
+    // Same reasoning as `microsite-basic` above: not supplied, and not
+    // safely derivable from the Line A figures. See this module's top doc
+    // comment.
     turnaround: { status: "pending" },
   },
 ];
@@ -251,7 +345,8 @@ export type QuoteBlock = {
   readonly typicalShapes: readonly [Localized<string>, ...Localized<string>[]];
   readonly variables: readonly [Localized<string>, ...Localized<string>[]];
   readonly process: Localized<string>;
-  readonly turnaround: Commitment<Localized<string>>;
+  /** Not supplied — same `Turnaround` type as the fixed tiers, still pending. */
+  readonly turnaround: Commitment<Turnaround>;
 };
 
 export const QUOTE_BLOCK: QuoteBlock = {

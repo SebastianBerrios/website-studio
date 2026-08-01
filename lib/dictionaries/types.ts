@@ -163,7 +163,6 @@ export type PricingDictionary = {
   readonly audienceLabel: string;
   readonly deliverablesLabel: string;
   readonly notIncludedHeading: string;
-  readonly notIncludedPendingNote: string;
   readonly turnaroundLabel: string;
   readonly turnaroundPendingNote: string;
   readonly revisionsPrefix: string;

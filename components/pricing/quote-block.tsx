@@ -1,4 +1,4 @@
-import { QUOTE_BLOCK } from "@/lib/content/pricing";
+import { formatTurnaround, QUOTE_BLOCK } from "@/lib/content/pricing";
 import { getDictionary } from "@/lib/dictionaries";
 import type { Locale } from "@/lib/content/locales";
 import { Price } from "./price";
@@ -50,7 +50,7 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
         <p className="mt-2 text-sm text-muted-foreground">
           {pricing.turnaroundLabel}:{" "}
           {QUOTE_BLOCK.turnaround.status === "set"
-            ? QUOTE_BLOCK.turnaround.value[locale]
+            ? formatTurnaround(QUOTE_BLOCK.turnaround.value)
             : pricing.turnaroundPendingNote}
         </p>
       </div>

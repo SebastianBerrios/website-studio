@@ -81,7 +81,6 @@ export const es: Dictionary = {
     audienceLabel: "Para quién es",
     deliverablesLabel: "Qué incluye",
     notIncludedHeading: "Qué no incluye",
-    notIncludedPendingNote: "Exclusiones pendientes de definir.",
     turnaroundLabel: "Tiempo de entrega",
     turnaroundPendingNote: "Tiempo de entrega pendiente de definir.",
     revisionsPrefix: "Incluye",

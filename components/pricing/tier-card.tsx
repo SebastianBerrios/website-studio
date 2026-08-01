@@ -1,5 +1,5 @@
 import { PROCESS } from "@/lib/content/process";
-import type { PricingTier } from "@/lib/content/pricing";
+import { formatTurnaround, type PricingTier } from "@/lib/content/pricing";
 import { getDictionary } from "@/lib/dictionaries";
 import type { Locale } from "@/lib/content/locales";
 import { Price } from "./price";
@@ -13,12 +13,15 @@ import { Price } from "./price";
  * (`lib/content/process.ts`), not duplicated per tier — see
  * `lib/content/pricing.ts`'s `PricingTier` doc comment.
  *
- * `turnaround` and `notIncluded` are `Commitment<T>` (`lib/content/
- * pricing.ts`'s documented deviation from design.md's literal
- * required-non-empty-tuple shape): neither was supplied this batch. Both
- * render an honest "pending" note rather than a silently blank section or an
- * invented list — same discipline `PricePending` already applies one level
- * up, at the price itself.
+ * `notIncluded` is a required, non-empty tuple — every tier now carries real
+ * exclusions (see `lib/content/pricing.ts`'s `FIXED_TIER_EXCLUSIONS`), so
+ * this section never renders a "pending" state.
+ *
+ * `turnaround` is still `Commitment<Turnaround>`: two of five tiers' figures
+ * were not supplied (`lib/content/pricing.ts`'s top doc comment). When set,
+ * it renders through `formatTurnaround()` so the "de trabajo del estudio, sin
+ * contar los plazos de aprobación del cliente" qualifier always travels with
+ * the figure — never a bare day count.
  */
 export function TierCard({ tier, locale }: { tier: PricingTier; locale: Locale }) {
   const { pricing } = getDictionary(locale);
@@ -60,7 +63,7 @@ export function TierCard({ tier, locale }: { tier: PricingTier; locale: Locale }
         </h4>
         <p className="mt-2 text-sm text-muted-foreground">
           {tier.turnaround.status === "set"
-            ? tier.turnaround.value[locale]
+            ? formatTurnaround(tier.turnaround.value)
             : pricing.turnaroundPendingNote}
         </p>
       </div>
@@ -69,17 +72,11 @@ export function TierCard({ tier, locale }: { tier: PricingTier; locale: Locale }
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.notIncludedHeading}
         </h4>
-        {tier.notIncluded.status === "set" ? (
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            {tier.notIncluded.value.map((item) => (
-              <li key={item[locale]}>{item[locale]}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {pricing.notIncludedPendingNote}
-          </p>
-        )}
+        <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+          {tier.notIncluded.map((item) => (
+            <li key={item[locale]}>{item[locale]}</li>
+          ))}
+        </ul>
       </div>
     </article>
   );
