@@ -201,6 +201,26 @@
   .reveal {
     animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  /*
+   * Per-word variant for the hero heading's staggered entrance.
+   *
+   * This replaces a JS-driven reveal that shipped every word as
+   * `class="opacity-0" style="filter:blur(10px)"` in the static HTML and
+   * un-hid it from a `useEffect`. That made the site's primary heading — and
+   * its LCP element — invisible without JavaScript, and an inline style set
+   * by JS is unreachable by the global reduced-motion override below
+   * (verify-report-final.md, finding C5).
+   *
+   * As CSS, the failure modes all resolve to "visible": no JS still animates,
+   * no animation support falls back to the element's natural opacity, and
+   * reduced motion collapses the duration so it lands on the `to` state
+   * immediately.
+   */
+  .reveal-word {
+    display: inline-block;
+    animation: reveal-word 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 @keyframes reveal-up {
@@ -211,6 +231,17 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes reveal-word {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
   }
 }
 

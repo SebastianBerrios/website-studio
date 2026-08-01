@@ -13,13 +13,13 @@ import type { Locale } from "@/lib/content/locales";
  *
  * **Editorial restyle (feat/editorial-design)**: the heading now renders
  * through `TextGenerateEffect` (`components/ui/text-generate-effect.tsx`,
- * new client component #2 of 3 this slice adds) — the hero's one
- * orchestrated entrance, a staggered word-by-word reveal, per this slice's
- * "high impact in few places" motion budget. This component itself STAYS a
- * Server Component: it renders `<TextGenerateEffect>` (a small, leaf client
- * component) the same way it already renders `<HoverBorderGradient>` — the
- * dictionary read and layout stay on the server, only the reveal mechanism
- * is client-side. Two `<TextGenerateEffect>` instances (one per heading
+ * a Server Component) — the hero's one orchestrated entrance, a staggered
+ * word-by-word reveal, per this slice's "high impact in few places" motion
+ * budget. It was briefly a client component that hid each word behind
+ * `opacity-0` until a `useEffect` ran, which left this heading — the site's
+ * primary heading and its LCP element — invisible without JavaScript
+ * (verify-report-final.md, C5). It is now CSS-driven and renders entirely on
+ * the server. Two `<TextGenerateEffect>` instances (one per heading
  * line, matching `HeroDictionary.heading`'s existing two-line tuple) rather
  * than one joined string, so the `<br />` line break survives without
  * teaching the component a line-break syntax it doesn't otherwise need.
@@ -36,8 +36,17 @@ export function HeroHeader({ locale }: { locale: Locale }) {
   return (
     <div className="max-w-7xl relative mx-auto py-20 md:py-36 px-4 w-full left-0 top-0">
       <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-foreground md:text-7xl lg:text-8xl">
-        <TextGenerateEffect words={hero.heading[0]} duration={0.6} />
-        <TextGenerateEffect words={hero.heading[1]} duration={0.6} />
+        <TextGenerateEffect words={hero.heading[0]} />
+        {/*
+          The second line continues the first line's sweep rather than
+          restarting it: its offset is the first line's word count times the
+          stagger, so the heading reads as one gesture instead of two lines
+          racing each other.
+        */}
+        <TextGenerateEffect
+          words={hero.heading[1]}
+          startDelaySeconds={hero.heading[0].split(" ").length * 0.12}
+        />
       </h1>
       <p className="mt-8 max-w-xl text-base text-muted-foreground md:text-xl">
         {hero.subtitle}
