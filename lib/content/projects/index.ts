@@ -88,7 +88,7 @@ export const PROJECTS: readonly Project[] = [
     // number. See `lib/content/projects/approach/luang.ts` for the long-form
     // reasoning.
     problem: {
-      es: "Luang Asociados SAC no tenía ningún sitio web: no existía una presencia digital previa. Necesitaban un canal propio para mostrar sus proyectos de arquitectura y darse a conocer ante nuevos clientes.",
+      es: "Luang Asociados SAC no tenía ningún sitio web: no existía una presencia digital previa. Necesitaban un canal propio para mostrar sus proyectos de ingeniería y construcción y darse a conocer ante nuevos clientes.",
     },
     role: {
       es: "El estudio diseñó y desarrolló el sitio completo desde cero — arquitectura de información, diseño visual y desarrollo — sin partir de ninguna base ni plataforma previa del cliente.",
