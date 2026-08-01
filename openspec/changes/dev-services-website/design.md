@@ -27,7 +27,7 @@ tasks, and it modifies no source file.
 | **D7** | **`typedRoutes: true`.** | Now a stable top-level config option (VERIFIED). It makes a dead literal internal link a **build failure** — exactly the `/portfolio` bug that shipped — and it is the cheapest net available with no test runner. |
 | **D8** | **No `[PRICE:*]` token ever exists as a string. Prices are a discriminated union in an exhaustive `Record<PriceToken, PriceEntry>`; unresolved = a designed `pending` state; production is gated by a throwing build-time assertion.** | Turns "unresolved placeholder in production" from a cosmetic accident into a compile error, a lint error, or a failed build, depending on the failure mode. |
 | **D9** | **Content model: locale-keyed prose (`Localized<T>`), locale-invariant facts, long prose behind an `async` loader, media as `StaticImageData` static imports.** | Adding `en` becomes a set of compile errors enumerating the translation debt. A missing image file becomes a build error instead of a silent 404. |
-| **D10** | **Exactly one new client component (`BriefForm`). Header, footer, and FAQ stay Server Components. `motion` stays confined to the hero; section reveals are CSS-only.** | The landing gains a sales narrative without gaining a JS budget. |
+| **D10** | ~~Exactly one new client component (`BriefForm`). Header, footer, and FAQ stay Server Components. `motion` stays confined to the hero; section reveals are CSS-only.~~ **Amended 2026-07-31 (`feat/editorial-design`): six client components total (three new, all small and leaf-level), `motion` used in the hero, "Proceso", and "Proyectos", everything else still CSS-only. See the dated amendment in §7.** | Original reason unchanged for the components it still describes. The amendment's reason: the user asked for a site that impresses, which was the original goal (proposal's own north star) — a plain page with a serif bolted on does not read as "señal de oficio" for an audience that buys with their eyes. |
 | **D11** | **`cacheComponents` stays off (default). Every route is `force-static`.** | There is no request-time data anywhere. PPR solves a problem this site does not have, and enabling it could move the integrity assertion out of build time. |
 | **D12** | **No `images.remotePatterns`. `next.config.ts` needs no `images` block.** | All media is local under `public/`. Nothing is externally hosted in this change's scope. |
 
@@ -590,7 +590,7 @@ pretending no one will ever need it.
 
 ## 7. Component architecture
 
-### D10: Client components — exactly one is new
+### D10: Client components — exactly one is new (superseded — see amendment below)
 
 ```
 components/
@@ -615,10 +615,13 @@ components/
               faq.tsx                SERVER  (native <details>/<summary>)
   case-study/ case-study-layout.tsx  SERVER
               disclosure-note.tsx    SERVER
-  brief/      brief-form.tsx         CLIENT  <- the only new one
+  brief/      brief-form.tsx         CLIENT
               field.tsx              SERVER
   ui/         hero-parallax.tsx      CLIENT  (existing)
               hover-border-gradient.tsx CLIENT (existing)
+              text-generate-effect.tsx  CLIENT (new, D10 amendment below)
+              sticky-scroll-reveal.tsx  CLIENT (new, D10 amendment below)
+              direction-aware-hover.tsx CLIENT (new, D10 amendment below)
 ```
 
 | Component | Client? | Why |
@@ -634,6 +637,66 @@ use CSS only via the already-installed `tw-animate-css` plus
 `@starting-style`/scroll-driven animations. One orchestrated, staggered page-load
 reveal per section beats scattered JS micro-interactions, and it keeps the
 landing's JS essentially flat against today's while adding nine sections.
+
+---
+
+#### D10 amendment — 2026-07-31, `feat/editorial-design`
+
+**What changed.** This slice is a deliberate visual-design pass ("Editorial
+claro — señal de oficio") requested after the site was functionally complete
+and verified. The user asked for a site that *impresses* — the original
+proposal's own stated goal (a portfolio that wins architecture studios and
+specialty cafés, who buy with their eyes) — and reviewed the plain,
+system-font, un-typeset landing this design produced and judged it too timid
+to serve that goal. D10 as written was correct for the functional slice: it
+kept a page with no sales narrative yet from acquiring a JS budget it hadn't
+earned. It is no longer the complete rule once the explicit deliverable is
+the visual layer itself.
+
+**Why the reversal is not a contradiction of D10's own reasoning.** D10's
+core argument — that a client boundary must be earned, not defaulted to — is
+kept, not abandoned. Every new client component below is small, leaf-level,
+and justified by a specific animation need `next/font`/CSS alone cannot
+satisfy (a staggered word-by-word reveal timed to mount, a scroll-linked
+sticky panel, a pointer-direction read on hover). None of them fetch data,
+own business logic, or grow beyond the one animation they exist for — the
+dictionary/content-module boundary from §5 is unchanged: copy and domain
+facts are still read on the server and passed down as plain props, per each
+new component's own doc comment.
+
+**The new rule.**
+
+| Component | Client? | Why |
+|---|---|---|
+| `hero-parallax.tsx` | yes (existing) | Unchanged — scroll-linked transforms. |
+| `hover-border-gradient.tsx` | yes (existing) | Unchanged — hover state + an auto-rotating interval, now gated behind `useReducedMotion()`. |
+| `brief-form.tsx` | yes (existing) | Unchanged — `useActionState`. |
+| `components/ui/text-generate-effect.tsx` | **yes (new)** | The hero's one orchestrated entrance: a staggered, blur-in word reveal timed to mount via `useAnimate`/`stagger`. Adapted from Aceternity UI's Text Generate Effect. No dictionary/content import — receives plain strings as props. |
+| `components/ui/sticky-scroll-reveal.tsx` | **yes (new)** | "Proceso"'s five phases, read by scroll: `useScroll({ container })` + `useMotionValueEvent` drives which phase is "active" in a sticky panel. Adapted from Aceternity UI's Sticky Scroll Reveal, restyled onto this site's own paper/ink tokens. Receives a plain `StickyScrollItem[]` built server-side in `process.tsx` — no dictionary or content-module import. |
+| `components/ui/direction-aware-hover.tsx` | **yes (new)** | "Proyectos" grid cards: a pointer-direction-aware image pan on hover. Adapted from Aceternity UI's Direction Aware Hover, retargeted from a plain `imageUrl: string` to this project's `StaticImageData` media contract (§8) so the "missing file is a build error" guarantee survives. Used only from `evidence.tsx`'s image-bearing branches (`live`/`gated`/`not-deployed`) — the `no-visual` state has no image and structurally never reaches this component. |
+| `site-header.tsx`, `faq.tsx`, every `sections/*`/`pricing/*`/`portfolio/*`/`case-study/*` component | **no** | Unchanged — still Server Components. The visual pass restyles their markup and CSS-only `.reveal` animation, not their client/server boundary. |
+
+Six client components total (three pre-existing and unchanged in kind, three
+new). **Motion library usage** moves from "confined to the hero" to
+"confined to the hero, Proceso, and Proyectos" — still three named places
+out of nine landing sections, matching the change's own brief: "high impact
+in few places," chosen deliberately over blanket animation because the
+audience is largely on mobile with variable connections. Every other
+section — Servicios, Autoridad, Retainer, Precios summary, Brief, the
+pricing page, case studies, both not-found pages — remains CSS-only reveals
+via the `.reveal` utility (`app/globals.css`), unchanged from the original
+D10 intent.
+
+**`prefers-reduced-motion` is non-negotiable for all six.** The three new
+components each call `motion/react`'s `useReducedMotion()` directly (a
+`MotionValue`/imperative animation is not reachable by a CSS media query);
+`hero-parallax.tsx` and `hover-border-gradient.tsx` gained the same guard in
+this slice, additively, without changing either component's preserved
+values (hero-parallax.tsx's row-derivation logic and every
+`useScroll`/`useTransform`/`useSpring` call are untouched — see that file's
+own comment). A global `app/globals.css` media query separately neutralizes
+every CSS animation/transition site-wide, covering `.reveal` and
+`tw-animate-css` for free.
 
 **Styling conventions, unchanged:** Tailwind v4 with the OKLCH CSS variables
 already in `app/globals.css`; `cn()` from `lib/utils.ts` for every conditional
