@@ -93,12 +93,20 @@
   --muted-foreground: oklch(0.44 0.024 55);
   --accent: oklch(0.93 0.016 70);
   --accent-foreground: oklch(0.225 0.019 55);
-  --accent-signal: oklch(0.58 0.16 38);
-  --accent-signal-foreground: oklch(0.98 0.012 80);
+  /*
+   * L tuned to 0.55 (not the visually-first-picked 0.58) specifically so
+   * BOTH of this token's real uses clear WCAG AA at normal text size:
+   * accent-signal-foreground-on-accent-signal (button labels) and
+   * accent-signal-as-text-on-background (WhatsApp/CTA links) — verified by
+   * OKLCH->sRGB conversion + relative-luminance contrast ratio, not eyeballed
+   * (4.77:1 and 5.07:1 respectively, both above the 4.5:1 floor).
+   */
+  --accent-signal: oklch(0.55 0.16 38);
+  --accent-signal-foreground: oklch(0.99 0.005 80);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.84 0.02 65);
   --input: oklch(0.84 0.02 65);
-  --ring: oklch(0.58 0.16 38 / 55%);
+  --ring: oklch(0.55 0.16 38 / 55%);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -111,7 +119,7 @@
   --sidebar-accent: oklch(0.93 0.016 70);
   --sidebar-accent-foreground: oklch(0.225 0.019 55);
   --sidebar-border: oklch(0.84 0.02 65);
-  --sidebar-ring: oklch(0.58 0.16 38 / 55%);
+  --sidebar-ring: oklch(0.55 0.16 38 / 55%);
 }
 
 .dark {
