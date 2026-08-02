@@ -63,9 +63,37 @@
  * specific visitor actually reached the form. Fetching happens client-side
  * and requires JavaScript; see that file's doc comment for why a purely
  * static route cannot do better, and `design.md`'s dated amendment to §9.
+ *
+ * **Focus management, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W25)**: the `<form key={JSON.stringify(
+ * state)}>` below remounts the whole form subtree on every action result —
+ * required because every input's `defaultValue` is uncontrolled, so a
+ * fresh mount is what actually picks up `state.values` after a server
+ * round-trip. That remount used to silently reset focus to `<body>`,
+ * discarding whatever the visitor was doing. `feedbackRef` now points at
+ * whichever `role="alert"` banner is showing (validation errors, a failed
+ * send, or a rejected submission — never more than one at a time), and an
+ * effect below moves focus there on every `state` change, so a visitor who
+ * submits and gets an error lands back on a focused, readable explanation
+ * instead of the top of an untouched page. On a genuinely successful
+ * submission `submit.ts` redirects away before any of this renders, so the
+ * effect has nothing to focus and is a no-op.
+ *
+ * **`autoComplete`, same remediation (finding W24)**: `name`/`email`/`phone`
+ * now carry the standard WCAG 2.1 1.3.5 tokens (`name`, `email`, `tel`) so a
+ * browser or password manager can fill them from data it already holds.
+ * `serviceLine`/`budgetBand` are studio-specific choices with no standard
+ * autofill token, and `projectDescription` is free text — neither gets one.
  */
 
-import { useActionState, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Field } from "./field";
 import { submitBrief } from "@/lib/brief/submit";
 import { requestFormToken } from "@/lib/brief/issue-token";
@@ -191,6 +219,15 @@ export function BriefForm({
     (field) => [field, state.errors[field] as string] as const,
   );
 
+  // Remediation of `verify-report-final.md` finding W25 — see this file's
+  // doc comment. Shared across the three mutually-exclusive `role="alert"`
+  // banners below; whichever one is actually rendered receives focus after
+  // every action result, instead of losing it to the form's own remount.
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    feedbackRef.current?.focus();
+  }, [state]);
+
   return (
     <form key={JSON.stringify(state)} action={formAction} className="flex flex-col gap-6">
       <input type="hidden" name="locale" value={locale} />
@@ -220,7 +257,9 @@ export function BriefForm({
 
       {errorEntries.length > 0 ? (
         <div
+          ref={feedbackRef}
           role="alert"
+          tabIndex={-1}
           className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
         >
           <p className="font-medium">{copy.errorSummaryHeading}</p>
@@ -237,7 +276,12 @@ export function BriefForm({
       ) : null}
 
       {state.status === "send-failed" ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm">
+        <div
+          ref={errorEntries.length === 0 ? feedbackRef : undefined}
+          role="alert"
+          tabIndex={-1}
+          className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm"
+        >
           <p className="font-medium text-destructive">{copy.sendFailedHeading}</p>
           <p className="mt-1 text-muted-foreground">{copy.sendFailedBody}</p>
           {whatsappUrl ? (
@@ -261,7 +305,9 @@ export function BriefForm({
           missing token, dwell time) actually tripped. */}
       {state.status === "rejected" ? (
         <div
+          ref={errorEntries.length === 0 ? feedbackRef : undefined}
           role="alert"
+          tabIndex={-1}
           className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm"
         >
           <p className="font-medium text-destructive">{copy.rejectedHeading}</p>
@@ -330,6 +376,7 @@ export function BriefForm({
         <input
           type="text"
           name="name"
+          autoComplete="name"
           defaultValue={state.values.name ?? ""}
           required
           maxLength={100}
@@ -341,6 +388,7 @@ export function BriefForm({
         <input
           type="email"
           name="email"
+          autoComplete="email"
           defaultValue={state.values.email ?? ""}
           required
           maxLength={254}
@@ -356,6 +404,7 @@ export function BriefForm({
         <input
           type="tel"
           name="phone"
+          autoComplete="tel"
           defaultValue={state.values.phone ?? ""}
           maxLength={30}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm"
