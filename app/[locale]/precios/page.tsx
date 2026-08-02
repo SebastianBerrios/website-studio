@@ -7,8 +7,12 @@ import { QuoteBlock } from "@/components/pricing/quote-block";
 import { RetainerPlans } from "@/components/pricing/retainer-plans";
 import { TermsTable } from "@/components/pricing/terms-table";
 import { Faq } from "@/components/pricing/faq";
-import { canonicalFor } from "@/lib/seo";
+import { canonicalAlternates } from "@/lib/seo";
 import type { Metadata } from "next";
+
+const TITLE = "Precios — ElectroCode Studio";
+const DESCRIPTION =
+  "Cada línea de servicio tiene un precio de referencia. Los planes fijos cubren un alcance definido; lo que no encaja en un plan fijo se cotiza a medida.";
 
 /**
  * This page's own canonical. Without it the page inherited the root layout's
@@ -16,6 +20,14 @@ import type { Metadata } from "next";
  * instruction to search engines NOT to index the pricing page as itself. That
  * defeats the reason this route exists (proposal §5: shareable, sent directly
  * in DMs, SEO target). See `lib/seo.ts`.
+ *
+ * **`title`/`description`, added 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W14)**: this page used to inherit the root
+ * layout's generic `<title>ElectroCode Studio</title>` and brand-level
+ * description, identical to every other route — a case-study link or this
+ * pricing page pasted into a DM previewed as the homepage. `DESCRIPTION`
+ * above is `pricing.introBody` from `lib/dictionaries/es.ts`, already-real
+ * copy, not a new claim.
  */
 export async function generateMetadata({
   params,
@@ -24,7 +36,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    alternates: { canonical: canonicalFor(assertLocale(locale), "precios") },
+    title: TITLE,
+    description: DESCRIPTION,
+    openGraph: { title: TITLE, description: DESCRIPTION },
+    alternates: canonicalAlternates(assertLocale(locale), "precios"),
   };
 }
 
@@ -37,17 +52,20 @@ export async function generateMetadata({
  *
  * **Block 8 deviation, documented rather than silently applied** (same
  * discipline as `components/sections/services.tsx`'s CTA note): task 4.7
- * asks for the CTA to pre-tag `?line=<ServiceLine>` into `#brief`. Neither
- * `#brief` nor the brief form exist yet — both are PR 6b scope, explicitly
- * out of scope for this batch, and this batch's own hard constraints forbid
- * a CTA pointing at a target that does not exist when this commit lands. The
- * CTA below instead points at the one conversion path already live
- * (`WHATSAPP`, wired in a prior batch), with the visitor's line of interest
- * folded into the prefilled WhatsApp message text — the same "point at
- * what's live today, replace once the real target ships" pattern
- * `site-header.tsx`/`services.tsx` already established. PR 6b must replace
- * this with the real `?line=` pre-tag into `#brief` once the form exists —
- * tracked as an explicit follow-up in apply-progress.md, not closed here.
+ * asks for the CTA to pre-tag `?line=<ServiceLine>` into `#brief`. The CTA
+ * below instead points at the one conversion path already live
+ * (`WHATSAPP`), the same "point at what's live today, replace once the real
+ * target ships" pattern `site-header.tsx`/`services.tsx` already established.
+ * **Correction, 2026-08-01 (remediation of `verify-report-final.md` finding
+ * W2)**: this comment used to claim the visitor's line of interest was
+ * "folded into the prefilled WhatsApp message text" — false.
+ * `lib/content/contact.ts` exports exactly one `WHATSAPP.url` with one fixed
+ * prefill; no line, service, or page context is ever folded into it, here or
+ * anywhere else on the site. `#brief` and the brief form now exist (PR 6b
+ * shipped), but this CTA was never reopened to use them — tracked as
+ * finding W1, explicitly not fixed by this batch (out of scope), so the
+ * WhatsApp-only behaviour described above is accurate for what actually
+ * ships today; only the false "folded in" claim is removed.
  *
  * `export const dynamic = 'force-static'`: no request-time data anywhere on
  * this page (design.md D11) — every figure and block above is build-time
@@ -68,7 +86,7 @@ export default async function PricingPage({
   const { pricing } = getDictionary(validLocale);
 
   return (
-    <main className="py-20 md:py-32">
+    <main id="main-content" className="py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
         <h1 className="reveal max-w-2xl text-4xl font-medium tracking-tight md:text-6xl">
           {pricing.heading}

@@ -24,7 +24,8 @@
  * against localhost.
  */
 
-import type { Locale } from "@/lib/content/locales";
+import type { Metadata } from "next";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/content/locales";
 
 /**
  * The canonical path for a page.
@@ -38,4 +39,40 @@ export function canonicalFor(locale: Locale, ...segments: string[]): string {
   return segments.length === 0
     ? `/${locale}`
     : `/${locale}/${segments.join("/")}`;
+}
+
+/**
+ * `alternates` for one route: its canonical, plus `languages`/`x-default`.
+ *
+ * **Added 2026-08-01 (remediation of `verify-report-final.md` finding
+ * W13)**: `app/layout.tsx` declares `alternates.languages`/`x-default` once,
+ * meaning to cover every route. But Next.js metadata merging replaces
+ * `alternates` **wholesale** per route rather than merging its sub-keys, so
+ * every route that called `generateMetadata` and returned only
+ * `{ canonical }` silently discarded the root layout's `languages`/
+ * `x-default` — verified in the compiled `<head>`: they landed only on
+ * `_not-found`, the one route with no `generateMetadata` of its own. Every
+ * route's `generateMetadata` should return this function's result instead of
+ * a bare `{ canonical }` object, so both survive together.
+ *
+ * With `LOCALES = ['es']` (`lib/content/locales.ts`), a page's own canonical
+ * IS its default-locale version, so `x-default` and `languages[es]` both
+ * point at the same path — exactly what the root layout's now-overridden
+ * declaration meant for every route before a second route existed. Adding a
+ * real second locale later is still design.md D2's "one-entry change": add
+ * that locale's own path under `languages`, and reconsider what `x-default`
+ * should point to once there is a real choice to make.
+ */
+export function canonicalAlternates(
+  locale: Locale,
+  ...segments: string[]
+): NonNullable<Metadata["alternates"]> {
+  const path = canonicalFor(locale, ...segments);
+  return {
+    canonical: path,
+    languages: {
+      [DEFAULT_LOCALE]: path,
+      "x-default": path,
+    },
+  };
 }

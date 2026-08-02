@@ -9,13 +9,26 @@ import { Retainer } from "@/components/sections/retainer";
 import { Brief } from "@/components/sections/brief";
 import { assertLocale } from "@/lib/content/locales";
 import { toHeroProducts } from "@/lib/content/projections";
-import { canonicalFor } from "@/lib/seo";
+import { canonicalAlternates } from "@/lib/seo";
 import type { Metadata } from "next";
 
 /**
  * Each route owns its canonical. The root layout deliberately declares none,
  * because a canonical in a shared shell is inherited by every page — see the
  * note in `app/layout.tsx` and `lib/seo.ts`.
+ *
+ * **`alternates.languages`/`x-default`, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W13)**: every route's `generateMetadata`
+ * used to return only `{ canonical }`, which — because Next.js replaces
+ * `alternates` wholesale rather than merging it — silently discarded the
+ * root layout's `alternates.languages`/`x-default` on every content route,
+ * leaving them present only on the one page that never called
+ * `generateMetadata` at all (`_not-found`). `canonicalAlternates()`
+ * (`lib/seo.ts`) now returns both together so every route keeps them. No
+ * title/description override here — the landing page intentionally keeps
+ * the brand-level `<title>`/description the root layout already sets
+ * (`app/layout.tsx`), the conventional homepage default; see W14's fix on
+ * the other routes for the pages that needed their own.
  */
 export async function generateMetadata({
   params,
@@ -23,8 +36,18 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return { alternates: { canonical: canonicalFor(assertLocale(locale)) } };
+  return { alternates: canonicalAlternates(assertLocale(locale)) };
 }
+
+/**
+ * D11 requires every route to be `force-static` (design.md §6): there is no
+ * request-time data anywhere on this page, and a throw during static
+ * generation is how `assertContentInvariants()` fails the build
+ * deterministically. Missing here and on `app/[locale]/layout.tsx` until
+ * this fix (`verify-report-final.md` finding W20) — both now declare it,
+ * matching `precios`/`gracias`/`proyectos/[slug]`, which already did.
+ */
+export const dynamic = "force-static";
 
 /**
  * The locale landing page. All eight numbered sections `specs/
@@ -54,7 +77,7 @@ export default async function LocalePage({
   const products = toHeroProducts(validLocale);
 
   return (
-    <>
+    <main id="main-content">
       <HeroParallax
         products={products}
         header={<HeroHeader locale={validLocale} />}
@@ -66,6 +89,6 @@ export default async function LocalePage({
       <PricingSummary locale={validLocale} />
       <Retainer locale={validLocale} />
       <Brief locale={validLocale} />
-    </>
+    </main>
   );
 }

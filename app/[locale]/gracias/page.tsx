@@ -2,8 +2,12 @@ import Link from "next/link";
 import { WHATSAPP } from "@/lib/content/contact";
 import { getDictionary } from "@/lib/dictionaries";
 import { assertLocale } from "@/lib/content/locales";
-import { canonicalFor } from "@/lib/seo";
+import { canonicalAlternates } from "@/lib/seo";
 import type { Metadata } from "next";
+
+const TITLE = "Gracias — ElectroCode Studio";
+const DESCRIPTION =
+  "Si acabas de enviar un brief, lo revisaremos y te contactaremos. Si prefieres avanzar ahora mismo, escríbenos directo por WhatsApp.";
 
 /**
  * The brief form's confirmation route. Task 6.8.
@@ -32,6 +36,13 @@ import type { Metadata } from "next";
  * sitemap.ts` (task 6.9, confirmed — that file's cross-product never emits
  * a `gracias` entry) — a confirmation page has nothing for a search engine
  * to rank.
+ *
+ * **`title`/`description`, added 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W14)**: this page's own copy
+ * (`gracias.heading`/`gracias.body`), instead of the root layout's generic,
+ * identical-everywhere default. `noindex` already makes this page invisible
+ * to search engines regardless, but the tab title and any accidental share
+ * preview should still describe this page, not the homepage.
  */
 export const dynamic = "force-static";
 
@@ -42,7 +53,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    alternates: { canonical: canonicalFor(assertLocale(locale), "gracias") },
+    title: TITLE,
+    description: DESCRIPTION,
+    openGraph: { title: TITLE, description: DESCRIPTION },
+    alternates: canonicalAlternates(assertLocale(locale), "gracias"),
     robots: { index: false, follow: false },
   };
 }
@@ -57,7 +71,7 @@ export default async function GraciasPage({
   const { gracias } = getDictionary(validLocale);
 
   return (
-    <main className="py-24 md:py-32">
+    <main id="main-content" className="py-24 md:py-32">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <h1 className="text-3xl font-medium tracking-tight md:text-5xl">
           {gracias.heading}

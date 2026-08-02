@@ -59,7 +59,7 @@ export function CaseStudyLayout({
   const { evidence } = project;
 
   return (
-    <main className="py-20 md:py-32">
+    <main id="main-content" className="py-20 md:py-32">
       <div className="mx-auto max-w-3xl px-4">
         <ServiceBadge serviceLine={project.serviceLine} locale={locale} />
         <h1 className="reveal mt-4 text-4xl font-medium tracking-tight md:text-6xl">

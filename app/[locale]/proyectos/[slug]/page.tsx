@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { assertLocale } from "@/lib/content/locales";
-import { publishedCaseStudyProjects } from "@/lib/content/projections";
+import { publicTitle, publishedCaseStudyProjects } from "@/lib/content/projections";
 import { PROJECTS, type ProjectSlug } from "@/lib/content/projects";
 import { getProjectApproach } from "@/lib/content/projects/approach/loader";
-import { canonicalFor } from "@/lib/seo";
+import { canonicalAlternates } from "@/lib/seo";
 import { CaseStudyLayout } from "@/components/case-study/case-study-layout";
 
 /**
@@ -45,6 +45,15 @@ function findPublishedProject(slug: string) {
  * This page's own canonical (hard constraint 1). Without it the page would
  * inherit the root layout's — which sets none precisely so no route
  * silently inherits the wrong one, see `lib/seo.ts` and `app/layout.tsx`.
+ *
+ * **`title`/`description`, added 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W14)**: each case study used to inherit
+ * the root layout's generic title/description, identical for `luang` and
+ * `blu` alike, and identical to every other route. Both now derive from
+ * fields this route already renders — `publicTitle()` (the exact
+ * consent-gated label `case-study-layout.tsx` uses) and the project's own
+ * `summary` — so the two case studies get genuinely distinct, already-real
+ * copy, never a new claim about either project.
  */
 export async function generateMetadata({
   params,
@@ -56,8 +65,14 @@ export async function generateMetadata({
   const project = findPublishedProject(slug);
   if (!project) return {};
 
+  const title = `${publicTitle(project)} — Caso de estudio | ElectroCode Studio`;
+  const description = project.summary[validLocale];
+
   return {
-    alternates: { canonical: canonicalFor(validLocale, "proyectos", project.slug) },
+    title,
+    description,
+    openGraph: { title, description },
+    alternates: canonicalAlternates(validLocale, "proyectos", project.slug),
   };
 }
 
