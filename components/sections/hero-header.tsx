@@ -38,6 +38,15 @@ export function HeroHeader({ locale }: { locale: Locale }) {
       <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-foreground md:text-7xl lg:text-8xl">
         <TextGenerateEffect words={hero.heading[0]} />
         {/*
+          A real space between the two heading lines. `HeroDictionary.heading`
+          is a two-line tuple that used to be separated by a `<br />`; the
+          editorial restyle dropped it and left the lines as adjacent inline
+          spans, so the heading rendered "único,tu". A space rather than a
+          restored `<br />` because the display size is responsive and a hard
+          break lands badly at some widths — letting it wrap naturally reads
+          correctly at every viewport.
+        */}{" "}
+        {/*
           The second line continues the first line's sweep rather than
           restarting it: its offset is the first line's word count times the
           stagger, so the heading reads as one gesture instead of two lines

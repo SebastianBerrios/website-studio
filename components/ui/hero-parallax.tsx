@@ -116,8 +116,22 @@ export const HeroParallax = ({
     useTransform(scrollYProgress, [0, 0.2], [20, 0]),
     springConfig,
   );
+  // The entrance lifts the card stack up and settles it. The original -700 was
+  // sized for three rows of cards: the offset opened a gap at the bottom of the
+  // section that the lower rows filled.
+  //
+  // With the row derivation now producing a single row for fewer than eight
+  // products, nothing fills that gap — measured in the browser, it left 840px
+  // of empty page between the hero heading and the Servicios section, more than
+  // a full 732px viewport of nothing before a visitor reaches what the studio
+  // sells. Scaling the offset to the number of rows keeps the same gesture
+  // without the hole.
+  //
+  // Found by looking at the rendered page. The build passed, every gate passed,
+  // and the compiled HTML was correct — the defect was purely spatial.
+  const entranceLift = secondRow.length > 0 ? -700 : -260;
   const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [-700, 50]),
+    useTransform(scrollYProgress, [0, 0.2], [entranceLift, 50]),
     springConfig,
   );
   return (
@@ -128,6 +142,31 @@ export const HeroParallax = ({
       {header}
       <motion.div
         id={productsId}
+        // With a single row the card track is purely decorative: the entrance
+        // lifts it up behind the heading, and a transform moves an element
+        // VISUALLY without releasing its layout box. Measured in the browser,
+        // that abandoned box left 840px of empty page between the heading and
+        // the Servicios section — more than a full viewport of nothing before
+        // a visitor reaches what the studio sells.
+        //
+        // Taking it out of flow is the honest fix: a decorative layer should
+        // not reserve space. With two rows the track is the section's real
+        // content and stays in flow.
+        //
+        // Only visible by looking at the rendered page. Every gate passed, the
+        // compiled HTML was correct, and an earlier attempt to fix this by
+        // shrinking the transform changed nothing — because the problem was
+        // never the transform's size, it was the box it left behind.
+        // `-z-10` rather than `pointer-events-none`: the cards are real links
+        // to live client sites, so disabling them to fix a layout problem
+        // would trade one defect for another. Sending the layer behind keeps
+        // the heading and its CTA clickable while the cards stay reachable
+        // wherever they are not covered.
+        className={
+          secondRow.length > 0
+            ? undefined
+            : "absolute inset-x-0 top-0 -z-10"
+        }
         style={
           // Resting values match this spring set's own settled endpoints
           // (scrollYProgress = 1: rotateX 0, rotateZ 0, opacity 1,

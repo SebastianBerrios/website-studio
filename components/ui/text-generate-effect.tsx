@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,16 +49,26 @@ export function TextGenerateEffect({
   return (
     <span className={cn(className)}>
       {wordsArray.map((word, index) => (
-        <span
-          key={`${word}-${index}`}
-          className="reveal-word"
-          style={{
-            animationDelay: `${startDelaySeconds + index * staggerSeconds}s`,
-          }}
-        >
-          {word}
-          {index < wordsArray.length - 1 ? " " : ""}
-        </span>
+        // The separating space sits BETWEEN the spans, never inside one.
+        // `.reveal-word` is `display: inline-block` so each word can carry its
+        // own `animation-delay`, and a browser discards trailing whitespace
+        // inside an inline-block box — so a space kept inside the span
+        // vanished and the heading rendered as "Tuproyectoesúnico".
+        //
+        // The space was present in the HTML the whole time, which is why
+        // grepping the compiled output said the fix was fine. It only shows
+        // up when someone looks at the page.
+        <Fragment key={`${word}-${index}`}>
+          <span
+            className="reveal-word"
+            style={{
+              animationDelay: `${startDelaySeconds + index * staggerSeconds}s`,
+            }}
+          >
+            {word}
+          </span>
+          {index < wordsArray.length - 1 ? " " : null}
+        </Fragment>
       ))}
     </span>
   );
