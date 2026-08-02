@@ -77,7 +77,9 @@ export function Process({ locale }: { locale: Locale }) {
           {process.heading}
         </h2>
         <div className="mt-10">
-          <StickyScrollReveal items={items} />
+          {/* `ariaLabel` reuses this section's own translated heading —
+              W10 remediation, see sticky-scroll-reveal.tsx's doc comment. */}
+          <StickyScrollReveal items={items} ariaLabel={process.heading} />
         </div>
         <p className="mt-8 text-sm text-muted-foreground">
           {revisionRoundsIncluded} {process.revisionsLabel}{" "}

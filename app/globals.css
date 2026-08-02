@@ -105,7 +105,20 @@
   --accent-signal-foreground: oklch(0.99 0.005 80);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.84 0.02 65);
-  --input: oklch(0.84 0.02 65);
+  /*
+   * `--input` is the border colour for form controls specifically
+   * (`border-input`, used only by `components/brief/brief-form.tsx`'s six
+   * fields — verified: no other component references it). It used to equal
+   * `--border` (0.84 L), which measured **1.50:1** against `--background` —
+   * WCAG 1.4.11 requires 3:1 for a UI component's visual boundary. Darkened
+   * to L 0.6 (same warm hue/chroma, `C 0.02 H 65`, so it stays in the same
+   * family as every other border token) for **3.62:1**, computed OKLCH →
+   * linear sRGB → relative luminance (verify-report-final.md finding W7).
+   * `--border` itself is unchanged — it is a decorative divider (cards,
+   * header/footer rules), not a form control boundary, so 1.4.11 does not
+   * apply to it the same way.
+   */
+  --input: oklch(0.6 0.02 65);
   --ring: oklch(0.55 0.16 38 / 55%);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -141,7 +154,11 @@
   --accent-signal-foreground: oklch(0.16 0.014 55);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
+  /* Same W7 remediation as `:root`'s `--input`: raised from 16% to 40% white
+     alpha so the form-input border still clears 3:1 against the dark
+     `--background` (computed: 3.80:1). Unreachable in production today (no
+     theme toggle renders `.dark`), kept consistent regardless. */
+  --input: oklch(1 0 0 / 40%);
   --ring: oklch(0.68 0.17 40 / 50%);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
