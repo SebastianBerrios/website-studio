@@ -16,12 +16,6 @@ export type HeroDictionary = {
   readonly cta: string;
 };
 
-export type NotFoundDictionary = {
-  readonly heading: string;
-  readonly message: string;
-  readonly backLink: string;
-};
-
 /**
  * Site chrome — `components/layout/site-header.tsx`. Renders on every route
  * under `app/[locale]/**`, not a landing section, so it is keyed separately
@@ -32,6 +26,14 @@ export type SiteHeaderDictionary = {
   readonly projectsLink: string;
   readonly pricingLink: string;
   readonly whatsappLink: string;
+  /**
+   * Skip-link label, rendered by `app/[locale]/layout.tsx` (finding W8 — no
+   * page had a `<main>` landmark or a skip link, so a keyboard/screen-reader
+   * visitor had to traverse the header and hero on every page). Grouped
+   * here rather than in a new dictionary section because it is global site
+   * chrome, same category as `header`'s other keys.
+   */
+  readonly skipToContentLabel: string;
 };
 
 /**
@@ -300,5 +302,4 @@ export type Dictionary = {
   readonly caseStudy: CaseStudyDictionary;
   readonly brief: BriefDictionary;
   readonly gracias: GraciasDictionary;
-  readonly notFound: NotFoundDictionary;
 };

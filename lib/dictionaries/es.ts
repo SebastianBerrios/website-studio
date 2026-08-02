@@ -12,6 +12,7 @@ export const es: Dictionary = {
     projectsLink: "Proyectos",
     pricingLink: "Precios",
     whatsappLink: "WhatsApp",
+    skipToContentLabel: "Saltar al contenido principal",
   },
   footer: {
     brand: "ElectroCode Studio",
@@ -110,8 +111,17 @@ export const es: Dictionary = {
       codeOwnershipPendingAnswer:
         "Pendiente de confirmar — todavía no hemos definido esta política públicamente.",
       howToLeaveQuestion: "¿Cómo puedo dejar de trabajar con el estudio?",
+      // Remediation of `verify-report-final.md` finding W3 (2026-08-01): this
+      // answer used to state "lo entregado es tuyo al finalizar" — a
+      // code-ownership claim with no provenance anywhere in this batch's
+      // supplied facts, directly contradicting `codeOwnershipPendingAnswer`
+      // two questions above. Removed, not replaced with a different
+      // ownership claim — the hard constraint forbids inventing that policy.
+      // What remains (no permanencia in a one-off project; the retainer's
+      // 30-day cancellation notice) is real and already sourced
+      // (`lib/content/retainer.ts`'s `RETAINER_COMMITMENTS.cancellationTerms`).
       howToLeaveAnswer:
-        "En un proyecto puntual no hay permanencia: lo entregado es tuyo al finalizar. Si estás en un plan de mantenimiento, la cancelación requiere 30 días de aviso, sin penalidad.",
+        "En un proyecto puntual no hay permanencia: el proyecto concluye al completarse la entrega acordada. Si estás en un plan de mantenimiento, la cancelación requiere 30 días de aviso, sin penalidad.",
     },
   },
   pricingSummary: {
@@ -175,10 +185,5 @@ export const es: Dictionary = {
       "Si acabas de enviar un brief, lo revisaremos y te contactaremos. Si prefieres avanzar ahora mismo, escríbenos directo por WhatsApp.",
     whatsappCtaLabel: "Escribir por WhatsApp",
     backToHomeLabel: "Volver al inicio",
-  },
-  notFound: {
-    heading: "Página no encontrada",
-    message: "La página que buscas no existe o fue movida.",
-    backLink: "Volver al inicio",
   },
 };
