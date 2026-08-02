@@ -54,11 +54,25 @@ Line D MUST state its response-time commitment, what the monthly hours cover, ex
 
 ### Requirement: Placeholder Discipline
 
-Every undecided figure MUST render as a visually unmistakable placeholder token in development and preview. An unresolved placeholder token reaching a production build MUST be treated as a launch-blocking failure.
+> Amended 2026-08-01, remediation of `verify-report-final.md` finding W22.
+> This requirement originally described an undecided figure as a `[PRICE:*]`/
+> `[CURRENCY]` placeholder STRING that a production build must catch if
+> unresolved. `design.md`'s D8 ("`[PRICE:*]` is a state, not a string")
+> explicitly rejected that shape: no such string ever exists in this design,
+> resolved or not. The actually-implemented mechanism is the `pending`/`set`
+> discriminant on every price/commitment value (`lib/content/pricing.ts`),
+> enforced by a build-time gate (`checkPendingPricesInProduction` in
+> `lib/content/invariants.ts`) — plus a separate ESLint rule
+> (`no-restricted-syntax` in `eslint.config.mjs`) that independently bans
+> anyone from ever hardcoding the literal strings `[PRICE:` / `[CURRENCY]` as
+> copy in the first place. This amendment describes that mechanism instead of
+> the string-token one that was never built.
 
-#### Scenario: Unresolved placeholder blocks production
+Every undecided figure MUST be modeled as a `pending` state in the typed pricing module, never as a hardcoded placeholder string in copy. A price whose status is still `pending` reaching a production build MUST be treated as a launch-blocking failure.
 
-- GIVEN a `[PRICE:*]` or `[CURRENCY]` token still unresolved
+#### Scenario: An unresolved price blocks production
+
+- GIVEN a price token whose `Commitment`/`PriceEntry` status is still `"pending"`
 - WHEN a production build is produced
 - THEN this state is a failure condition, not a cosmetic gap
 
@@ -66,7 +80,7 @@ Every undecided figure MUST render as a visually unmistakable placeholder token 
 
 - GIVEN any pricing copy
 - WHEN reviewed
-- THEN no numeric price figure exists outside the typed pricing module's resolved values
+- THEN no numeric price figure exists outside the typed pricing module's resolved values, and no `[PRICE:*]`/`[CURRENCY]` placeholder string is ever hardcoded in source
 
 ### Requirement: Pre-Tagged CTA
 

@@ -3136,3 +3136,251 @@ constraint 6) and remain open, reported but not fixed.
 Ready for `sdd-verify` to re-validate the full site against
 `verify-report-final.md`'s findings, or for a human/orchestrator decision on
 merge/deploy.
+
+## Batch 17 — WARNING remediation, branch `fix/a11y-and-metadata`
+
+All 7 CRITICALs from `verify-report-final.md` were already closed (Batch 16).
+This batch closes 16 of the 25 WARNINGs: W2, W3, W4, W5, W6, W7, W8, W9, W10,
+W11, W13, W14, W20, W22, W24, W25. W1, W12, W15-W19, W21, W23 and all 8
+SUGGESTIONs are explicitly out of scope (report only, per this batch's own
+scope contract) — most depend on user-supplied content that does not exist
+yet. `tasks.md`'s new "Remediation slice — `fix/a11y-and-metadata`" section
+(G.W2 through G.V3) has the per-finding detail; this is the condensed mirror.
+
+### Accessibility (priority 1)
+
+**W5/W6 — Proceso contrast.** `components/ui/sticky-scroll-reveal.tsx`'s
+inactive-phase dim (`opacity-50` over `bg-card/60`) measured **2.29:1** for
+body text (needs 4.5:1) and the approval badge measured **4.08:1** (needs
+4.5:1) — both computed OKLCH → linear sRGB → relative luminance, the same
+method `app/globals.css`'s own palette comment claims. Raised the dim opacity
+to `opacity-[0.85]` (body **4.87:1**, title **10.00:1**) and switched the
+badge to the already-verified solid `bg-accent-signal`/
+`text-accent-signal-foreground` pairing used for the hero/pricing CTAs
+(**5.05:1**), rather than tuning a new low-alpha tint. Neither the terracotta
+accent nor the warm-paper background token changed — contrast was raised
+within the existing palette, not by flattening it to grey.
+
+**W7 — form-input border.** `border-input`/`--input` (used only by
+`brief-form.tsx`'s six fields, verified — no other component references it)
+equalled `--border` at **1.50:1** against `--background` (WCAG 1.4.11 needs
+3:1). Darkened `--input` to `oklch(0.6 0.02 65)` (same hue/chroma family) for
+**3.62:1**; `--border` itself is untouched (decorative dividers, not a
+form-control boundary). `.dark`'s `--input` bumped proportionately
+(unreachable today — no theme toggle renders `.dark`).
+
+**W8 — main landmark + skip link.** `/es` had `<header>`, eight `<section>`s,
+and `<footer>` with no `<main>`; no page had a skip link. Added a skip link
+(`#main-content`, new `header.skipToContentLabel` dictionary key,
+`sr-only`/`focus-visible:not-sr-only`) as the first element in
+`app/[locale]/layout.tsx`, before `<SiteHeader>`. Every page under the layout
+now sets `id="main-content"` on its own `<main>` — the landing page's
+top-level element became `<main>`; `precios`/`gracias`/case-study already had
+one. Verified reachable: the skip link is the first focusable element in the
+compiled markup on every route, and every route's `<main id="main-content">`
+is confirmed present in the built output.
+
+**W9 — heading-level skips.** `/es`: the hero's product-card titles were
+`<h3>`, the first heading after the page's `<h1>` (skipping `<h2>` — the next
+heading, Servicios, is a sibling section further down the page). Raised to
+`<h2>` in `hero-parallax.tsx`. `/es/precios`: `quote-block.tsx`,
+`retainer-plans.tsx`, and `terms-table.tsx`'s sub-headings were `<h4>` direct
+children of a block's `<h2>`, skipping `<h3>`; raised to `<h3>`. `faq.tsx`'s
+own block heading was `<h3>` while every other block heading on that page is
+`<h2>`; raised to `<h2>`. Verified: extracted every `<h1>`-`<h4>` in document
+order for both pages from the compiled HTML — no `h2`→`h4` (or any other)
+skip remains anywhere.
+
+**W10 — unlabelled scroll region.** The Proceso phases sit in a
+`h-[30rem] overflow-y-auto` container with no `role`, no accessible name, and
+no place in the tab order. Added `role="region"`, `aria-label` (the section's
+own translated heading, passed down from `process.tsx` — no new copy
+introduced), and `tabIndex={0}`. The `lg`-and-up sticky preview panel, which
+restates the active phase's title/description verbatim, is now `aria-hidden`
+so assistive tech does not hear every phase's copy twice.
+
+**W11 — hero titles invisible on touch.** `hero-parallax.tsx`'s card titles
+were `opacity-0 group-hover/product:opacity-100` — no `:hover` on touch, so a
+mobile visitor saw four unlabelled images (the label existed in `alt` for
+assistive tech, never for sighted touch users). The gradient scrim and title
+are now permanently rendered; `whileHover={{ y: -20 }}` remains a
+desktop-only lift, not the only way to see a card's title. Verified in
+compiled output: no `opacity-0`/hover-gated class remains on the title.
+
+**W24/W25 — form autocomplete and focus.** Added `autoComplete`
+(`name`/`email`/`tel`) to the name/email/phone fields (`serviceLine`/
+`budgetBand` have no standard token; `projectDescription` is free text).
+`<form key={JSON.stringify(state)}>` remounts on every action result
+(required — every field's `defaultValue` is uncontrolled), which silently
+reset focus to `<body>`. Added a shared `feedbackRef` across the three
+mutually-exclusive `role="alert"` banners (validation errors, send-failed,
+rejected) and a `useEffect` that focuses whichever is showing on every
+`state` change; a successful submission redirects before any banner renders,
+so the effect is a no-op there.
+
+### Metadata and SEO (priority 2)
+
+**W14 — identical titles.** All five content pages plus `_not-found` shared
+one `<title>`/description. Added distinct `title`/`description`/`openGraph`
+to `precios` ("Precios — ElectroCode Studio" + `pricing.introBody`),
+`gracias` ("Gracias — ElectroCode Studio" + `gracias.body`), each case study
+(`${publicTitle(project)} — Caso de estudio | ElectroCode Studio` +
+`project.summary[locale]`), and root `app/not-found.tsx` (static `metadata`,
+`noindex`). The landing page intentionally keeps the root layout's
+brand-level default — the conventional homepage title. No invented claim:
+every description is copy or content the page already renders. Verified: all
+six compiled `<title>`s are distinct (quoted in full below).
+
+**W13 — hreflang/x-default.** `app/layout.tsx` declares
+`alternates.languages`/`x-default` once, meant to cover every route — but
+Next.js replaces `alternates` wholesale per route rather than merging it, so
+every route calling `generateMetadata` and returning only `{ canonical }`
+silently discarded them; verified in the compiled `<head>`, they landed only
+on `_not-found`. Added `lib/seo.ts`'s `canonicalAlternates()`, returning
+`canonical` + `languages`/`x-default` together; every content route now uses
+it. Verified: `hreflang="es"` and `hreflang="x-default"` both present and
+self-referential on all six routes.
+
+**W20 — missing `force-static`.** D11 requires it on every route;
+`app/[locale]/page.tsx` and `app/[locale]/layout.tsx` were missing it (no
+task ever owned this gap). Both now declare it, matching
+`precios`/`gracias`/`proyectos/[slug]`. `design.md`'s §11 amended with a
+dated note.
+
+### Doc and spec corrections (priority 3)
+
+**W2.** `app/[locale]/precios/page.tsx`'s doc comment falsely claimed the
+WhatsApp CTA folds the visitor's line of interest into the prefilled message
+text; `lib/content/contact.ts` exports exactly one fixed prefill. Corrected;
+also removed a second stale claim in the same comment (that `#brief`/the
+brief form "do not exist yet" — PR 6b shipped them since that comment was
+written).
+
+**W3.** `pricing.faq.howToLeaveAnswer` asserted "lo entregado es tuyo al
+finalizar" — a code-ownership claim with no provenance anywhere in this
+change set's supplied facts, directly contradicting
+`codeOwnershipPendingAnswer` two questions above. Removed the ownership
+clause — **not replaced with a different one**; that policy is still the
+user's decision to make. Kept what IS sourced: no permanencia in a one-off
+project, and the retainer's 30-day cancellation notice
+(`RETAINER_COMMITMENTS.cancellationTerms`).
+
+**W4.** Verified live this batch (production build + `next start`, probing
+an unknown `proyectos/[slug]`): `app/[locale]/not-found.tsx` never renders.
+`proyectos/[slug]`'s own `dynamicParams = false` 404s an unlisted slug at the
+**routing layer**, before `app/[locale]/layout.tsx`'s chrome ever renders —
+confirmed by the compiled 404 response carrying zero `<header>`/`<footer>`
+tags and the ROOT boundary's exact copy. `apply-progress.md`'s own earlier
+prediction ("becomes reachable once PR 5 adds a dynamic segment") was false
+and is corrected here. Deleted the dead file and its now-unused
+`NotFoundDictionary` type/content; `design.md`'s §3 amended with a dated
+note; `specs/site-shell/spec.md`'s "Not Found Handling" only requires one
+branded 404, which the root boundary alone satisfies.
+
+**W22.** `specs/pricing/spec.md`'s "Placeholder Discipline" still described
+the abolished `[PRICE:*]`/`[CURRENCY]` string-token model, which
+`design.md`'s D8 explicitly rejected ("There is no `[PRICE:*]` token in this
+design"). Amended to describe the actually-implemented `pending`/`set`
+discriminant, `checkPendingPricesInProduction`, and the ESLint
+`no-restricted-syntax` rule, with a dated amendment note matching the
+project-portfolio spec's existing C7 amendment style.
+
+### Verification performed
+
+- `npm run build`: exit 0, all 10 routes, same pre-existing
+  `NEXT_PUBLIC_SITE_URL` warn-mode log. Re-run after every commit in this
+  batch (5 checkpoints), never broke.
+- `npm run lint`: exit 0, same 2 pre-existing `hover-border-gradient.tsx`
+  warnings, zero new, at every checkpoint.
+- `VERCEL_ENV=production NEXT_PUBLIC_SITE_URL=https://x.test npm run build`:
+  exit 0, all 10 routes, every integrity check active. Also re-run with the
+  four brief env vars set (`RESEND_API_KEY`/`BRIEF_TO_EMAIL`/
+  `BRIEF_FROM_EMAIL`/`BRIEF_FORM_SECRET`) to confirm the rendered form: all
+  three `autoComplete` attributes present, `border-input` class still
+  applied.
+- **Contrast table** (OKLCH → linear sRGB → relative luminance, WCAG ratio):
+
+  | Pair | Before | After | Floor | Status |
+  |---|---|---|---|---|
+  | Proceso body text (`muted-foreground` dim-opacity on `card/60`) | 2.29:1 | 4.87:1 | 4.5:1 (normal text) | PASS |
+  | Proceso phase title (`card-foreground` dim-opacity on `card/60`) | 3.24:1 | 10.00:1 | 3:1 (large text) | PASS |
+  | Approval badge (`accent-signal` text on tinted bg) | 4.08:1 | 5.05:1 (solid pairing) | 4.5:1 (normal text) | PASS |
+  | Form-input border vs background | 1.50:1 | 3.62:1 | 3:1 (UI component, 1.4.11) | PASS |
+  | (for reference, unchanged) `accent-signal` text on `background` | 4.75:1 | 4.75:1 | 4.5:1 | PASS (unchanged) |
+  | (for reference, unchanged) `accent-signal-foreground` on `accent-signal` | 5.05:1 | 5.05:1 | 4.5:1 | PASS (unchanged) |
+
+- **W8**: skip link confirmed as the first focusable element in compiled
+  `/es`, targeting `#main-content`; `<main id="main-content">` confirmed
+  present in all six compiled pages.
+- **W9**: full heading-level listing extracted from compiled `/es` and
+  `/es/precios` — document order confirmed, zero skips.
+- **W14**: all six compiled `<title>`s —
+  `Página no encontrada — ElectroCode Studio` (`_not-found`),
+  `ElectroCode Studio` (`/es`, unchanged brand default),
+  `Gracias — ElectroCode Studio` (`/es/gracias`),
+  `Precios — ElectroCode Studio` (`/es/precios`),
+  `Luang Asociados SAC — Caso de estudio | ElectroCode Studio`
+  (`/es/proyectos/luang`),
+  `Sistema de gestión interno de Blu Café — Caso de estudio |
+  ElectroCode Studio` (`/es/proyectos/blu`) — all distinct.
+- **W11**: hero card `<h2>` title confirmed rendered with no `opacity-0`
+  class in compiled `/es` — a sighted visitor on any input device (touch
+  included) now sees every card's title without hovering.
+- **W4**: confirmed by an independent live probe this batch (production
+  build + `next start` on an unused port, `curl` an unknown
+  `proyectos/[slug]`) — 404, zero `<header>`/`<footer>` tags, root
+  boundary's copy. Not merely re-trusting `verify-report-final.md`'s own
+  claim.
+- **Fault injection 1** (pre-existing gate): blanked `luang.summary.es` →
+  real exit 1 citing `checkNoEmptyLocalizedValues`; reverted via `Edit`,
+  `git status --porcelain` clean, rebuilt clean.
+- **Fault injection 2** (pre-existing gate): omitted `NEXT_PUBLIC_SITE_URL`
+  under `VERCEL_ENV=production` → real exit 1 citing
+  `checkSiteUrlConfigured`. No file touched for this injection (env-var
+  only), `git status --porcelain` already clean.
+- No new `[PRICE:*]`/`[CURRENCY]` token, no new `as Route` cast (count
+  unchanged at 13), no new dead link. `prefers-reduced-motion`'s global media
+  query and every `useReducedMotion()` call site untouched — no motion
+  behaviour changed this batch. `fast-route` (`no-visual`, zero `<img>`) and
+  `blu` (`gated` + disclosure note) reconfirmed unchanged in compiled markup.
+  The `<noscript>` block in the brief section is unchanged.
+
+### Commits (6, on `fix/a11y-and-metadata`)
+
+1. `fix(a11y): raise Proceso/badge/form-input contrast to WCAG AA`
+2. `fix(a11y): fix heading-level skips and always show hero titles on touch`
+3. `fix(a11y): manage focus after brief-form submission and add autocomplete`
+4. `docs(dictionary): drop the unreachable locale 404 and fix the FAQ
+   contradiction`
+5. `fix(routes): add a main landmark, skip link, and per-route metadata`
+6. `docs(sdd): record the a11y/metadata remediation in tasks.md, design.md,
+   and apply-progress.md` — this bookkeeping commit.
+
+No push performed. No PR opened. No history rewrite. Local commits only.
+
+### Open items, not closed by this batch (none invented)
+
+- W1, W12, W15, W16, W17, W18, W19, W21, W23 and all 8 SUGGESTIONs from
+  `verify-report-final.md` remain untouched — explicitly out of scope for
+  this batch. Several depend on user-supplied content that does not exist
+  yet (retainer channels, a fixed bug-vs-feature rule, IGV statement, etc.).
+- Every open item carried from Batch 16 (code-ownership policy —
+  narrowed but still genuinely undecided, `care-basic`/`care-standard` scope
+  difference, the `?line=` write-side CTA wiring — W1,
+  `RETAINER_COMMITMENTS.channels` — W17, the `lib/brief/schema.ts`/`PRICES`
+  type-coupling discovery — S1, `microsite-basic`/`microsite-event`
+  turnaround, Line B's quote turnaround, `PRICING_TERMS.paymentSchedule`)
+  remains untouched.
+
+## Status (cumulative, through Batch 17)
+
+All PR 1-6b code tasks, the Batch 15 visual layer, and Batch 16's CRITICAL
+remediation remain as recorded, unchanged by this batch. This batch closes 16
+of the 25 WARNING findings from `verify-report-final.md` (W2, W3, W4, W5, W6,
+W7, W8, W9, W10, W11, W13, W14, W20, W22, W24, W25). 7/7 CRITICALs and 16/25
+WARNINGs from that report are now closed. 9 WARNINGs and all 8 SUGGESTIONs
+remain open, reported but explicitly not fixed this batch (out of scope).
+
+Ready for `sdd-verify` to re-validate the full site against
+`verify-report-final.md`'s findings, or for a human/orchestrator decision on
+merge/deploy.

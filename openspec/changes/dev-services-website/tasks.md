@@ -265,8 +265,16 @@ Satisfies: `site-shell` (Locale Root Resolution, Discoverability, Not Found),
 - [x] 2.19 Create `app/not-found.tsx` (root, locale-neutral, default Spanish
       copy, no dictionary/chrome dependency). — *design §3 layout
       boundaries*
-- [x] 2.20 Create `app/[locale]/not-found.tsx` (uses dictionary, full
-      chrome). — *site-shell: Not Found Handling*
+- [x] 2.20 ~~Create `app/[locale]/not-found.tsx` (uses dictionary, full
+      chrome).~~ **Amended 2026-08-01, remediation of `verify-report-final.md`
+      finding W4**: this file was genuinely unreachable — `proyectos/[slug]`'s
+      own `dynamicParams = false` 404s an unlisted slug at the routing layer,
+      before `app/[locale]/layout.tsx`'s chrome ever renders, so the ROOT
+      `app/not-found.tsx` (task 2.19) handles every case in practice, verified
+      live. Deleted as dead code, along with the now-unused
+      `NotFoundDictionary` type/content. `specs/site-shell/spec.md`'s "Not
+      Found Handling" only requires one branded 404, which task 2.19 already
+      satisfies. — *site-shell: Not Found Handling*
 - [x] 2.21 Create `app/sitemap.ts`: cross-product `LOCALES ×
       publishableProjects()` (`/gracias` excluded once it exists in PR 6). —
       *site-shell: Discoverability Files*. **Deviation**: emits only the
@@ -1319,3 +1327,137 @@ issued at build time).
       6 recorded in Batch 15, because the C5 fix (already on this branch)
       demoted `text-generate-effect.tsx` back to a Server Component.
       `design.md`'s D10 amendment corrected to match (it still said "six").
+
+## Remediation slice — `fix/a11y-and-metadata` (post-`sdd-verify` final, WARNING pass)
+
+Closes 16 of the 25 WARNING findings in `verify-report-final.md`
+(W2-W11, W13, W14, W20, W22, W24, W25). W1, W12, W15-W19, W21, W23 and all 8
+SUGGESTIONs are explicitly out of scope for this batch (report only) — most
+depend on user-supplied content that does not exist yet.
+
+### Accessibility (priority 1)
+
+- [x] G.W5 `components/ui/sticky-scroll-reveal.tsx`: the inactive Proceso
+      phase dimmed to `opacity-50` over `bg-card/60`, putting its body text at
+      2.29:1 (needs 4.5:1). Computed OKLCH → linear sRGB → relative luminance;
+      raised to `opacity-[0.85]` → body 4.87:1, title 10.00:1. — *W5*
+- [x] G.W6 Same file: the "Requiere tu aprobación" badge was
+      `text-accent-signal` on `bg-accent-signal/10` (4.08:1, needs 4.5:1).
+      Switched to the already-verified solid `bg-accent-signal`/
+      `text-accent-signal-foreground` pairing used elsewhere (hero/pricing
+      CTAs) → 5.05:1. — *W6*
+- [x] G.W7 `app/globals.css`: `--input` (form-control border, used only by
+      `brief-form.tsx`'s six fields) equalled `--border` at 1.50:1 against
+      `--background` (needs 3:1 per WCAG 1.4.11). Darkened to
+      `oklch(0.6 0.02 65)` (same hue/chroma family) → 3.62:1. `--border`
+      itself untouched (decorative, not a form-control boundary). `.dark`'s
+      `--input` bumped proportionately for consistency (unreachable today, no
+      theme toggle). — *W7*
+- [x] G.W8 `app/[locale]/layout.tsx`: added a skip link (`#main-content`,
+      new `header.skipToContentLabel` dictionary key) as the first element,
+      `sr-only` until focused. Every page under the layout now sets
+      `id="main-content"` on its own `<main>` — the landing page's top-level
+      element became `<main>`; `precios`/`gracias`/case-study already had one,
+      just gained the id. — *W8*
+- [x] G.W9 Heading-level skips fixed in 5 files: `hero-parallax.tsx`'s
+      product-card title `h3`→`h2` (was the first heading after the page's
+      `h1`, skipping `h2`); `quote-block.tsx`, `retainer-plans.tsx`,
+      `terms-table.tsx`'s sub-headings `h4`→`h3` (were direct children of a
+      pricing-page block `h2`, skipping `h3`); `faq.tsx`'s block heading
+      `h3`→`h2` (the only pricing-page block heading not matching its
+      siblings). Verified in document order for both `/es` and `/es/precios`:
+      no `h2`→`h4` transition remains anywhere. — *W9*
+- [x] G.W10 `components/ui/sticky-scroll-reveal.tsx`: the Proceso scroll
+      container had no `role`, no accessible name, and was not in the tab
+      order. Added `role="region"`, `aria-label` (the section's own
+      translated heading, passed from `process.tsx` — no new copy), and
+      `tabIndex={0}`. The `lg`-and-up sticky preview panel, which restates the
+      active phase's title/description verbatim, is now `aria-hidden`. — *W10*
+- [x] G.W11 `components/ui/hero-parallax.tsx`: hero card titles were
+      `opacity-0 group-hover/product:opacity-100` — invisible on touch (no
+      `:hover`). Gradient scrim and title are now always rendered; the hover
+      state (`whileHover={{ y: -20 }}`) remains a desktop-only lift, not the
+      only way to see a title. — *W11*
+- [x] G.W24 `components/brief/brief-form.tsx`: added `autoComplete`
+      (`name`/`email`/`tel`) to the name/email/phone fields — WCAG 2.1 1.3.5.
+      `serviceLine`/`budgetBand` have no standard token; `projectDescription`
+      is free text. — *W24*
+- [x] G.W25 Same file: `<form key={JSON.stringify(state)}>` remounts on every
+      action result (required — every field's `defaultValue` is
+      uncontrolled), discarding focus to `<body>`. Added a shared
+      `feedbackRef`/`tabIndex={-1}` across the three mutually-exclusive
+      `role="alert"` banners (validation errors, send-failed, rejected) and a
+      `useEffect` that focuses whichever is showing on every `state` change. A
+      successful submission redirects before any banner renders, so the
+      effect is a no-op on that path. — *W25*
+
+### Metadata and SEO (priority 2)
+
+- [x] G.W14 Six routes previously shared one `<title>`/description. Added
+      distinct `title`/`description`/`openGraph` to `precios` ("Precios —
+      ElectroCode Studio" + `pricing.introBody`), `gracias` ("Gracias —
+      ElectroCode Studio" + `gracias.body`), each case study
+      (`${publicTitle(project)} — Caso de estudio | ElectroCode Studio` +
+      `project.summary[locale]`), and root `app/not-found.tsx` (static
+      `metadata` export, `noindex`). Landing intentionally keeps the root
+      layout's brand-level default (the conventional homepage title). All six
+      compiled `<title>`s confirmed distinct. No new claim — every description
+      is copy or content the page already renders. — *W14*
+- [x] G.W13 `lib/seo.ts`: added `canonicalAlternates()`, returning
+      `canonical` + `languages`/`x-default` together. Every route's
+      `generateMetadata` used to return only `{ canonical }`, which — Next.js
+      replaces `alternates` wholesale, not merged — silently dropped the root
+      layout's `languages`/`x-default` everywhere except `_not-found` (the one
+      route with no `generateMetadata`). All content routes updated to use
+      the new helper; each route's `x-default`/`languages.es` now point at its
+      OWN canonical, verified compiled. — *W13*
+- [x] G.W20 D11 requires `force-static` on every route; `app/[locale]/
+      page.tsx` and `app/[locale]/layout.tsx` were missing it (an oversight no
+      task ever owned). Both now declare it, matching
+      `precios`/`gracias`/`proyectos/[slug]`. `design.md`'s §11 data-flow
+      section amended with a dated note. — *W20*
+
+### Doc and spec corrections (priority 3)
+
+- [x] G.W2 `app/[locale]/precios/page.tsx`'s doc comment falsely claimed the
+      WhatsApp CTA folds the visitor's line of interest into the prefilled
+      message text; `lib/content/contact.ts` exports one fixed prefill.
+      Corrected; also removed a second stale claim in the same comment (that
+      `#brief`/the brief form "do not exist yet" — PR 6b shipped them). — *W2*
+- [x] G.W3 `lib/dictionaries/es.ts`'s `pricing.faq.howToLeaveAnswer` asserted
+      "lo entregado es tuyo al finalizar" — a code-ownership claim with no
+      provenance anywhere in this change set, directly contradicting
+      `codeOwnershipPendingAnswer` two questions above. Removed the ownership
+      clause (not replaced with a different one — the user has not decided
+      this policy); kept what IS sourced (no permanencia in a one-off
+      project; the retainer's 30-day cancellation notice, from
+      `RETAINER_COMMITMENTS.cancellationTerms`). — *W3*
+- [x] G.W4 Verified live (fault-injected build + `next start` probe of an
+      unknown `proyectos/[slug]`): `app/[locale]/not-found.tsx` was
+      unreachable — see amended task 2.20 above. Deleted as dead code;
+      `design.md`'s §3 "Layout and 404 boundaries" amended with a dated note
+      correcting the false "this covers every realistic 404" claim. — *W4*
+- [x] G.W22 `specs/pricing/spec.md`'s "Placeholder Discipline" still
+      described the abolished `[PRICE:*]`/`[CURRENCY]` string-token model
+      (`design.md` D8 explicitly rejected that shape: "There is no
+      `[PRICE:*]` token in this design"). Amended to describe the actually-
+      implemented `pending`/`set` discriminant + `checkPendingPricesInProduction`
+      + the ESLint `no-restricted-syntax` rule. — *W22*
+
+### Verification
+
+- [x] G.V1 `npm run build`, `npm run lint`, and `VERCEL_ENV=production
+      NEXT_PUBLIC_SITE_URL=https://x.test npm run build` all pass clean (same
+      2 pre-existing `hover-border-gradient.tsx` lint warnings, zero new).
+- [x] G.V2 Fault-injection re-proof of two gates: (1) blanked
+      `luang.summary.es` → real exit 1 citing `checkNoEmptyLocalizedValues`;
+      (2) omitted `NEXT_PUBLIC_SITE_URL` under `VERCEL_ENV=production` → real
+      exit 1 citing `checkSiteUrlConfigured`. Both reverted (injection 2
+      touched no file), `git status --porcelain` clean.
+- [x] G.V3 Compiled-output checks: skip link + `id="main-content"` on all 6
+      routes; heading order for `/es` and `/es/precios` has no level skip;
+      all 6 `<title>`s distinct; `hreflang`/`x-default` present and
+      self-referential on all 6 routes; hero card titles render without
+      `opacity-0`; badge/opacity/input-border classes compiled as expected;
+      `fast-route` still renders zero `<img>`, `blu`'s gated note + disclosure
+      both still render, `<noscript>` block in the brief section unchanged.

@@ -301,9 +301,29 @@ owns the header, footer, dictionary, and the locale assertion.
 - `app/not-found.tsx` (root) handles the `dynamicParams = false` 404s. It renders
   inside the **root** layout, so it cannot use the locale dictionary — it must be
   locale-neutral or default to Spanish, and must not assume header/footer chrome.
-- `app/[locale]/not-found.tsx` handles in-locale 404s (a bad case-study slug),
+- ~~`app/[locale]/not-found.tsx` handles in-locale 404s (a bad case-study slug),
   keeps the full chrome, and uses the dictionary. This covers every realistic
-  404 with a good page.
+  404 with a good page.~~
+
+  > **Amended 2026-08-01, remediation of `verify-report-final.md` finding
+  > W4.** This assumption was never verified and turned out false. A bad
+  > `proyectos/[slug]` slug does NOT reach `app/[locale]/not-found.tsx`: that
+  > route also declares `dynamicParams = false`, so an unlisted slug 404s at
+  > the **routing layer**, before `app/[locale]/layout.tsx`'s own chrome ever
+  > renders — the same layer-1 mechanism this section already describes for
+  > an unknown locale segment, just one level deeper. Verified live this
+  > batch: `GET /es/proyectos/<unknown-slug>` returns the root boundary's
+  > markup (zero `<header>`/`<footer>` tags, the root's exact copy), never the
+  > locale-scoped one. The imperative `notFound()` call inside
+  > `proyectos/[slug]/page.tsx` is reachable only if a slug that IS in
+  > `generateStaticParams()` somehow fails `findPublishedProject()` at request
+  > time — structurally impossible today, since both derive from the same
+  > `PROJECTS` array. `app/[locale]/not-found.tsx` was therefore genuinely
+  > dead code and has been deleted, along with its now-unused
+  > `NotFoundDictionary` entry. `specs/site-shell/spec.md`'s "Not Found
+  > Handling" requirement only asks for ONE branded 404 naming the studio
+  > with a link back to `/[locale]` — the root boundary alone satisfies it,
+  > confirmed by re-reading that requirement's scenario.
 - **Rejected alternative:** promoting `app/[locale]/layout.tsx` to *be* the root
   layout (owning `<html lang={locale}>`) with no `app/layout.tsx`. It is the
   cleaner end state for multi-locale, but which `not-found` boundary Next renders
@@ -315,6 +335,20 @@ owns the header, footer, dictionary, and the locale assertion.
   page moves and no URL changes**, so the proposal's success criterion ("adding
   `en` requires adding a dictionary — no route files move") holds for pages. Be
   precise about this rather than claiming zero cost.
+
+> **Added 2026-08-01, remediation of `verify-report-final.md` finding W8.**
+> No route had a `<main>` landmark or a skip link, so a keyboard/screen-reader
+> visitor had to traverse the full header and hero on every page.
+> `app/[locale]/layout.tsx` now renders one `sr-only`-until-focused skip link
+> (`#main-content`) as the first element inside its fragment, before
+> `<SiteHeader>`. It does NOT render `<main>` itself — `precios`, `gracias`,
+> and the case-study route already had their own `<main>` before this fix, so
+> the layout adding a second one would nest an invalid duplicate landmark.
+> Instead, every page under this layout sets `id="main-content"` on its own
+> `<main>` (the landing page's own top-level element is now `<main>` rather
+> than a fragment). One new dictionary key, `header.skipToContentLabel`
+> ("Saltar al contenido principal") — grouped under `header` because it is
+> global site chrome, not a new dictionary section.
 
 ---
 
@@ -1004,6 +1038,19 @@ pre-existing `submitBrief`). Nothing on any page reads cookies, headers, or
 `searchParams` at request time, which is what makes `force-static` everywhere
 achievable and D11 correct — a Server Action invocation is not a page render,
 so this does not add a request-time render to any route.
+
+> **Amended 2026-08-01, remediation of `verify-report-final.md` finding
+> W20.** "Achievable" was correct; "everywhere" was not actually applied.
+> `app/[locale]/precios/page.tsx`, `.../gracias/page.tsx`, and
+> `.../proyectos/[slug]/page.tsx` declared `export const dynamic =
+> 'force-static'`; `app/[locale]/page.tsx` (the landing route) and
+> `app/[locale]/layout.tsx` did not — an oversight no task ever owned,
+> inconsistent within one route family, which is worse than uniformly
+> absent (nothing was broken by it, since these routes build as SSG anyway
+> and every integrity-gate fault injection this batch and prior batches ran
+> still threw correctly — but the guarantee `assertContentInvariants()`
+> leans on was resting on default behaviour, not a declared one, on two of
+> five routes). Both now declare it explicitly, closing the gap.
 
 ---
 
