@@ -12,6 +12,14 @@ import { Price } from "./price";
  * (`lib/content/pricing.ts`) is the single source for all of this; see that
  * module's doc comment for why the gap between this floor and Line A/C's
  * fixed tiers is stated plainly rather than oversold.
+ *
+ * **Heading levels, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W9)**: these three sub-headings were
+ * `<h4>` directly under the pricing page's Line B block `<h2>`
+ * (`app/[locale]/precios/page.tsx`), skipping `<h3>` entirely. Raised to
+ * `<h3>` — no other heading nests under them, so `<h3>` is also the correct
+ * leaf level, matching `tier-card.tsx`'s sibling `<h3>`/`<h4>` pattern one
+ * level up.
  */
 export function QuoteBlock({ locale }: { locale: Locale }) {
   const { pricing } = getDictionary(locale);
@@ -19,9 +27,9 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
   return (
     <div className="reveal rounded-2xl border border-border bg-card p-6">
       <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.quoteShapesHeading}
-        </h4>
+        </h3>
         <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
           {QUOTE_BLOCK.typicalShapes.map((shape) => (
             <li key={shape[locale]}>{shape[locale]}</li>
@@ -30,9 +38,9 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
       </div>
 
       <div className="mt-6">
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.quoteVariablesHeading}
-        </h4>
+        </h3>
         <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
           {QUOTE_BLOCK.variables.map((variable) => (
             <li key={variable[locale]}>{variable[locale]}</li>
@@ -41,9 +49,9 @@ export function QuoteBlock({ locale }: { locale: Locale }) {
       </div>
 
       <div className="mt-6">
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.quoteProcessHeading}
-        </h4>
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
           {QUOTE_BLOCK.process[locale]}
         </p>

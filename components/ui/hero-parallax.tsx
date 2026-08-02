@@ -188,6 +188,28 @@ export const ProductCard = ({
   shouldReduceMotion?: boolean | null;
 }) => {
   const cardBody = (
+    /*
+     * Card title, corrected 2026-08-01 (remediation of
+     * `verify-report-final.md` findings W9 and W11).
+     *
+     * W11: the title used to be `opacity-0 group-hover/product:opacity-100`
+     * — invisible until a `:hover` that touch devices never fire, so a
+     * mobile visitor saw four unlabelled images (the label existed in `alt`
+     * for assistive tech, but not for sighted touch users). The gradient
+     * scrim is now permanent instead of hover-only, and the `<h2>` is always
+     * rendered at full opacity — a sighted visitor on any input device now
+     * sees every card's title without needing to hover at all. `whileHover`'s
+     * card lift (below) remains the desktop-only flourish.
+     *
+     * W9: this was an `<h3>` immediately after the page's one `<h1>` (the
+     * hero heading, `hero-header.tsx`), with no `<h2>` in between —
+     * `components/sections/services.tsx`'s `<h2>` is the next heading in
+     * document order, rendered by a sibling component further down the page.
+     * Raised to `<h2>` so the outline reads h1 -> h2 (these cards) -> h2
+     * (Servicios) -> h3 (its own cards), never skipping a level. Tailwind's
+     * preflight resets heading font-size/weight to `inherit`, so this is a
+     * pure semantic change — the rendered size is unchanged.
+     */
     <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <Image
         src={product.thumbnail}
@@ -196,10 +218,10 @@ export const ProductCard = ({
         className="object-contain max-h-96 max-w-120"
         alt={product.title}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/0 to-transparent opacity-0 transition-opacity duration-300 group-hover/product:opacity-100 pointer-events-none"></div>
-      <h3 className="absolute bottom-4 left-4 font-display text-lg font-medium text-background opacity-0 transition-opacity duration-300 group-hover/product:opacity-100 z-10">
+      <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/20 to-transparent pointer-events-none"></div>
+      <h2 className="absolute bottom-4 left-4 font-display text-lg font-medium text-background z-10">
         {product.title}
-      </h3>
+      </h2>
     </div>
   );
 

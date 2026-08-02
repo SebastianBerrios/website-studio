@@ -15,6 +15,14 @@ import type { Locale } from "@/lib/content/locales";
  * new invented claim). The fourth, code ownership, has not been supplied
  * this batch — rendered honestly as pending rather than a fabricated policy.
  * See apply-progress.md's open items.
+ *
+ * **Heading level, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W9)**: this block's own heading was
+ * `<h3>` while it is the block's ONLY heading — every other pricing-page
+ * block (Line A/C/B/D, terms) has its `<h2>` rendered by
+ * `app/[locale]/precios/page.tsx` one level above its content, so this was
+ * the one block heading at the wrong level. Raised to `<h2>` to match its
+ * siblings; nothing nests under it (`<details>/<summary>` are not headings).
  */
 export function Faq({ locale }: { locale: Locale }) {
   const { faq } = getDictionary(locale).pricing;
@@ -28,9 +36,9 @@ export function Faq({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      <h3 className="text-2xl font-medium text-card-foreground md:text-3xl">
+      <h2 className="text-2xl font-medium text-card-foreground md:text-3xl">
         {faq.heading}
-      </h3>
+      </h2>
       <div className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
         {entries.map(([question, answer]) => (
           <details key={question} className="group p-5">

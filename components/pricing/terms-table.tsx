@@ -11,6 +11,12 @@ import type { Locale } from "@/lib/content/locales";
  * this batch; see `lib/content/pricing.ts`'s `PricingTerms` doc comment.
  * Currency is never hardcoded per site — every price on this page renders
  * through `<Price>`/`formatMoney()`, which both read `DISPLAY_CURRENCY`.
+ *
+ * **Heading levels, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W9)**: these three sub-headings were
+ * `<h4>` directly under the pricing page's terms block `<h2>`
+ * (`app/[locale]/precios/page.tsx`), skipping `<h3>`. Raised to `<h3>` —
+ * same fix and reasoning as `quote-block.tsx`'s doc comment.
  */
 export function TermsTable({ locale }: { locale: Locale }) {
   const { pricing } = getDictionary(locale);
@@ -19,9 +25,9 @@ export function TermsTable({ locale }: { locale: Locale }) {
   return (
     <div className="reveal grid gap-6 rounded-2xl border border-border bg-card p-6 sm:grid-cols-3">
       <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.alwaysIncludedHeading}
-        </h4>
+        </h3>
         <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
           {alwaysIncluded.map((item) => (
             <li key={item[locale]}>{item[locale]}</li>
@@ -29,9 +35,9 @@ export function TermsTable({ locale }: { locale: Locale }) {
         </ul>
       </div>
       <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.alwaysExtraHeading}
-        </h4>
+        </h3>
         <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
           {alwaysExtra.map((item) => (
             <li key={item[locale]}>{item[locale]}</li>
@@ -39,9 +45,9 @@ export function TermsTable({ locale }: { locale: Locale }) {
         </ul>
       </div>
       <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {pricing.paymentScheduleLabel}
-        </h4>
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
           {paymentSchedule.status === "set"
             ? paymentSchedule.value[locale]

@@ -19,6 +19,12 @@ import { Price } from "./price";
  * explicitly. See `lib/content/pricing.ts`'s `RetainerPlan` doc comment for
  * the open item: no scope difference between the two plans beyond price has
  * been supplied.
+ *
+ * **Heading levels, corrected 2026-08-01 (remediation of
+ * `verify-report-final.md` finding W9)**: every sub-heading here was `<h4>`
+ * directly under the pricing page's Line D block `<h2>`
+ * (`app/[locale]/precios/page.tsx`), skipping `<h3>`. Raised to `<h3>` —
+ * same fix and reasoning as `quote-block.tsx`'s doc comment.
  */
 export function RetainerPlans({ locale }: { locale: Locale }) {
   const { retainer } = getDictionary(locale);
@@ -33,9 +39,9 @@ export function RetainerPlans({ locale }: { locale: Locale }) {
             key={plan.token}
             className="rounded-xl border border-border p-4"
           >
-            <h4 className="font-display text-base font-medium text-card-foreground">
+            <h3 className="font-display text-base font-medium text-card-foreground">
               {plan.name[locale]}
-            </h4>
+            </h3>
             <p className="mt-1 text-xl">
               <Price token={plan.token} />{" "}
               <span className="text-sm text-muted-foreground">/ mes</span>
@@ -46,9 +52,9 @@ export function RetainerPlans({ locale }: { locale: Locale }) {
 
       {responseWindow.status === "set" ? (
         <div className="mt-6">
-          <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {retainer.responseHeading}
-          </h4>
+          </h3>
           <dl className="mt-2 grid gap-2 sm:grid-cols-2">
             {responseWindow.value.map((tier) => (
               <div key={tier.severity[locale]} className="text-sm">
@@ -65,9 +71,9 @@ export function RetainerPlans({ locale }: { locale: Locale }) {
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         {includedScope.status === "set" ? (
           <div>
-            <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {retainer.includedHeading}
-            </h4>
+            </h3>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {includedScope.value.map((item) => (
                 <li key={item[locale]}>{item[locale]}</li>
@@ -77,9 +83,9 @@ export function RetainerPlans({ locale }: { locale: Locale }) {
         ) : null}
         {excludedScope.status === "set" ? (
           <div>
-            <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {retainer.excludedHeading}
-            </h4>
+            </h3>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {excludedScope.value.map((item) => (
                 <li key={item[locale]}>{item[locale]}</li>
